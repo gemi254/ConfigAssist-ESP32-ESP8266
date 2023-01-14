@@ -1,5 +1,5 @@
 # ConfigAssist
-A litewave library allowing easy editing of application variables and configuration using
+A litewave library allowing easy editing of application variables and quick configuration using
 a json dictionary for **esp32/esp8266** devices.
 
 ![](docs/config.png)
@@ -30,7 +30,7 @@ i.e.
 + `digitalWrite(conf["led_pin"].toInt(), 0)`;
 + `float float_value = atof(conf["float_value"].c_str());`
 
-## Parameters definition with JSON
+## Variables definition with JSON dictionary
 In your application sketch file you must define a json dictionary that includes all the information needed 
 for the html form to be generated. See example below. Each variable will be displayed on config page with the order 
 Defined in the json file.
