@@ -65,10 +65,12 @@ const char* appConfigDict_json PROGMEM = R"~(
 + Define your static instance
   - `Config conf;        //configAssist class`
 
-+ in your setup function you must init the class
++ in your setup function you must init the config class with a pointer to the dictionary
+  - `onf.init(appConfigDict_json);`
+ 
 ## Access point handler
 Define a web server handler function for the **configAssist**. This function will be passed to 
-conf.setup in order for configAssist to handle form requests
+conf.setup in order for configAssist to handle form AP requests
 ```
 // Handler function for AP config form
 static void handleAssistRoot() { 
