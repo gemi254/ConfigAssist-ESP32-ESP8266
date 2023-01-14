@@ -1,6 +1,6 @@
 # ConfigAssist
-A litewave library allowing easy editing of application variables and quick configuration using
-a json dictionary for **esp32/esp8266** devices.
+A litewave library allowing easy editing of application variables and quick configuration of **esp32/esp8266** devices 
+using a json dictionary.
 
 ![](docs/config.png)
 
