@@ -43,10 +43,10 @@ struct confPairs {
 #include "configAssistPMem.h"
 
 // ConfigAssist class
-class Config{ 
+class ConfigAssist{ 
   public:
-    Config() {_dict = false; _valid=false; _hostName="";}
-    ~Config() {}
+    ConfigAssist() {_dict = false; _valid=false; _hostName="";}
+    ~ConfigAssist() {}
   
   public:  
     // Load configs after storage started
