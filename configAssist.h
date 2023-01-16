@@ -96,11 +96,11 @@ class Config{
     // Return next key and value from configs on each call in key order
     bool getNextKeyVal(String &keyName, String &keyVal, String &label, uint8_t &readNo) {
       static uint8_t row = 0;
-      if (row++ < configs.size()) {          
-          keyName = configs[row - 1].name.c_str();
-          keyVal = configs[row - 1].value.c_str(); 
-          label = configs[row - 1].label.c_str(); 
-          readNo = configs[row - 1].readNo;
+      if (row++ < _configs.size()) {          
+          keyName = _configs[row - 1].name.c_str();
+          keyVal = _configs[row - 1].value.c_str(); 
+          label = _configs[row - 1].label.c_str(); 
+          readNo = _configs[row - 1].readNo;
           return true;
       }
       // end of vector reached, reset
@@ -112,7 +112,7 @@ class Config{
     String get(String variable) {
       int keyPos = getKeyPos(variable);
       if (keyPos >= 0) {
-        return configs[keyPos].value;        
+        return _configs[keyPos].value;        
       }
       return String(""); 
     }
@@ -121,7 +121,7 @@ class Config{
     bool put(String thisKey, String value) {      
       int keyPos = getKeyPos(thisKey);
       if (keyPos >= 0) {
-        configs[keyPos].value = value;
+        _configs[keyPos].value = value;
         return true;
       }
       LOG_ERR("Put failed on Key: %s=%s\n", thisKey.c_str(), value.c_str());
@@ -139,12 +139,12 @@ class Config{
     // Sort vectors by key (name in confPairs)
     void add(String key, String val, int readNo=0, String lbl=""){
       //LOG_INF("Adding key %s, val %s\n", key.c_str(), val.c_str()); 
-      configs.push_back({key, val, lbl, readNo}) ;      
+      _configs.push_back({key, val, lbl, readNo}) ;      
     }
 
     // Sort vectors by key (name in confPairs)
     void sort(){
-      std::sort(configs.begin(), configs.end(), [] (
+      std::sort(_configs.begin(), _configs.end(), [] (
         const confPairs &a, const confPairs &b) {
         return a.name < b.name;}
       );
@@ -152,7 +152,7 @@ class Config{
 
     // Sort vectors by key (readNo in confPairs)
     void sortReadOrder(){
-      std::sort(configs.begin(), configs.end(), [] (
+      std::sort(_configs.begin(), _configs.end(), [] (
         const confPairs &a, const confPairs &b) {
         return a.readNo < b.readNo;}
       );
@@ -187,8 +187,8 @@ class Config{
             if (keyPos >= 0) {
               //LOG_INF("Json upd: %i, %s, val %s\n", keyPos, key.c_str(), val.c_str());            
               // update other fields but not value        
-              configs[keyPos].readNo = i;
-              configs[keyPos].label = lbl;                
+              _configs[keyPos].readNo = i;
+              _configs[keyPos].label = lbl;                
             }else{
               LOG_ERR("Not exists in json Key: %s\n", key.c_str());
             }
@@ -219,7 +219,7 @@ class Config{
         _valid = false;       
         return false;
       }else{
-        configs.reserve(MAX_PARAMS);
+        _configs.reserve(MAX_PARAMS);
         // extract each config line from file
         while (file.available()) {
           String configLineStr = file.readStringUntil('\n');
@@ -248,7 +248,7 @@ class Config{
         LOG_ERR("Failed to save config file\n");
         return false;
       }else{
-        for (const auto& row: configs) {
+        for (const auto& row: _configs) {
           // recreate config file with updated content
           LOG_INF("Save: %s=%s\n", row.name.c_str(), row.value.c_str());
           if (!strcmp(row.name.c_str() + strlen(row.name.c_str()) - 5, "_Pass")) {
@@ -276,7 +276,7 @@ class Config{
         //Discard and load json defaults;
         if (server->hasArg(F("RST"))) {
           deleteConfig(CONF_FILE);
-          configs.clear();
+          _configs.clear();
           loadJsonDict(_jStr);
           dump();
           //saveConfigFile(CONF_FILE);
@@ -355,14 +355,14 @@ class Config{
   private:
     // Get location of given key to retrieve other elements
     int getKeyPos(String thisKey) {
-      if (configs.empty()) return -1;
-      auto lower = std::lower_bound(configs.begin(), configs.end(), thisKey, [](
+      if (_configs.empty()) return -1;
+      auto lower = std::lower_bound(_configs.begin(), _configs.end(), thisKey, [](
           const confPairs &a, const String &b) { 
           //Serial.printf("Comp: %s %s \n", a.name.c_str(), b.c_str());    
           return a.name < b;}
       );
-      int keyPos = std::distance(configs.begin(), lower); 
-      if (thisKey == configs[keyPos].name) return keyPos;
+      int keyPos = std::distance(_configs.begin(), lower); 
+      if (thisKey == _configs[keyPos].name) return keyPos;
       else Serial.printf("Key %s not found\n", thisKey.c_str()); 
       return -1; // not found
     }
@@ -393,12 +393,12 @@ class Config{
           add(key, val);
         }
       }
-      if (configs.size() > MAX_PARAMS) 
-        LOG_WRN("Config file entries: %u exceed max: %u", configs.size(), MAX_PARAMS);
+      if (_configs.size() > MAX_PARAMS) 
+        LOG_WRN("Config file entries: %u exceed max: %u", _configs.size(), MAX_PARAMS);
     }
      
   private: 
-    std::vector<confPairs> configs;
+    std::vector<confPairs> _configs;
     bool _valid;
     bool _dict;
     String _hostName;
