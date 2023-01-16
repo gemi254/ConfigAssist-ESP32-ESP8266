@@ -68,7 +68,7 @@ const char* appConfigDict_json PROGMEM = R"~(
   - `ConfigAssist conf;        //ConfigAssist class`
 
 + in your setup function you must init the config class with a pointer to the dictionary
-  - `onf.init(appConfigDict_json);` or `onf.init(NULL);` for default settings
+  - `conf.init(appConfigDict_json);` or `onf.init(NULL);` for default settings
  
 ## WIFI Access point handler
 Define a web server handler function for the **configAssist** class. This function will be passed to 
