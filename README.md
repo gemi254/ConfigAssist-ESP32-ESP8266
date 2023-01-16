@@ -65,7 +65,7 @@ const char* appConfigDict_json PROGMEM = R"~(
   - `#include "configAssist.h"  // Setup assistant class`
 
 + Define your static instance
-  - `Config conf;        //configAssist class`
+  - `ConfigAssist conf;        //ConfigAssist class`
 
 + in your setup function you must init the config class with a pointer to the dictionary
   - `onf.init(appConfigDict_json);` or `onf.init(NULL);` for default settings
