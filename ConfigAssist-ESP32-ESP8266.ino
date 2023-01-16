@@ -64,7 +64,7 @@ const char* appConfigDict_json PROGMEM = R"~(
 )~";
 
 #include "configAssist.h"  // Setup assistant class
-Config conf;               // Config class
+ConfigAssist conf;               // Config class
 String hostName;           // Default Host name
 
 // *********** Helper funcions ************
