@@ -6,7 +6,7 @@ using a json dictionary and a config portal.
 </p>
 
 ## Description
-**ConfigAssist** will automatically generate a web form that allows editing of application preferences such as **Wifi ssid**, **Wifii pasword**. 
+**ConfigAssist** will automatically generate a web form that allows editing of application preferences such as **Wifi ssid**, **Wifi pasword**. 
 A json description text, with a `variable name`, a `default value` and a `label` for each variable must be defined describing all the 
 variables that the application will use. 
 
