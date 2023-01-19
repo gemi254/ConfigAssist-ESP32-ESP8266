@@ -16,7 +16,7 @@ The configuration data will be stored in the **SPIFFS** as an **ini file** <em>(
 loaded on each reboot.
 
 ## How it works
-On first run when no data (ini file) is present in local **storeage**, **ConfigAssist** will start an **AccessPoint** and load the
+On first run when no data (ini file) is present in local **storage**, **ConfigAssist** will start an **AccessPoint** and load the
 default json dictionary with variables to be edited. A web form will be generated in order to 
 initialize application variables using a **web page** from the remote host connected to AccesPoint.
 Data will be saved on local storage and will be available on next reboot. 
@@ -69,6 +69,8 @@ const char* appConfigDict_json PROGMEM = R"~(
 
 + in your setup function you must init the config class with a pointer to the dictionary
   - `conf.init(appConfigDict_json);` or `onf.init(NULL);` for default settings
++ if you want to use a different external **ini file name**
+  - `conf.init(appConfigDict_json, ini_file_name);`
  
 ## WIFI Access point handler
 Define a web server handler function for the **configAssist** class. This function will be passed to 
