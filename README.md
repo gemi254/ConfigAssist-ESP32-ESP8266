@@ -40,23 +40,19 @@ Defined in the json file.
 for example ..
 ```
 const char* appConfigDict_json PROGMEM = R"~(
-[
-  {
+[{
       "name": "st_ssid",
      "label": "Name for WLAN (Ssid to connect)",
    "default": ""
-  },
-  {
+  },{
       "name": "st_pass",
      "label": "Password for WLAN",
    "default": ""
-  },
-  {
+  },{
       "name": "host_name",
      "label": "Host name to use for MDNS and AP",
    "default": "ConfigAssist"
-  }  
-]
+  }]
 ```
 
 ## Project definitions in your main app
