@@ -2,7 +2,7 @@
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DELIM '~'                    // Ini file pairs seperator
 #define CONF_FILE "/config.ini"      // Ini file to save configuration
-#define DONT_ALLOW_SPACES true       // Allow spaces in var names ?
+#define DONT_ALLOW_SPACES false       // Allow spaces in var names ?
 #define HOSTNAME_KEY "host_name"     // The key that defines host name
 
 //Structure for config elements
@@ -50,9 +50,9 @@ class ConfigAssist{
   
   public:  
     // Load configs after storage started
-    void init(const char * jStr) { 
+    void init(const char * jStr,String ini_file=CONF_FILE) { 
       _jStr = jStr;
-      loadConfigFile(CONF_FILE); 
+      loadConfigFile(ini_file); 
       //On fail load defaults from dict
       if(!_valid) loadJsonDict(_jStr);
       //Set hostname
@@ -119,6 +119,7 @@ class ConfigAssist{
     
     // Update the value of thisKey = value
     bool put(String thisKey, String value) {      
+      LOG_INF("Put key %s, val %s\n", thisKey.c_str(), value.c_str()); 
       int keyPos = getKeyPos(thisKey);
       if (keyPos >= 0) {
         _configs[keyPos].value = value;
@@ -136,7 +137,7 @@ class ConfigAssist{
       }
     }
 
-    // Sort vectors by key (name in confPairs)
+    // Add vectors by key (name in confPairs)
     void add(String key, String val, int readNo=0, String lbl=""){
       //LOG_INF("Adding key %s, val %s\n", key.c_str(), val.c_str()); 
       _configs.push_back({key, val, lbl, readNo}) ;      
@@ -223,20 +224,20 @@ class ConfigAssist{
         // extract each config line from file
         while (file.available()) {
           String configLineStr = file.readStringUntil('\n');
-          LOG_INF("Load: %s\n" , configLineStr.c_str());
+          //LOG_INF("Load: %s\n" , configLineStr.c_str());
           //if (!configLineStr.length()) continue;
           loadVectItem(configLineStr);
         } 
         sort();
       }
-      LOG_INF("Loaded config\n");
+      LOG_INF("Loaded config: %s\n",filename.c_str());
       _valid = true;
       return true;
     }
 
     // Delete configuration file
-    bool deleteConfig(const char * filename){
-      LOG_INF("Remove config file\n");
+    bool deleteConfig(String filename){
+      LOG_INF("Remove config: %s\n",filename.c_str());
       return STORAGE.remove(filename);
     }
 
@@ -250,7 +251,7 @@ class ConfigAssist{
       }else{
         for (const auto& row: _configs) {
           // recreate config file with updated content
-          LOG_INF("Save: %s=%s\n", row.name.c_str(), row.value.c_str());
+          //LOG_INF("Save: %s=%s\n", row.name.c_str(), row.value.c_str());
           if (!strcmp(row.name.c_str() + strlen(row.name.c_str()) - 5, "_Pass")) {
               // replace passwords with asterisks
               sprintf(configLine, "%s%c%s\n", row.name.c_str(), DELIM, "************");   
@@ -258,9 +259,10 @@ class ConfigAssist{
               sprintf(configLine, "%s%c%s\n", row.name.c_str(), DELIM, row.value.c_str());   
           }
           file.write((uint8_t*)configLine, strlen(configLine));
-        }
-        LOG_INF("File saved, sz: %u B\n",file.size());
+        }        
+        LOG_INF("File saved: %s\n", filename.c_str());
         file.close();
+        
         return true;
       }
     }
@@ -278,7 +280,7 @@ class ConfigAssist{
           deleteConfig(CONF_FILE);
           _configs.clear();
           loadJsonDict(_jStr);
-          dump();
+          //dump();
           //saveConfigFile(CONF_FILE);
           LOG_INF("_valid: %i\n", _valid);
           if(!_valid){
@@ -363,7 +365,7 @@ class ConfigAssist{
       );
       int keyPos = std::distance(_configs.begin(), lower); 
       if (thisKey == _configs[keyPos].name) return keyPos;
-      else Serial.printf("Key %s not found\n", thisKey.c_str()); 
+      else LOG_INF("Key %s not found\n", thisKey.c_str()); 
       return -1; // not found
     }
 
@@ -394,7 +396,7 @@ class ConfigAssist{
         }
       }
       if (_configs.size() > MAX_PARAMS) 
-        LOG_WRN("Config file entries: %u exceed max: %u", _configs.size(), MAX_PARAMS);
+        LOG_WRN("Config file entries: %u exceed max: %u\n", _configs.size(), MAX_PARAMS);
     }
      
   private: 
