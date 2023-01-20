@@ -12,6 +12,11 @@ struct confPairs {
     String label;
     int readNo;
 };
+//Seperators of config elements
+struct confSeperators {
+    String name;
+    String value;
+};
 
 // Define Platform libs
 #if defined(ESP32)
@@ -50,7 +55,7 @@ class ConfigAssist{
   
   public:  
     // Load configs after storage started
-    void init(const char * jStr,String ini_file=CONF_FILE) { 
+    void init(const char * jStr, String ini_file = CONF_FILE) { 
       _jStr = jStr;
       loadConfigFile(ini_file); 
       //On fail load defaults from dict
@@ -60,7 +65,7 @@ class ConfigAssist{
       if(_hostName=="") _hostName = getDefaultHostName("ESP");
     }
     
-    //if not Use dictionary laod default minimal config
+    //if not Use dictionary load default minimal config
     //For quick connection to wifi
     void init() { 
       init(NULL);
@@ -69,7 +74,7 @@ class ConfigAssist{
     // Is config loaded valid ?
     bool valid(){ return _valid;}
 
-    // Start an AP with web server and edit config values loaded from json dictionary
+    // Start an AP with a web server and render config values loaded from json dictionary
     void setup(WEB_SERVER &server, std::function<void(void)> handler) {
       LOG_INF("Config starting AP..\n");
       WiFi.mode(WIFI_AP);
@@ -100,7 +105,7 @@ class ConfigAssist{
           keyName = _configs[row - 1].name.c_str();
           keyVal = _configs[row - 1].value.c_str(); 
           label = _configs[row - 1].label.c_str(); 
-          readNo = _configs[row - 1].readNo;
+          readNo = _configs[row - 1].readNo;          
           return true;
       }
       // end of vector reached, reset
@@ -108,7 +113,7 @@ class ConfigAssist{
       return false;
     }
     
-    // return the value of a given key, Empty on not found
+    // Return the value of a given key, Empty on not found
     String get(String variable) {
       int keyPos = getKeyPos(variable);
       if (keyPos >= 0) {
@@ -139,8 +144,14 @@ class ConfigAssist{
 
     // Add vectors by key (name in confPairs)
     void add(String key, String val, int readNo=0, String lbl=""){
-      //LOG_INF("Adding key %s, val %s\n", key.c_str(), val.c_str()); 
+       //LOG_INF("Adding  key[%i]: %s=%s\n", readNo, key.c_str(), val.c_str()); 
       _configs.push_back({key, val, lbl, readNo}) ;      
+    }
+
+    // Add seperator vectors by key
+    void addSeperator(String key, String val){
+       //LOG_INF("Adding sep key: %s=%s\n", key.c_str(), val.c_str()); 
+      _seperators.push_back({key, val}) ;      
     }
 
     // Sort vectors by key (name in confPairs)
@@ -150,7 +161,15 @@ class ConfigAssist{
         return a.name < b.name;}
       );
     }
-
+    
+    // Sort vectors by key (name in confPairs)
+    void sortSeperators(){
+      std::sort(_seperators.begin(), _seperators.end(), [] (
+        const confSeperators &a, const confSeperators &b) {
+        return a.name < b.name;}
+      );
+    }
+    
     // Sort vectors by key (readNo in confPairs)
     void sortReadOrder(){
       std::sort(_configs.begin(), _configs.end(), [] (
@@ -186,7 +205,7 @@ class ConfigAssist{
           }else{
             int keyPos = getKeyPos(key);
             if (keyPos >= 0) {
-              //LOG_INF("Json upd: %i, %s, val %s\n", keyPos, key.c_str(), val.c_str());            
+              //LOG_INF("Json upd key[%i]=%s, label: %s, read: %i\n", keyPos, key.c_str(), lbl.c_str(),i);
               // update other fields but not value        
               _configs[keyPos].readNo = i;
               _configs[keyPos].label = lbl;                
@@ -194,13 +213,18 @@ class ConfigAssist{
               LOG_ERR("Not exists in json Key: %s\n", key.c_str());
             }
           }
-          i++;             
+          i++;
+        }else if (obj.containsKey("seperator")){
+          String sepNo = "sep_" + String(i);
+          String val =  obj["seperator"];
+          addSeperator(sepNo, val);          
         }else{
           LOG_ERR("Undefined keys name/default on param : %i.", i);
         }
       }
       //sort vector for binarry search
       sort();
+      sortSeperators();
       _dict = true;
       if(!update) _valid = true;
       LOG_INF("Loaded json dict\n");
@@ -224,8 +248,7 @@ class ConfigAssist{
         // extract each config line from file
         while (file.available()) {
           String configLineStr = file.readStringUntil('\n');
-          //LOG_INF("Load: %s\n" , configLineStr.c_str());
-          //if (!configLineStr.length()) continue;
+          //LOG_INF("Load: %s\n" , configLineStr.c_str());          
           loadVectItem(configLineStr);
         } 
         sort();
@@ -270,17 +293,15 @@ class ConfigAssist{
     // Respond a HTTP request for the form use the CONF_FILE
     // to save. Save, Reboot ESP, Reset to defaults, cancel edits
     void handleFormRequest(WEB_SERVER * server){
-      //LOG_INF("Handle req: %i\n",server->args());
       //Save config form
       if (server->args() > 0) {
         server->setContentLength(CONTENT_LENGTH_UNKNOWN);
         
-        //Discard and load json defaults;
+        //Discard edits and load json defaults;
         if (server->hasArg(F("RST"))) {
           deleteConfig(CONF_FILE);
           _configs.clear();
           loadJsonDict(_jStr);
-          //dump();
           //saveConfigFile(CONF_FILE);
           LOG_INF("_valid: %i\n", _valid);
           if(!_valid){
@@ -348,8 +369,19 @@ class ConfigAssist{
           out.replace("{key}",var);
           out.replace("{lbl}",lbl);
           out.replace("{val}",val);
+          String sKey = "sep_" + String(readNo);
+          int sepKeyPos = getSepKeyPos(sKey);
+          if(sepKeyPos>=0){
+            //Add a seperator
+            String val = _seperators[sepKeyPos].value;
+            String outSep = String(HTML_PAGE_SEPERATOR_LINE);
+            outSep.replace("{val}", val);
+            out = outSep + out;
+            LOG_INF("SEP key[%i]: %s = %s\n", readNo, sKey.c_str(), val.c_str());
+          }  
+          LOG_INF("HTML key: %s = %s [%i] %s\n",var.c_str(), val.c_str(), readNo, lbl.c_str() );          
           server->sendContent(out);
-          //LOG_INF("HTML key: %s = %s [%i] %s\n",var.c_str(), val.c_str(), readNo, lbl.c_str() );
+          
       }
       sort();
       server->sendContent(HTML_PAGE_END);
@@ -360,16 +392,29 @@ class ConfigAssist{
       if (_configs.empty()) return -1;
       auto lower = std::lower_bound(_configs.begin(), _configs.end(), thisKey, [](
           const confPairs &a, const String &b) { 
-          //Serial.printf("Comp: %s %s \n", a.name.c_str(), b.c_str());    
           return a.name < b;}
       );
       int keyPos = std::distance(_configs.begin(), lower); 
       if (thisKey == _configs[keyPos].name) return keyPos;
-      else LOG_INF("Key %s not found\n", thisKey.c_str()); 
+      else LOG_WRN("Key %s not found\n", thisKey.c_str()); 
       return -1; // not found
     }
 
-    // Extract a config tokens from input and load into configs vector
+    // Get seperation location of given key
+    int getSepKeyPos(String thisKey) {
+      if (_seperators.empty()) return -1;
+      auto lower = std::lower_bound(_seperators.begin(), _seperators.end(), thisKey, [](
+          const confSeperators &a, const String &b) { 
+          //Serial.printf("Comp conf sep: %s %s \n", a.name.c_str(), b.c_str());    
+          return a.name < b;}
+      );
+      int keyPos = std::distance(_seperators.begin(), lower); 
+      if (thisKey == _seperators[keyPos].name) return keyPos;
+      //LOG_INF("Sep key %s not found\n", thisKey.c_str()); 
+      return -1; // not found
+    }
+
+    // Extract a config tokens from keyValPair and load it into configs vector
     void loadVectItem(String keyValPair) {  
       if (keyValPair.length()) {
         std::string token[2];
@@ -401,6 +446,7 @@ class ConfigAssist{
      
   private: 
     std::vector<confPairs> _configs;
+    std::vector<confSeperators> _seperators;
     bool _valid;
     bool _dict;
     String _hostName;
