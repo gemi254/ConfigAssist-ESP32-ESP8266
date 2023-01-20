@@ -1,5 +1,5 @@
 # ConfigAssist
-A litewave library allowing easy editing of application variables and quick configuration of **esp32/esp8266** devices 
+A liteweight library allowing definition and easy editing of application variables for quick configuration of **esp32/esp8266** devices 
 using a json dictionary and a config portal.
 <p align="center">
   <img src="docs/config.png">
@@ -35,12 +35,14 @@ i.e.
 ## Variables definition with JSON dictionary
 In your application sketch file you must define a json dictionary that includes all the information needed 
 for the html form to be generated. See example below. Each variable will be displayed on config page with the order 
-Defined in the json file.
+defined in the json file. A seperator line can be used to group config values under a title.
 
 for example ..
 ```
 const char* appConfigDict_json PROGMEM = R"~(
 [{
+ "seperator": "Wifi settings"
+  },{
       "name": "st_ssid",
      "label": "Name for WLAN (Ssid to connect)",
    "default": ""
@@ -48,6 +50,8 @@ const char* appConfigDict_json PROGMEM = R"~(
       "name": "st_pass",
      "label": "Password for WLAN",
    "default": ""
+  },{
+ "seperator": "Application settings"
   },{
       "name": "host_name",
      "label": "Host name to use for MDNS and AP",
