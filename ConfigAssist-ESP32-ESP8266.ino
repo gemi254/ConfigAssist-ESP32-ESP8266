@@ -29,39 +29,37 @@
 // Modify the file with the params for you application
 // Then you can use then then by val = config[name];
 const char* appConfigDict_json PROGMEM = R"~(
-[
-  {
-      "name": "st_ssid",
+[ {
+   "seperator": "Wifi settings"
+  },{
+    "name": "st_ssid",
      "label": "Name for WLAN",
    "default": ""
-  },
-  {
+  },{
       "name": "st_pass",
      "label": "Password for WLAN",
    "default": ""
-  },
-  {
+  },{
       "name": "host_name",
      "label": "Host name to use for MDNS and AP",
    "default": "SetupAssist01"
-  },
-  {
+  },{
+ "seperator": "Application settings"
+  },{
       "name": "app_name",
      "label": "Name your application",
    "default": "ConfigAssist"
-  },
-  {
+  },{
       "name": "led_pin",
      "label": "Enter the pin that the led is connected",
    "default": "33"
-  },
-  {
+  },{
+ "seperator": "Other settings"
+  },{
       "name": "float_val",
      "label": "Enter a float val",
    "default": "3.14159"
-  }
-]
-)~";
+  }])~";
 
 #include "configAssist.h"  // Setup assistant class
 ConfigAssist conf;               // Config class
@@ -166,7 +164,7 @@ void setup(void) {
   WiFi.mode(WIFI_STA);
   Serial.printf("Wifi Station starting, connecting to: %s\n", conf["st_ssid"].c_str());
   WiFi.begin(conf["st_ssid"].c_str(), conf["st_pass"].c_str());
-  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000)  {
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000)  {
     digitalWrite(conf["led_pin"].toInt(), 0);
     Serial.print(".");
     delay(50);
