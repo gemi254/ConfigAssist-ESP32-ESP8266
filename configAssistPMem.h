@@ -4,18 +4,15 @@ const char* appDefConfigDict_json PROGMEM = R"~(
       "name": "st_ssid",
      "label": "Enter the name WLAN to connect",
    "default": ""
-  },
-  {
+  },{
       "name": "st_pass",
      "label": "Password for station WLAN",
    "default": ""
-  },
-  {
+  },{
       "name": "host_name",
      "label": "Enter a name for your host",
    "default": ""
-  }]
-)~";
+  }])~";
 
 // Template for header, begin of the config form
 PROGMEM const char HTML_PAGE_START[] = R"=====(
@@ -56,6 +53,13 @@ table th, table td {
 }
 tbody tr:nth-of-type(2n+1) {
   background-color: var(--bg-table-stripe)
+}
+.pair-sep{
+    text-align: center;
+    font-weight: 800;
+    font-size: 16px;
+    border-bottom: 2px solid lightgray;
+    background-color: beige;
 }
 .pair-key{
     text-align: right;
@@ -162,6 +166,13 @@ PROGMEM const char HTML_PAGE_INPUT_LINE[] = R"=====(
         <input id="{key}" name="{key}" length="64" value="{val}">
        </td>
       <td class="pair-lbl">{lbl}</td>
+    </tr>    
+)=====";
+
+//Template for seperator line
+PROGMEM const char HTML_PAGE_SEPERATOR_LINE[] = R"=====(
+    <tr>
+      <td colspan="5" class="pair-sep">{val}</td>
     </tr>    
 )=====";
 
