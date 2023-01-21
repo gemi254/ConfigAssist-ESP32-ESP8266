@@ -182,10 +182,10 @@ PROGMEM const char HTML_PAGE_END[] = R"=====(
           <tfoot>
             <tr>
               <td style="text-align: center;" colspan="5">
-                  <button type='submit' name='SAVE'>Save</button>
-                  <button type='submit' onClick='if(!confirm("Reboot esp?")) return false;' name='RBT'>Reboot ESP</button>
-                  <button type='submit' onClick='if(!confirm("Reset values?")) return false;' title='Reset values to default' name='RST'>Reset</button>
-                  <button type='submit' onClick='if(!confirm("Discard changes?")) return false;' name='CANCEL'>Cancel</button>
+                  <button type='submit' title='Save ini file to storage'name='SAVE'>Save</button>
+                  <button type='submit' title='Reboot esp device' onClick='if(!confirm("Reboot esp?")) return false;' name='RBT'>Reboot ESP</button>
+                  <button type='submit' title='Reset values to defaults'onClick='if(!confirm("Reset values?")) return false;' name='RST'>Reset</button>
+                  <button type='submit' title='Reload and loose change' onClick='if(!confirm("Discard changes?")) return false;' name='CANCEL'>Cancel</button>
               </td>
             </tr>
           </tfoot>
