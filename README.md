@@ -1,5 +1,5 @@
 # ConfigAssist
-A liteweight library allowing definition and easy editing of application variables for quick configuration of **esp32/esp8266** devices  using a json dictionary and a configuration portal.
+A lightweight library allowing definition and easy editing of application variables and quick configuration of **esp32/esp8266** devices using a json dictionary and  configuration portal.
 <p align="center">
   <img src="docs/config.png">
 </p>
