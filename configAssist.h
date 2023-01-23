@@ -1,22 +1,12 @@
-#define APP_VERSION "1.0"            // Version
+#define APP_VERSION "1.1"            // Version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DELIM '~'                    // Ini file pairs seperator
 #define CONF_FILE "/config.ini"      // Ini file to save configuration
 #define DONT_ALLOW_SPACES false       // Allow spaces in var names ?
 #define HOSTNAME_KEY "host_name"     // The key that defines host name
 
-//Structure for config elements
-struct confPairs {
-    String name;
-    String value;
-    String label;
-    int readNo;
-};
-//Seperators of config elements
-struct confSeperators {
-    String name;
-    String value;
-};
+#define INPUT_TEXT_BOX 1
+#define INPUT_CHECK_BOX 2
 
 // Define Platform libs
 #if defined(ESP32)
@@ -28,6 +18,7 @@ struct confSeperators {
 #endif
 
 // LOG shortcuts
+#define DEBUG    //Uncomment to serial print DBG messages
 #ifdef ESP32
   #define LOG_NO_COLOR
   #define LOG_COLOR_DBG
@@ -38,11 +29,34 @@ struct confSeperators {
   #define LOG_INF(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
 #else
   //#define LOG_DBG(format, ...) Serial.printf(format, ##__VA_ARGS__)
-  #define LOG_ERR Serial.printf
-  #define LOG_DBG Serial.printf
-  #define LOG_WRN Serial.printf
-  #define LOG_INF Serial.printf
+  #if defined(DEBUG)
+    #define LOG_ERR Serial.printf
+    #define LOG_DBG Serial.printf
+    #define LOG_WRN Serial.printf
+    #define LOG_INF Serial.printf
+  #else
+    void printfNull(const char *format, ...) {}
+    #define LOG_ERR Serial.printf
+    #define LOG_DBG printfNull
+    #define LOG_WRN Serial.printf
+    #define LOG_INF Serial.printf
+   #endif
 #endif
+
+//Structure for config elements
+struct confPairs {
+    String name;
+    String value;
+    String label;
+    int readNo;
+    byte type;
+};
+
+//Seperators of config elements
+struct confSeperators {
+    String name;
+    String value;
+};
 
 //Memory static valiables (html pages)
 #include "configAssistPMem.h"
@@ -67,9 +81,7 @@ class ConfigAssist{
     
     //if not Use dictionary load default minimal config
     //For quick connection to wifi
-    void init() { 
-      init(NULL);
-    }
+    void init() { init(NULL); }
 
     // Is config loaded valid ?
     bool valid(){ return _valid;}
@@ -99,13 +111,14 @@ class ConfigAssist{
     String operator [] (String k) { return get(k); }
         
     // Return next key and value from configs on each call in key order
-    bool getNextKeyVal(String &keyName, String &keyVal, String &label, uint8_t &readNo) {
+    bool getNextKeyVal(String &keyName, String &keyVal, String &label, uint8_t &readNo ,byte &type) {
       static uint8_t row = 0;
       if (row++ < _configs.size()) {          
           keyName = _configs[row - 1].name.c_str();
           keyVal = _configs[row - 1].value.c_str(); 
           label = _configs[row - 1].label.c_str(); 
-          readNo = _configs[row - 1].readNo;          
+          readNo = _configs[row - 1].readNo;
+          type = _configs[row - 1].type;
           return true;
       }
       // end of vector reached, reset
@@ -124,7 +137,7 @@ class ConfigAssist{
     
     // Update the value of thisKey = value
     bool put(String thisKey, String value) {      
-      LOG_INF("Put key %s, val %s\n", thisKey.c_str(), value.c_str()); 
+      LOG_DBG("Put %s=%s\n", thisKey.c_str(), value.c_str()); 
       int keyPos = getKeyPos(thisKey);
       if (keyPos >= 0) {
         _configs[keyPos].value = value;
@@ -136,16 +149,17 @@ class ConfigAssist{
 
     // Display config items
     void dump(){
-      String var, val, lbl; uint8_t readNo;
-      while (getNextKeyVal(var, val, lbl, readNo)){
-          LOG_INF("[%u]: %s = %s; %s\n",readNo, var.c_str(), val.c_str(), lbl.c_str() );
+      String var, val, lbl; 
+      uint8_t readNo; byte type;
+      while (getNextKeyVal(var, val, lbl, readNo, type)){
+          LOG_INF("[%u]: %s = %s; %s; %i\n", readNo, var.c_str(), val.c_str(), lbl.c_str(), type );
       }
     }
 
     // Add vectors by key (name in confPairs)
-    void add(String key, String val, int readNo=0, String lbl=""){
+    void add(String key, String val, int readNo=0, String lbl="", byte type=1){
        //LOG_INF("Adding  key[%i]: %s=%s\n", readNo, key.c_str(), val.c_str()); 
-      _configs.push_back({key, val, lbl, readNo}) ;      
+      _configs.push_back({key, val, lbl, readNo, type}) ;      
     }
 
     // Add seperator vectors by key
@@ -195,25 +209,44 @@ class ConfigAssist{
       JsonArray array = doc.as<JsonArray>();
       int i=0;
       for (JsonObject  obj  : array) {        
-        if (obj.containsKey("name") && obj.containsKey("default") ) {
-          String key = obj["name"];
-          String val = obj["default"];
-          String lbl = obj["label"];
-          if(!update){
-            //LOG_INF("Json add: %s, val %s\n", key.c_str(), val.c_str());            
-            add(key, val, i, lbl);
+        String key, val, lbl;  
+        int type = 0;
+        if (obj.containsKey("name")){
+          String k = obj["name"];
+          String l = obj["label"];
+          key = k;
+          lbl = l;
+          if (obj.containsKey("default")){ //Input box
+            String d = obj["default"];
+            val = d;
+            type = INPUT_TEXT_BOX;
+          }else if (obj.containsKey("checked")){//Check box
+            String c = obj["checked"];
+            val = c;
+            type = INPUT_CHECK_BOX;
           }else{
-            int keyPos = getKeyPos(key);
-            if (keyPos >= 0) {
-              //LOG_INF("Json upd key[%i]=%s, label: %s, read: %i\n", keyPos, key.c_str(), lbl.c_str(),i);
-              // update other fields but not value        
-              _configs[keyPos].readNo = i;
-              _configs[keyPos].label = lbl;                
+            LOG_ERR("Undefined value on param : %i.", i);
+          }  
+
+          if (type) { //Valid
+            if(update){
+              int keyPos = getKeyPos(key);
+              if (keyPos >= 0) {
+                //Update all other fields but not value        
+                _configs[keyPos].readNo = i;
+                _configs[keyPos].label = lbl;
+                _configs[keyPos].type = type;
+                //LOG_DBG("Json upd key[%i]=%s, label: %s, read: %i\n", keyPos, key.c_str(), lbl.c_str(),i);
+              }else{
+                LOG_ERR("Undefined json Key: %s\n", key.c_str());
+              }
             }else{
-              LOG_ERR("Not exists in json Key: %s\n", key.c_str());
+              //LOG_DBG("Json add: %s, val %s\n", key.c_str(), val.c_str());            
+              add(key, val, i, lbl, type);
             }
+            i++;
           }
-          i++;
+
         }else if (obj.containsKey("seperator")){
           String sepNo = "sep_" + String(i);
           String val =  obj["seperator"];
@@ -248,7 +281,7 @@ class ConfigAssist{
         // extract each config line from file
         while (file.available()) {
           String configLineStr = file.readStringUntil('\n');
-          //LOG_INF("Load: %s\n" , configLineStr.c_str());          
+          LOG_INF("Load: %s\n" , configLineStr.c_str());          
           loadVectItem(configLineStr);
         } 
         sort();
@@ -272,15 +305,15 @@ class ConfigAssist{
         LOG_ERR("Failed to save config file\n");
         return false;
       }else{
-        for (const auto& row: _configs) {
+        for (auto& row: _configs) {
           // recreate config file with updated content
-          //LOG_INF("Save: %s=%s\n", row.name.c_str(), row.value.c_str());
           if (!strcmp(row.name.c_str() + strlen(row.name.c_str()) - 5, "_Pass")) {
               // replace passwords with asterisks
               sprintf(configLine, "%s%c%s\n", row.name.c_str(), DELIM, "************");   
           }else {
               sprintf(configLine, "%s%c%s\n", row.name.c_str(), DELIM, row.value.c_str());   
           }
+          LOG_DBG("Save: %s = %s\n", row.name.c_str(), row.value.c_str());
           file.write((uint8_t*)configLine, strlen(configLine));
         }        
         LOG_INF("File saved: %s\n", filename.c_str());
@@ -317,15 +350,21 @@ class ConfigAssist{
           server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/\">");
           return;
         }    
+
+
+        //Reset all check boxes.Only If checked will be posted
+        for(uint8_t k=0; k < _configs.size(); ++k) {
+          if(_configs[k].type==INPUT_CHECK_BOX) _configs[k].value = "0";
+        }
         //Update configs from form post vals
-        for(uint8_t  i=0; i<server->args(); ++i ){
+        for(uint8_t i=0; i<server->args(); ++i ){
           String key(server->argName(i));
           String val(server->arg(i));
           if(key=="apName" || key =="SAVE" || key=="RST" || key=="RBT" || key=="plain") continue;
+          LOG_DBG("Form upd: %s = %s\n", key.c_str(), val.c_str());
           put(key, val);
-          String msg = " " + server->argName(i) + ": " + server->arg(i);
-          LOG_INF("Form upd: %s\n", msg.c_str());
         }
+
         //Save config file 
         if (server->hasArg(F("SAVE"))) {
             String out(HTML_PAGE_MESSAGE);
@@ -336,7 +375,7 @@ class ConfigAssist{
             out.replace("{refresh}", "3000");            
             server->send(200, "text/html", out);
             server->client().flush(); 
-            delay(1000);
+            delay(500);
         }
         
         if (server->hasArg(F("RBT"))) {
@@ -356,6 +395,7 @@ class ConfigAssist{
       LOG_INF("Config form _valid: %i, _dict: %i\n", _valid, _dict);
       //Load dictionary if no pressent
       if(!_dict) loadJsonDict(_jStr, true);
+
       //Send config form data
       server->setContentLength(CONTENT_LENGTH_UNKNOWN);
       String out(HTML_PAGE_START);
@@ -363,9 +403,21 @@ class ConfigAssist{
       server->send(200, "text/html", out); 
       sortReadOrder();
       //Render html keys
-      String var, val, lbl; uint8_t readNo;
-      while (getNextKeyVal(var, val, lbl, readNo)){
+      String var, val, lbl; 
+      uint8_t readNo; byte type;
+      while (getNextKeyVal(var, val, lbl, readNo, type)){
           out = String(HTML_PAGE_INPUT_LINE);
+          String elm;
+          if(type==INPUT_TEXT_BOX){
+            elm = String(HTML_PAGE_TEXT_BOX);
+          }else if(type==INPUT_CHECK_BOX){
+            elm = String(HTML_PAGE_CHECK_BOX);
+            if(val=="True" || val=="on" || val=="1"){
+              elm.replace("{chk}"," checked");
+            }else
+              elm.replace("{chk}","");
+          }
+          out.replace("{elm}",elm);
           out.replace("{key}",var);
           out.replace("{lbl}",lbl);
           out.replace("{val}",val);
@@ -377,9 +429,9 @@ class ConfigAssist{
             String outSep = String(HTML_PAGE_SEPERATOR_LINE);
             outSep.replace("{val}", val);
             out = outSep + out;
-            LOG_INF("SEP key[%i]: %s = %s\n", readNo, sKey.c_str(), val.c_str());
+            LOG_DBG("SEP key[%i]: %s = %s\n", readNo, sKey.c_str(), val.c_str());
           }  
-          LOG_INF("HTML key: %s = %s [%i] %s\n",var.c_str(), val.c_str(), readNo, lbl.c_str() );          
+          LOG_DBG("HTML key[%i]: %s = %s ; %s\n",readNo, var.c_str(), val.c_str(), lbl.c_str() );          
           server->sendContent(out);
           
       }
