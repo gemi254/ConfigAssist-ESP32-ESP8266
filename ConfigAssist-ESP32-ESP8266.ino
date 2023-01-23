@@ -29,7 +29,7 @@
 // Modify the file with the params for you application
 // Then you can use then then by val = config[name];
 const char* appConfigDict_json PROGMEM = R"~(
-[ {
+[{
    "seperator": "Wifi settings"
   },{
     "name": "st_ssid",
@@ -59,10 +59,15 @@ const char* appConfigDict_json PROGMEM = R"~(
       "name": "float_val",
      "label": "Enter a float val",
    "default": "3.14159"
-  }])~";
+   },{
+      "name": "debug",
+     "label": "Check to enable debug",
+   "checked": "False"
+}]
+)~";
 
 #include "configAssist.h"  // Setup assistant class
-ConfigAssist conf;               // Config class
+ConfigAssist conf;         // Config class
 String hostName;           // Default Host name
 
 // *********** Helper funcions ************
