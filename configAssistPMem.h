@@ -160,20 +160,28 @@ button:hover {
 
 //Template for one input field
 PROGMEM const char HTML_PAGE_INPUT_LINE[] = R"=====(
-    <tr>
-      <td scope="row" class="pair-key">{key}</td>
-      <td class="pair-val">
-        <input id="{key}" name="{key}" length="64" value="{val}">
-       </td>
-      <td class="pair-lbl">{lbl}</td>
-    </tr>    
+  <tr>
+    <td scope="row" class="pair-key">{key}</td>
+    <td class="pair-val">
+      {elm}
+      </td>
+    <td class="pair-lbl">{lbl}</td>
+  </tr>    
+)=====";
+
+PROGMEM const char HTML_PAGE_TEXT_BOX[] = R"=====(
+  <input id="{key}" name="{key}" length="64" value="{val}">
+)=====";
+
+PROGMEM const char HTML_PAGE_CHECK_BOX[] = R"=====(
+  <input type='checkbox' name='{key}'{chk}>
 )=====";
 
 //Template for seperator line
 PROGMEM const char HTML_PAGE_SEPERATOR_LINE[] = R"=====(
-    <tr>
-      <td colspan="5" class="pair-sep">{val}</td>
-    </tr>    
+  <tr>
+    <td colspan="5" class="pair-sep">{val}</td>
+  </tr>    
 )=====";
 
 //Template for save button and end of the form with save
