@@ -32,9 +32,12 @@ i.e.
 
 ## Variables definition with JSON dictionary
 In your application sketch file you must define a json dictionary that includes all the information needed 
-for the html form to be generated. See example below. Each variable will be displayed on configuration  page with the order 
-defined in the json file. A separator line can be used to group config values under a title.
-for example ..
+for the html form to be generated. See example below. Each variable will be displayed on edit page with the order 
+defined in the json file. 
+
+You an use keyword **checked** instead of **default** in order to use a Boolean value that will be edited by a **check box**
+
+A **separator title** can also be used to group configuration values under a specific title.
 ```
 const char* appConfigDict_json PROGMEM = R"~(
 [{
@@ -53,7 +56,11 @@ const char* appConfigDict_json PROGMEM = R"~(
       "name": "host_name",
      "label": "Host name to use for MDNS and AP",
    "default": "ConfigAssist"
-  }]
+ },{
+      "name": "debug",
+     "label": "Check to enable debug",
+   "checked": "False"
+ },{
 ```
 
 ## Project definitions in your main app
