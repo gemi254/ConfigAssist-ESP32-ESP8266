@@ -34,8 +34,10 @@ i.e.
 In your application sketch file you must define a json dictionary that includes all the information needed 
 for the html form to be generated. See example below. Each variable will be displayed on edit page with the order 
 defined in the json file. 
-
-You an use keyword **checked** instead of **default** in order to use a Boolean value that will be edited by a **check box**
++ if you use keywords `name, default` an **edit box** will be generated to edit the variable.
++ If you use keyword `checked` instead of `default` in order to use a Boolean value that will be edited by a **check box**
++ You can compine keywords `default` with `options` in order to use a select list that will be edited by a **drop list**. 
+  - The `options` field must contain a comma seperated list of values and can be enclosed by single quotes.
 
 A **separator title** can also be used to group configuration values under a specific title.
 ```
@@ -61,6 +63,10 @@ const char* appConfigDict_json PROGMEM = R"~(
      "label": "Check to enable debug",
    "checked": "False"
  },{
+      "name": "sensor_type",
+     "label": "Enter the sensor type",
+   "options": "'BMP280', 'DHT12', 'DHT21', 'DHT22'",
+   "default": "DHT22"
 ```
 
 ## Project definitions in your main app
