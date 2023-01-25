@@ -96,7 +96,7 @@ tbody tr:nth-of-type(2n+1) {
   table tr {
     border-bottom: 3px solid #ddd;
     display: block;
-    margin-bottom: 0.625em;
+    margin-bottom: 0.125em;
   }
 
   table td {
@@ -120,7 +120,7 @@ tbody tr:nth-of-type(2n+1) {
     text-align: left;    
   }
 }
-.dcf-w-100\% {
+.w-100 {
   width: 100%!important;
 }
 button {
@@ -148,8 +148,7 @@ button:hover {
 </head>
 <body>
 <center>
-  <div class="dcf-modal-content dcf-wrapper dcf-pb-8 dcf-w-100">
-    <div class="cf-w-100">
+    <div class="w-100">
       <form method='post'>
       <table>
         <caption>
@@ -177,6 +176,16 @@ PROGMEM const char HTML_PAGE_CHECK_BOX[] = R"=====(
   <input type='checkbox' name='{key}'{chk}>
 )=====";
 
+PROGMEM const char HTML_PAGE_SELECT_BOX[] = R"=====(
+  <select name='{key}' style='width:100%'>
+  {opt}
+  </select>
+)=====";
+
+PROGMEM const char HTML_PAGE_SELETC_OPTION[] = R"=====(
+  <option value='{optVal}'{sel}>{optVal}</option>
+)=====";
+
 //Template for seperator line
 PROGMEM const char HTML_PAGE_SEPERATOR_LINE[] = R"=====(
   <tr>
@@ -200,7 +209,6 @@ PROGMEM const char HTML_PAGE_END[] = R"=====(
         </table>
         </form>
       </div>
-  </div>
 </center>
 </body>
 </html>
