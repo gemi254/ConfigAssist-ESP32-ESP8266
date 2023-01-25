@@ -63,6 +63,11 @@ const char* appConfigDict_json PROGMEM = R"~(
       "name": "debug",
      "label": "Check to enable debug",
    "checked": "False"
+   },{
+      "name": "sensor_type",
+     "label": "Enter the sensor type",
+   "options": "'BMP280', 'DHT12', 'DHT21', 'DHT22'",
+   "default": "DHT22"
 }]
 )~";
 
@@ -142,7 +147,7 @@ void setup(void) {
   Serial.print("\n\n\n\n");
   Serial.flush();
   Serial.print("Starting..\n");
-  
+  debugMemory("setup");
   //Start local storage
   #if defined(ESP32)  
     if(!STORAGE.begin(true)) Serial.println("ESP32 Storage failed!"); 
@@ -161,7 +166,7 @@ void setup(void) {
     conf.setup(server, handleAssistRoot);
     return;
   }
-  
+  debugMemory("Loaded config");
   pinMode(conf["led_pin"].toInt(), OUTPUT);
      
   //Connect to Wifi station with ssid from conf file
@@ -218,7 +223,7 @@ void loop(void) {
   #endif  
   
   //Display info
-  if (millis() - pingMillis >= 5000) debugMemory("Loop");
+  if (millis() - pingMillis >= 10000) debugMemory("Loop");
   
   //allow the cpu to switch to other tasks  
   delay(2);
