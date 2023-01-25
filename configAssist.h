@@ -1,12 +1,9 @@
-#define APP_VERSION "1.1"            // Version
+#define APP_VERSION "1.2"            // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DELIM '~'                    // Ini file pairs seperator
 #define CONF_FILE "/config.ini"      // Ini file to save configuration
 #define DONT_ALLOW_SPACES false       // Allow spaces in var names ?
 #define HOSTNAME_KEY "host_name"     // The key that defines host name
-
-#define INPUT_TEXT_BOX 1
-#define INPUT_CHECK_BOX 2
 
 // Define Platform libs
 #if defined(ESP32)
@@ -18,7 +15,7 @@
 #endif
 
 // LOG shortcuts
-#define DEBUG    //Uncomment to serial print DBG messages
+//#define DEBUG    //Uncomment to serial print DBG messages
 #ifdef ESP32
   #define LOG_NO_COLOR
   #define LOG_COLOR_DBG
@@ -48,6 +45,7 @@ struct confPairs {
     String name;
     String value;
     String label;
+    String attribs;
     int readNo;
     byte type;
 };
@@ -66,7 +64,8 @@ class ConfigAssist{
   public:
     ConfigAssist() {_dict = false; _valid=false; _hostName="";}
     ~ConfigAssist() {}
-  
+  private:
+    enum input_types { TEXT_BOX=1, CHECK_BOX=2, OPTION_BOX=3};
   public:  
     // Load configs after storage started
     void init(const char * jStr, String ini_file = CONF_FILE) { 
@@ -109,23 +108,23 @@ class ConfigAssist{
 
     // Implement operator [] i.e. val = config['key']    
     String operator [] (String k) { return get(k); }
-        
-    // Return next key and value from configs on each call in key order
-    bool getNextKeyVal(String &keyName, String &keyVal, String &label, uint8_t &readNo ,byte &type) {
+
+     // Return next key and value from configs on each call in key order
+    bool getNextKeyVal(confPairs &c) {
       static uint8_t row = 0;
       if (row++ < _configs.size()) {          
-          keyName = _configs[row - 1].name.c_str();
-          keyVal = _configs[row - 1].value.c_str(); 
-          label = _configs[row - 1].label.c_str(); 
-          readNo = _configs[row - 1].readNo;
-          type = _configs[row - 1].type;
+          c.name = _configs[row - 1].name.c_str();
+          c.value = _configs[row - 1].value.c_str(); 
+          c.label = _configs[row - 1].label.c_str(); 
+          c.attribs = _configs[row - 1].attribs.c_str(); 
+          c.readNo = _configs[row - 1].readNo;
+          c.type = _configs[row - 1].type;
           return true;
       }
       // end of vector reached, reset
       row = 0;
       return false;
     }
-    
     // Return the value of a given key, Empty on not found
     String get(String variable) {
       int keyPos = getKeyPos(variable);
@@ -149,22 +148,26 @@ class ConfigAssist{
 
     // Display config items
     void dump(){
-      String var, val, lbl; 
-      uint8_t readNo; byte type;
-      while (getNextKeyVal(var, val, lbl, readNo, type)){
-          LOG_INF("[%u]: %s = %s; %s; %i\n", readNo, var.c_str(), val.c_str(), lbl.c_str(), type );
+      confPairs c;
+      while (getNextKeyVal(c)){
+          LOG_INF("[%u]: %s = %s; %s; %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
       }
     }
 
     // Add vectors by key (name in confPairs)
-    void add(String key, String val, int readNo=0, String lbl="", byte type=1){
-       //LOG_INF("Adding  key[%i]: %s=%s\n", readNo, key.c_str(), val.c_str()); 
-      _configs.push_back({key, val, lbl, readNo, type}) ;      
+    void add(String key, String val){
+      confPairs d = {key, val, "", "", 0, 1 };
+      //LOG_DBG("Adding  key %s=%s\n", key.c_str(), val.c_str()); 
+      _configs.push_back(d);
     }
-
-    // Add seperator vectors by key
+    // Add vectors pairs
+    void add(confPairs &c){
+       //LOG_DBG("Adding  key[%i]: %s=%s\n", readNo, key.c_str(), val.c_str()); 
+      _configs.push_back({c}) ;
+    }
+    // Add seperator by key
     void addSeperator(String key, String val){
-       //LOG_INF("Adding sep key: %s=%s\n", key.c_str(), val.c_str()); 
+       //LOG_DBG("Adding sep key: %s=%s\n", key.c_str(), val.c_str()); 
       _seperators.push_back({key, val}) ;      
     }
 
@@ -176,7 +179,7 @@ class ConfigAssist{
       );
     }
     
-    // Sort vectors by key (name in confPairs)
+    // Sort seperator vectors by key (name in confSeperators)
     void sortSeperators(){
       std::sort(_seperators.begin(), _seperators.end(), [] (
         const confSeperators &a, const confSeperators &b) {
@@ -184,16 +187,16 @@ class ConfigAssist{
       );
     }
     
-    // Sort vectors by key (readNo in confPairs)
+    // Sort vectors by readNo in confPairs
     void sortReadOrder(){
       std::sort(_configs.begin(), _configs.end(), [] (
         const confPairs &a, const confPairs &b) {
         return a.readNo < b.readNo;}
       );
     }
-
+    
     // Load json description file. 
-    // if update=true update only additional pair info
+    // On update=true update only additional pair info
     int loadJsonDict(String jStr, bool update=false) { 
       if(jStr==NULL) return loadJsonDict(appDefConfigDict_json, update);      
       DeserializationError error;
@@ -208,41 +211,49 @@ class ConfigAssist{
       //Parse json description
       JsonArray array = doc.as<JsonArray>();
       int i=0;
-      for (JsonObject  obj  : array) {        
-        String key, val, lbl;  
-        int type = 0;
+      for (JsonObject  obj  : array) {                
+        confPairs c = {"", "", "", "", 0, 1};        
         if (obj.containsKey("name")){
           String k = obj["name"];
           String l = obj["label"];
-          key = k;
-          lbl = l;
-          if (obj.containsKey("default")){ //Input box
+          c.name = k;
+          c.label = l;
+          c.attribs ="";
+          c.readNo = i;
+          if (obj.containsKey("options")){//Options box
+            String o = obj["options"];
             String d = obj["default"];
-            val = d;
-            type = INPUT_TEXT_BOX;
+            c.value = d;
+            c.type = OPTION_BOX;
+            c.attribs = o;
+          }else if (obj.containsKey("default")){ //Input box
+            String d = obj["default"];
+            c.value = d;
+            c.type = TEXT_BOX;
           }else if (obj.containsKey("checked")){//Check box
-            String c = obj["checked"];
-            val = c;
-            type = INPUT_CHECK_BOX;
+            String ck = obj["checked"];
+            c.value = ck;
+            c.type = CHECK_BOX;
           }else{
             LOG_ERR("Undefined value on param : %i.", i);
           }  
 
-          if (type) { //Valid
+          if (c.type) { //Valid
             if(update){
-              int keyPos = getKeyPos(key);
+              int keyPos = getKeyPos(c.name);
               if (keyPos >= 0) {
-                //Update all other fields but not value        
+                //Update all other fields but not value,key        
                 _configs[keyPos].readNo = i;
-                _configs[keyPos].label = lbl;
-                _configs[keyPos].type = type;
-                //LOG_DBG("Json upd key[%i]=%s, label: %s, read: %i\n", keyPos, key.c_str(), lbl.c_str(),i);
+                _configs[keyPos].label = c.label;
+                _configs[keyPos].type = c.type;
+                _configs[keyPos].attribs = c.attribs;
+                LOG_DBG("Json upd key[%i]=%s, label: %s, type:%i, read: %i\n", keyPos, c.name.c_str(), c.label.c_str(),c.type, i);
               }else{
-                LOG_ERR("Undefined json Key: %s\n", key.c_str());
+                LOG_ERR("Undefined json Key: %s\n", c.name.c_str());
               }
             }else{
-              //LOG_DBG("Json add: %s, val %s\n", key.c_str(), val.c_str());            
-              add(key, val, i, lbl, type);
+              LOG_DBG("Json add: %s, val %s, read: %i\n", c.name.c_str(), c.value.c_str(), i);                         
+              add(c);
             }
             i++;
           }
@@ -281,7 +292,7 @@ class ConfigAssist{
         // extract each config line from file
         while (file.available()) {
           String configLineStr = file.readStringUntil('\n');
-          LOG_INF("Load: %s\n" , configLineStr.c_str());          
+          LOG_DBG("Load: %s\n" , configLineStr.c_str());          
           loadVectItem(configLineStr);
         } 
         sort();
@@ -354,7 +365,7 @@ class ConfigAssist{
 
         //Reset all check boxes.Only If checked will be posted
         for(uint8_t k=0; k < _configs.size(); ++k) {
-          if(_configs[k].type==INPUT_CHECK_BOX) _configs[k].value = "0";
+          if(_configs[k].type==CHECK_BOX) _configs[k].value = "0";
         }
         //Update configs from form post vals
         for(uint8_t i=0; i<server->args(); ++i ){
@@ -392,7 +403,7 @@ class ConfigAssist{
         }
         return;
       }
-      LOG_INF("Config form _valid: %i, _dict: %i\n", _valid, _dict);
+      LOG_DBG("Generate form _valid: %i, _dict: %i\n", _valid, _dict);
       //Load dictionary if no pressent
       if(!_dict) loadJsonDict(_jStr, true);
 
@@ -403,35 +414,38 @@ class ConfigAssist{
       server->send(200, "text/html", out); 
       sortReadOrder();
       //Render html keys
-      String var, val, lbl; 
-      uint8_t readNo; byte type;
-      while (getNextKeyVal(var, val, lbl, readNo, type)){
+      confPairs c;
+      while (getNextKeyVal(c)){
           out = String(HTML_PAGE_INPUT_LINE);
           String elm;
-          if(type==INPUT_TEXT_BOX){
+          if(c.type==TEXT_BOX){
             elm = String(HTML_PAGE_TEXT_BOX);
-          }else if(type==INPUT_CHECK_BOX){
+          }else if(c.type==CHECK_BOX){
             elm = String(HTML_PAGE_CHECK_BOX);
-            if(val=="True" || val=="on" || val=="1"){
+            if(c.value=="True" || c.value=="on" || c.value=="1"){
               elm.replace("{chk}"," checked");
             }else
               elm.replace("{chk}","");
+          }else if(c.type==OPTION_BOX){
+            elm = String(HTML_PAGE_SELECT_BOX);
+            String optList = getOptionsListHtml(c.value, c.attribs);
+            elm.replace("{opt}", optList);
           }
           out.replace("{elm}",elm);
-          out.replace("{key}",var);
-          out.replace("{lbl}",lbl);
-          out.replace("{val}",val);
-          String sKey = "sep_" + String(readNo);
+          out.replace("{key}",c.name);
+          out.replace("{lbl}",c.label);
+          out.replace("{val}",c.value);
+          String sKey = "sep_" + String(c.readNo);
           int sepKeyPos = getSepKeyPos(sKey);
           if(sepKeyPos>=0){
             //Add a seperator
-            String val = _seperators[sepKeyPos].value;
+            String sVal = _seperators[sepKeyPos].value;
             String outSep = String(HTML_PAGE_SEPERATOR_LINE);
-            outSep.replace("{val}", val);
+            outSep.replace("{val}", sVal);
             out = outSep + out;
-            LOG_DBG("SEP key[%i]: %s = %s\n", readNo, sKey.c_str(), val.c_str());
+            LOG_DBG("SEP key[%i]: %s = %s\n", sepKeyPos, sKey.c_str(), sVal.c_str());
           }  
-          LOG_DBG("HTML key[%i]: %s = %s ; %s\n",readNo, var.c_str(), val.c_str(), lbl.c_str() );          
+          LOG_DBG("HTML key[%i]: %s = %s, type: %i, lbl: %s\n",c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.label.c_str() );          
           server->sendContent(out);
           
       }
@@ -439,6 +453,27 @@ class ConfigAssist{
       server->sendContent(HTML_PAGE_END);
     }
   private:
+    String getOptionsListHtml(String defVal, String attribs){
+      String ret="";
+      char *token = NULL;
+      char seps[] = ",";
+      token = strtok(&attribs[0], seps);
+      while( token != NULL ){
+        String opt(HTML_PAGE_SELETC_OPTION);
+        String optVal(token);
+        optVal.replace("'","");
+        optVal.trim();
+        opt.replace("{optVal}", optVal);
+        if(optVal == defVal){
+          opt.replace("{sel}", " selected");
+        }else{
+          opt.replace("{sel}", "");
+        }
+        ret += opt;        
+        token = strtok( NULL, seps );
+      }
+      return ret;
+    }
     // Get location of given key to retrieve other elements
     int getKeyPos(String thisKey) {
       if (_configs.empty()) return -1;
