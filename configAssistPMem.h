@@ -120,6 +120,9 @@ tbody tr:nth-of-type(2n+1) {
     text-align: left;    
   }
 }
+input[type="range"] {
+  width:100%;
+}
 .w-100 {
   width: 100%!important;
 }
@@ -182,8 +185,12 @@ PROGMEM const char HTML_PAGE_SELECT_BOX[] = R"=====(
   </select>
 )=====";
 
-PROGMEM const char HTML_PAGE_SELETC_OPTION[] = R"=====(
+PROGMEM const char HTML_PAGE_SELECT_OPTION[] = R"=====(
   <option value='{optVal}'{sel}>{optVal}</option>
+)=====";
+
+PROGMEM const char HTML_PAGE_INPUT_RANGE[] = R"=====(
+<input type='range' min='{min}' max='{max}' step='{step}' value='{val}' name='{key}'>
 )=====";
 
 //Template for seperator line
