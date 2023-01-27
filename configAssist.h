@@ -15,29 +15,32 @@
 #endif
 
 // LOG shortcuts
-//#define DEBUG    //Uncomment to serial print DBG messages
+#define DEBUG    //Uncomment to serial print DBG messages
 #ifdef ESP32
   #define LOG_NO_COLOR
   #define LOG_COLOR_DBG
   #define DBG_FORMAT(format) LOG_COLOR_DBG "[%s DEBUG @ %s:%u] " format LOG_NO_COLOR "", esp_log_system_timestamp(), pathToFileName(__FILE__), __LINE__
   #define LOG_ERR(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
-  #define LOG_DBG(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
   #define LOG_WRN(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
   #define LOG_INF(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
-#else
-  //#define LOG_DBG(format, ...) Serial.printf(format, ##__VA_ARGS__)
   #if defined(DEBUG)
-    #define LOG_ERR Serial.printf
-    #define LOG_DBG Serial.printf
-    #define LOG_WRN Serial.printf
-    #define LOG_INF Serial.printf
+    #define LOG_DBG(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
   #else
     void printfNull(const char *format, ...) {}
-    #define LOG_ERR Serial.printf
-    #define LOG_DBG printfNull
-    #define LOG_WRN Serial.printf
-    #define LOG_INF Serial.printf
-   #endif
+    #define LOG_DBG(format, ...) printfNull(DBG_FORMAT(format), ##__VA_ARGS__)
+  #endif
+#else
+  //#define LOG_DBG(format, ...) Serial.printf(format, ##__VA_ARGS__)
+  #define LOG_ERR Serial.printf
+  #define LOG_WRN Serial.printf
+  #define LOG_INF Serial.printf
+
+  #if defined(DEBUG)
+    #define LOG_DBG Serial.printf
+  #else
+    void printfNull(const char *format, ...) {}
+    #define LOG_DBG printfNull    
+  #endif
 #endif
 
 //Structure for config elements
@@ -65,7 +68,7 @@ class ConfigAssist{
     ConfigAssist() {_dict = false; _valid=false; _hostName="";}
     ~ConfigAssist() {}
   private:
-    enum input_types { TEXT_BOX=1, CHECK_BOX=2, OPTION_BOX=3};
+    enum input_types { TEXT_BOX=1, CHECK_BOX=2, OPTION_BOX=3, RANGE_BOX=4};
   public:  
     // Load configs after storage started
     void init(const char * jStr, String ini_file = CONF_FILE) { 
@@ -94,7 +97,7 @@ class ConfigAssist{
       if (MDNS.begin(_hostName.c_str()))  LOG_INF("AP MDNS responder Started\n");      
       server.begin();
       server.on("/",handler);
-      server.on("/config",handler);
+      server.on("/cfg",handler);
       LOG_INF("AP HTTP server started");
     } 
 
@@ -220,13 +223,19 @@ class ConfigAssist{
           c.label = l;
           c.attribs ="";
           c.readNo = i;
-          if (obj.containsKey("options")){//Options box
+          if (obj.containsKey("options")){//Options list
             String o = obj["options"];
             String d = obj["default"];
             c.value = d;
-            c.type = OPTION_BOX;
             c.attribs = o;
-          }else if (obj.containsKey("default")){ //Input box
+            c.type = OPTION_BOX;
+           }else if (obj.containsKey("range")){ //Input range
+            String d = obj["default"];
+            String r = obj["range"];
+            c.value = d;
+            c.attribs = r;
+            c.type = RANGE_BOX;
+          }else if (obj.containsKey("default")){ //Edit box
             String d = obj["default"];
             c.value = d;
             c.type = TEXT_BOX;
@@ -382,7 +391,7 @@ class ConfigAssist{
             if(saveConfigFile(CONF_FILE)) out.replace("{msg}", "Config file saved");
             else out.replace("{msg}", "<font color='red'>Failed to save config</font>");            
             out.replace("{title}", "Save");
-            out.replace("{url}", "/config");
+            out.replace("{url}", "/cfg");
             out.replace("{refresh}", "3000");            
             server->send(200, "text/html", out);
             server->client().flush(); 
@@ -393,7 +402,7 @@ class ConfigAssist{
             //saveConfigFile(CONF_FILE);
             String out(HTML_PAGE_MESSAGE);
             out.replace("{title}", "Reboot device");
-            out.replace("{url}", "/config");
+            out.replace("{url}", "/cfg");
             out.replace("{refresh}", "10000");
             out.replace("{msg}", "Device will restart in a few seconds");      
             server->send(200, "text/html", out);
@@ -430,6 +439,8 @@ class ConfigAssist{
             elm = String(HTML_PAGE_SELECT_BOX);
             String optList = getOptionsListHtml(c.value, c.attribs);
             elm.replace("{opt}", optList);
+          }else if(c.type==RANGE_BOX){
+            elm = getRangeHtml(c.value, c.attribs);
           }
           out.replace("{elm}",elm);
           out.replace("{key}",c.name);
@@ -445,7 +456,7 @@ class ConfigAssist{
             out = outSep + out;
             LOG_DBG("SEP key[%i]: %s = %s\n", sepKeyPos, sKey.c_str(), sVal.c_str());
           }  
-          LOG_DBG("HTML key[%i]: %s = %s, type: %i, lbl: %s\n",c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.label.c_str() );          
+          LOG_DBG("HTML key[%i]: %s = %s, type: %i, lbl: %s, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.label.c_str(), c.attribs.c_str() );
           server->sendContent(out);
           
       }
@@ -453,13 +464,37 @@ class ConfigAssist{
       server->sendContent(HTML_PAGE_END);
     }
   private:
+    String getRangeHtml(String defVal, String attribs){
+      char *token = NULL;
+      char seps[] = ",";
+      token = strtok(&attribs[0], seps);
+      int i=0;
+      String ret(HTML_PAGE_INPUT_RANGE);
+      while( token != NULL ){
+        String optVal(token);
+        optVal.replace("'","");
+        optVal.trim();
+        if(i==0){
+          ret.replace("{min}", optVal);
+        }else if(i==1){
+          ret.replace("{max}", optVal);
+        }else if(i==2){          
+          if(optVal=="") optVal="1";
+          ret.replace("{step}", optVal);
+        }
+        token = strtok( NULL, seps );
+        i++;
+      }
+      return ret;
+
+    }
     String getOptionsListHtml(String defVal, String attribs){
       String ret="";
       char *token = NULL;
       char seps[] = ",";
       token = strtok(&attribs[0], seps);
       while( token != NULL ){
-        String opt(HTML_PAGE_SELETC_OPTION);
+        String opt(HTML_PAGE_SELECT_OPTION);
         String optVal(token);
         optVal.replace("'","");
         optVal.trim();
