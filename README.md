@@ -1,5 +1,5 @@
 # ConfigAssist
-A lightweight library allowing definition and easy editing of application variables and quick configuration of **esp32/esp8266** devices using a json dictionary and  configuration portal.
+A lightweight library allowing quick configuration for **esp32/esp8266** devices by editing application variables using a configuration portal and a json definition dictionary and saving them on a ini file in local storage.
 <p align="center">
   <img src="docs/config.png">
 </p>
@@ -18,7 +18,8 @@ On first run when no data (ini file) is present in local **storage**, **ConfigAs
 default json dictionary with variables to be edited. A web form will be generated in order to 
 initialize application variables using a **web page** from the remote host connected to AccesPoint.
 Data will be saved on local storage and will be available on next reboot. If configuration file is valid during next boot the **json dictionary** will not be loaded reducing memory consumption and speeding up the whole process.
-ConfigAssist uses c++ vectors to dynamically store variables and binary search for speeding the access process.
+
+ConfigAssist uses **c++ vectors** to dynamically allocate and store variables and **binary search** for speeding the access process.
 
 ## How to use variables
 **ConfigAssist** consists of single file "configAssist.h" that must be included in your application 
