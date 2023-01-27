@@ -38,6 +38,9 @@ defined in the json file.
 + If you use keyword `checked` instead of `default` in order to use a Boolean value that will be edited by a **check box**
 + You can compine keywords `default` with `options` in order to use a select list that will be edited by a **drop list**. 
   - The `options` field must contain a comma seperated list of values and can be enclosed by single quotes.
++ You can compine keywords `default` with `range` in order to use a value that will be edited by a **input range**. 
+  - The `range` field must contain a comma seperated list of `min, max, step` and can be enclosed by single quotes.
+  
 
 A **separator title** can also be used to group configuration values under a specific title.
 ```
@@ -67,6 +70,11 @@ const char* appConfigDict_json PROGMEM = R"~(
      "label": "Enter the sensor type",
    "options": "'BMP280', 'DHT12', 'DHT21', 'DHT22'",
    "default": "DHT22"
+ },{
+      "name": "refresh_rate",
+     "label": "Enter the sensor update refresh rate",
+     "range": "10, 50, 1",
+   "default": "30"   
 ```
 
 ## Project definitions in your main app
