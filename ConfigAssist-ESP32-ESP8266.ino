@@ -68,6 +68,11 @@ const char* appConfigDict_json PROGMEM = R"~(
      "label": "Enter the sensor type",
    "options": "'BMP280', 'DHT12', 'DHT21', 'DHT22'",
    "default": "DHT22"
+   },{
+      "name": "refresh_rate",
+     "label": "Enter the sensor update refresh rate",
+     "range": "10, 50, 1",
+   "default": "30"
 }]
 )~";
 
@@ -206,7 +211,7 @@ void setup(void) {
   //conf.put("led_pin","4");
 
   //Register handlers for web server    
-  server.on("/config", handleAssistRoot);
+  server.on("/cfg", handleAssistRoot);
   server.on("/", handleRoot);
   server.on("/inline", []() {
     server.send(200, "text/plain", "this works as well");
