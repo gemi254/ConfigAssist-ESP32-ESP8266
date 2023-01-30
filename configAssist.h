@@ -1,8 +1,8 @@
-#define APP_VERSION "1.2"            // Class version
+#define CLASS_VERSION "1.2"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DELIM '~'                    // Ini file pairs seperator
 #define CONF_FILE "/config.ini"      // Ini file to save configuration
-#define DONT_ALLOW_SPACES false       // Allow spaces in var names ?
+#define DONT_ALLOW_SPACES false      // Allow spaces in var names ?
 #define HOSTNAME_KEY "host_name"     // The key that defines host name
 
 // Define Platform libs
@@ -15,7 +15,7 @@
 #endif
 
 // LOG shortcuts
-#define DEBUG    //Uncomment to serial print DBG messages
+#define DEBUG_CONFIG_ASSIST    //Uncomment to serial print DBG messages
 #ifdef ESP32
   #define LOG_NO_COLOR
   #define LOG_COLOR_DBG
@@ -23,7 +23,7 @@
   #define LOG_ERR(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
   #define LOG_WRN(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
   #define LOG_INF(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
-  #if defined(DEBUG)
+  #if defined(DEBUG_CONFIG_ASSIST)
     #define LOG_DBG(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
   #else
     void printfNull(const char *format, ...) {}
@@ -35,7 +35,7 @@
   #define LOG_WRN Serial.printf
   #define LOG_INF Serial.printf
 
-  #if defined(DEBUG)
+  #if defined(DEBUG_CONFIG_ASSIST)
     #define LOG_DBG Serial.printf
   #else
     void printfNull(const char *format, ...) {}
@@ -79,6 +79,7 @@ class ConfigAssist{
       //Set hostname
       if(_valid) _hostName = get(HOSTNAME_KEY);
       if(_hostName=="") _hostName = getDefaultHostName("ESP");
+      else _hostName.replace("{mac}", getMacID());
     }
     
     //if not Use dictionary load default minimal config
@@ -100,13 +101,16 @@ class ConfigAssist{
       server.on("/cfg",handler);
       LOG_INF("AP HTTP server started");
     } 
+    // Get a temponary hostname
+    static String getMacID(){
+      String mac = WiFi.macAddress();
+      mac.replace(":","");
+      return mac.substring(6);
+    }
 
     // Get a temponary hostname
     static String getDefaultHostName(String appName){
-      String mac = WiFi.macAddress();
-      mac.replace(":","");
-      mac = mac.substring(6);
-      return String(appName) + "_" + mac;  
+      return String(appName) + "_" + getMacID();  
     }
 
     // Implement operator [] i.e. val = config['key']    
