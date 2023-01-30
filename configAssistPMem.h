@@ -70,7 +70,9 @@ tbody tr:nth-of-type(2n+1) {
 }
 .pair-lbl{
     text-align: left;
-    font-style: italic;}
+    font-style: italic;
+    font-size: .8em;
+}
 
 
  @media screen and (max-width: 400px) {
