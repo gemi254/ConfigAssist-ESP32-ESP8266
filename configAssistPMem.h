@@ -74,7 +74,6 @@ tbody tr:nth-of-type(2n+1) {
     font-size: .8em;
 }
 
-
  @media screen and (max-width: 400px) {
   table {
     border: 0;
@@ -159,48 +158,59 @@ button:hover {
         <caption>
           <h3>Config for {appName}</h3>
         </caption>
-        <tbody>
-)=====";
-
-//Template for one input field
-PROGMEM const char HTML_PAGE_INPUT_LINE[] = R"=====(
-  <tr>
-    <td scope="row" class="pair-key">{key}</td>
-    <td class="pair-val">
-      {elm}
-      </td>
-    <td class="pair-lbl">{lbl}</td>
-  </tr>    
-)=====";
-
-PROGMEM const char HTML_PAGE_TEXT_BOX[] = R"=====(
-  <input id="{key}" name="{key}" length="64" value="{val}">
-)=====";
-
-PROGMEM const char HTML_PAGE_CHECK_BOX[] = R"=====(
-  <input type='checkbox' name='{key}'{chk}>
-)=====";
-
-PROGMEM const char HTML_PAGE_SELECT_BOX[] = R"=====(
-  <select name='{key}' style='width:100%'>
-  {opt}
-  </select>
-)=====";
-
-PROGMEM const char HTML_PAGE_SELECT_OPTION[] = R"=====(
-  <option value='{optVal}'{sel}>{optVal}</option>
-)=====";
-
-PROGMEM const char HTML_PAGE_INPUT_RANGE[] = R"=====(
-<input type='range' min='{min}' max='{max}' step='{step}' value='{val}' name='{key}'>
-)=====";
+        <tbody>)=====";
 
 //Template for seperator line
 PROGMEM const char HTML_PAGE_SEPERATOR_LINE[] = R"=====(
-  <tr>
-    <td colspan="5" class="pair-sep">{val}</td>
-  </tr>    
+        <tr>
+            <td colspan="5" class="pair-sep">{val}</td>
+        </tr>    
 )=====";
+
+//Template for one configuration pair
+PROGMEM const char HTML_PAGE_INPUT_LINE[] = R"=====(
+        <tr>
+          <td scope="row" class="pair-key">{key}</td>
+          <td class="pair-val">{elm}</td>
+          <td class="pair-lbl">{lbl}</td>
+        </tr>)=====";
+
+//Template for one input text box
+PROGMEM const char HTML_PAGE_TEXT_BOX[] = 
+R"=====(<input id="{key}" name="{key}" length="64" value="{val}">)=====";
+
+//Template for one input check box
+PROGMEM const char HTML_PAGE_CHECK_BOX[] = 
+R"=====(<input type='checkbox' name='{key}'{chk}>)=====";
+
+//Template for one input select box
+PROGMEM const char HTML_PAGE_SELECT_BOX[] = R"=====(
+            <select name='{key}' style='width:100%'>
+              {opt}
+            </select>
+)=====";
+
+//Template for one input select option
+PROGMEM const char HTML_PAGE_SELECT_OPTION[] = 
+R"=====(            <option value='{optVal}'{sel}>{optVal}</option>
+)=====";
+
+//Template for one input select datalist option
+PROGMEM const char HTML_PAGE_SELECT_DATALIST_OPTION[] = 
+R"=====(            <option value='{optVal}'></option>
+)=====";
+
+//Template for one input select datalist
+PROGMEM const char HTML_PAGE_DATA_LIST[] = 
+R"=====(<input type="text" name="{key}" list="{key}_list" value="{val}"/>
+          <datalist id='{key}_list'>
+              {opt}
+          </datalist>
+)=====";
+
+//Template for one input select range
+PROGMEM const char HTML_PAGE_INPUT_RANGE[] = R"=====(
+            <input type='range' min='{min}' max='{max}' step='{step}' value='{val}' name='{key}'>)=====";
 
 //Template for save button and end of the form with save
 PROGMEM const char HTML_PAGE_END[] = R"=====(
@@ -223,6 +233,7 @@ PROGMEM const char HTML_PAGE_END[] = R"=====(
 </html>
 )=====";
 
+//Template for message page
 PROGMEM const char HTML_PAGE_MESSAGE[] = R"=====(
 <!DOCTYPE html>
 <html lang="en" class="">
