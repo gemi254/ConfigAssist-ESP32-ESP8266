@@ -1,4 +1,4 @@
-#define CLASS_VERSION "1.2"          // Class version
+#define CLASS_VERSION "1.3"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DELIM '~'                    // Ini file pairs seperator
 #define CONF_FILE "/config.ini"      // Ini file to save configuration
@@ -68,7 +68,7 @@ class ConfigAssist{
     ConfigAssist() {_dict = false; _valid=false; _hostName="";}
     ~ConfigAssist() {}
   private:
-    enum input_types { TEXT_BOX=1, CHECK_BOX=2, OPTION_BOX=3, RANGE_BOX=4};
+    enum input_types { TEXT_BOX=1, CHECK_BOX=2, OPTION_BOX=3, RANGE_BOX=4, COMBO_BOX=5};
   public:  
     // Load configs after storage started
     void init(const char * jStr, String ini_file = CONF_FILE) { 
@@ -228,11 +228,17 @@ class ConfigAssist{
           c.attribs ="";
           c.readNo = i;
           if (obj.containsKey("options")){//Options list
-            String o = obj["options"];
             String d = obj["default"];
+            String o = obj["options"];
             c.value = d;
             c.attribs = o;
             c.type = OPTION_BOX;
+          }else if (obj.containsKey("datalist")){//Combo box
+            String d = obj["default"];
+            String l = obj["datalist"];
+            c.value = d;
+            c.attribs = l;
+            c.type = COMBO_BOX;            
            }else if (obj.containsKey("range")){ //Input range
             String d = obj["default"];
             String r = obj["range"];
@@ -364,7 +370,7 @@ class ConfigAssist{
           if(!_valid){
             server->send(200, "text/html", "Failed to load config.");
           }else{
-            server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/config\">");
+            server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/cfg\">");
           }
           server->client().flush(); 
           return;
@@ -443,10 +449,14 @@ class ConfigAssist{
             elm = String(HTML_PAGE_SELECT_BOX);
             String optList = getOptionsListHtml(c.value, c.attribs);
             elm.replace("{opt}", optList);
+          }else if(c.type==COMBO_BOX){
+            elm = String(HTML_PAGE_DATA_LIST);
+            String optList = getOptionsListHtml(c.value, c.attribs, true);            
+            elm.replace("{opt}", optList);
           }else if(c.type==RANGE_BOX){
             elm = getRangeHtml(c.value, c.attribs);
           }
-          out.replace("{elm}",elm);
+          out.replace("{elm}",elm); 
           out.replace("{key}",c.name);
           out.replace("{lbl}",c.label);
           out.replace("{val}",c.value);
@@ -492,14 +502,25 @@ class ConfigAssist{
       return ret;
 
     }
-    String getOptionsListHtml(String defVal, String attribs){
+    String getOptionsListHtml(String defVal, String attribs, bool isDataList=false){
       String ret="";
       char *token = NULL;
       char seps[] = ",";
+      //Look for line feeds as seperators
+      //LOG_DBG("defVal: %s attribs: %s \n",defVal.c_str(), attribs.c_str());
+      if(attribs.indexOf("\n")>=0){          
+          seps[0] = '\n';
+      }
+      
       token = strtok(&attribs[0], seps);
       while( token != NULL ){
-        String opt(HTML_PAGE_SELECT_OPTION);
+        String opt;
+        if(isDataList)
+          opt = HTML_PAGE_SELECT_DATALIST_OPTION;
+        else
+          opt = HTML_PAGE_SELECT_OPTION;
         String optVal(token);
+        if(optVal=="") continue;
         optVal.replace("'","");
         optVal.trim();
         opt.replace("{optVal}", optVal);
