@@ -42,6 +42,8 @@ defined in the json file.  See example below..
   - The `options` field must contain a comma seperated list of values and can be enclosed by single quotes.
 + You can compine keywords `default` with `range` in order to use a value that will be edited by a **input range**. 
   - The `range` field must contain a comma seperated list of `min, max, step` and can be enclosed by single quotes.
++ You can compine keywords `default` with `datalist` in order to use a value that will be edited by a **combo box**. 
+  - The `datalist` field must contain a comma or line feed seperated list of default values for drop down list.
   
 
 A **separator title** can also be used to group configuration values under a specific title.
@@ -76,7 +78,17 @@ const char* appConfigDict_json PROGMEM = R"~(
       "name": "refresh_rate",
      "label": "Enter the sensor update refresh rate",
      "range": "10, 50, 1",
-   "default": "30"   
+   "default": "30"
+ },{
+      "name": "time_zone",
+     "label": "Needs to be a valid time zone string",
+   "default": "EET-2EEST,M3.5.0/3,M10.5.0/4",    
+  "datalist": "
+'Etc/GMT,GMT0'
+'Etc/GMT-0,GMT0'
+'Etc/GMT-1,<+01>-1'
+'Etc/GMT-2,<+02>-2'"
+}.{
 ```
 
 ## Project definitions in your main app
