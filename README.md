@@ -37,6 +37,7 @@ for the html edit form to be generated. Each variable will be displayed on edit 
 defined in the json file.  See example below..
 
 + if you use keywords `name, default` an **edit box** will be generated to edit the variable.
++ If you keyword name contains ``_pass`` a **password field** will be used. See **PASSWD_KEY** definition. 
 + If you use keyword `checked` instead of `default` in order to use a Boolean value that will be edited by a **check box**
 + You can compine keywords `default` with `options` in order to use a select list that will be edited by a **drop list**. 
   - The `options` field must contain a comma seperated list of values and can be enclosed by single quotes.
