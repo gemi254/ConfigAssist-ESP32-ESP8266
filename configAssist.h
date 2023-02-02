@@ -1,8 +1,9 @@
-#define CLASS_VERSION "1.3"          // Class version
+#define CLASS_VERSION "1.4"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DELIM '~'                    // Ini file pairs seperator
 #define CONF_FILE "/config.ini"      // Ini file to save configuration
 #define DONT_ALLOW_SPACES false      // Allow spaces in var names ?
+#define PASSWD_KEY   "_pass"         // The key part that defines a password field
 #define HOSTNAME_KEY "host_name"     // The key that defines host name
 
 // Define Platform libs
@@ -115,23 +116,7 @@ class ConfigAssist{
 
     // Implement operator [] i.e. val = config['key']    
     String operator [] (String k) { return get(k); }
-
-     // Return next key and value from configs on each call in key order
-    bool getNextKeyVal(confPairs &c) {
-      static uint8_t row = 0;
-      if (row++ < _configs.size()) {          
-          c.name = _configs[row - 1].name.c_str();
-          c.value = _configs[row - 1].value.c_str(); 
-          c.label = _configs[row - 1].label.c_str(); 
-          c.attribs = _configs[row - 1].attribs.c_str(); 
-          c.readNo = _configs[row - 1].readNo;
-          c.type = _configs[row - 1].type;
-          return true;
-      }
-      // end of vector reached, reset
-      row = 0;
-      return false;
-    }
+     
     // Return the value of a given key, Empty on not found
     String get(String variable) {
       int keyPos = getKeyPos(variable);
@@ -152,15 +137,7 @@ class ConfigAssist{
       LOG_ERR("Put failed on Key: %s=%s\n", thisKey.c_str(), value.c_str());
       return false;      
     }
-
-    // Display config items
-    void dump(){
-      confPairs c;
-      while (getNextKeyVal(c)){
-          LOG_INF("[%u]: %s = %s; %s; %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
-      }
-    }
-
+    
     // Add vectors by key (name in confPairs)
     void add(String key, String val){
       confPairs d = {key, val, "", "", 0, 1 };
@@ -202,6 +179,37 @@ class ConfigAssist{
       );
     }
     
+    // Return next key and value from configs on each call in key order
+    bool getNextKeyVal(confPairs &c) {
+      static uint8_t row = 0;
+      if (row++ < _configs.size()) { 
+          c = _configs[row - 1];
+          return true;
+      }
+      // end of vector reached, reset
+      row = 0;
+      return false;
+    }
+
+    //Get the configuration in json format
+    String getJsonConfig(){
+      confPairs c;
+      String j = "{";
+      while (getNextKeyVal(c)){
+          j += "\"" + c.name + "\": \"" + c.value + "\",";          
+      }
+      if(j.length()>1) j.remove(j.length() - 1);
+      j+="}";
+      return j;
+    }
+
+    // Display config items
+    void dump(){
+      confPairs c;
+      while (getNextKeyVal(c)){
+          LOG_INF("[%u]: %s = %s; %s; %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+      }
+    }
     // Load json description file. 
     // On update=true update only additional pair info
     int loadJsonDict(String jStr, bool update=false) { 
@@ -209,7 +217,8 @@ class ConfigAssist{
       DeserializationError error;
       const int capacity = JSON_ARRAY_SIZE(MAX_PARAMS)+ MAX_PARAMS*JSON_OBJECT_SIZE(8);
       DynamicJsonDocument doc(capacity);
-      error = deserializeJson(doc, jStr.c_str());      
+      error = deserializeJson(doc, jStr.c_str());
+      
       if (error) { 
         LOG_ERR("Deserialize Json failed: %s\n", error.c_str());
         _dict = false;   
@@ -381,7 +390,6 @@ class ConfigAssist{
           return;
         }    
 
-
         //Reset all check boxes.Only If checked will be posted
         for(uint8_t k=0; k < _configs.size(); ++k) {
           if(_configs[k].type==CHECK_BOX) _configs[k].value = "0";
@@ -431,53 +439,75 @@ class ConfigAssist{
       String out(HTML_PAGE_START);
       out.replace("{appName}", _hostName);
       server->send(200, "text/html", out); 
-      sortReadOrder();
       //Render html keys
-      confPairs c;
-      while (getNextKeyVal(c)){
-          out = String(HTML_PAGE_INPUT_LINE);
-          String elm;
-          if(c.type==TEXT_BOX){
-            elm = String(HTML_PAGE_TEXT_BOX);
-          }else if(c.type==CHECK_BOX){
-            elm = String(HTML_PAGE_CHECK_BOX);
-            if(c.value=="True" || c.value=="on" || c.value=="1"){
-              elm.replace("{chk}"," checked");
-            }else
-              elm.replace("{chk}","");
-          }else if(c.type==OPTION_BOX){
-            elm = String(HTML_PAGE_SELECT_BOX);
-            String optList = getOptionsListHtml(c.value, c.attribs);
-            elm.replace("{opt}", optList);
-          }else if(c.type==COMBO_BOX){
-            elm = String(HTML_PAGE_DATA_LIST);
-            String optList = getOptionsListHtml(c.value, c.attribs, true);            
-            elm.replace("{opt}", optList);
-          }else if(c.type==RANGE_BOX){
-            elm = getRangeHtml(c.value, c.attribs);
-          }
-          out.replace("{elm}",elm); 
-          out.replace("{key}",c.name);
-          out.replace("{lbl}",c.label);
-          out.replace("{val}",c.value);
-          String sKey = "sep_" + String(c.readNo);
-          int sepKeyPos = getSepKeyPos(sKey);
-          if(sepKeyPos>=0){
-            //Add a seperator
-            String sVal = _seperators[sepKeyPos].value;
-            String outSep = String(HTML_PAGE_SEPERATOR_LINE);
-            outSep.replace("{val}", sVal);
-            out = outSep + out;
-            LOG_DBG("SEP key[%i]: %s = %s\n", sepKeyPos, sKey.c_str(), sVal.c_str());
-          }  
-          LOG_DBG("HTML key[%i]: %s = %s, type: %i, lbl: %s, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.label.c_str(), c.attribs.c_str() );
-          server->sendContent(out);
-          
+      sortReadOrder();      
+      while(getEditHtmlChunk(out)){
+        server->sendContent(out);  
       }
       sort();
       server->sendContent(HTML_PAGE_END);
     }
+    
+    //Get edit page html table (no form)
+    String getEditHtml(){
+      sortReadOrder();      
+      String ret = "";
+      String out = "";
+      while(getEditHtmlChunk(out)){
+        ret += out;
+      }
+      sort();
+      return ret;
+    }
+    
   private:
+    //Render keys,values to html lines
+    bool getEditHtmlChunk(String &out){      
+      //Render html keys
+      confPairs c;
+      out="";
+      if(!getNextKeyVal(c)) return false;
+      out = String(HTML_PAGE_INPUT_LINE);
+      String elm;
+      if(c.type==TEXT_BOX){
+        elm = String(HTML_PAGE_TEXT_BOX);
+        if(c.name.indexOf(PASSWD_KEY)>=0)
+          elm.replace("<input ", "<input type=\"password\" ");
+      }else if(c.type==CHECK_BOX){
+        elm = String(HTML_PAGE_CHECK_BOX);
+        if(c.value=="True" || c.value=="on" || c.value=="1"){
+          elm.replace("{chk}"," checked");
+        }else
+          elm.replace("{chk}","");
+      }else if(c.type==OPTION_BOX){
+        elm = String(HTML_PAGE_SELECT_BOX);
+        String optList = getOptionsListHtml(c.value, c.attribs);
+        elm.replace("{opt}", optList);
+      }else if(c.type==COMBO_BOX){
+        elm = String(HTML_PAGE_DATA_LIST);
+        String optList = getOptionsListHtml(c.value, c.attribs, true);            
+        elm.replace("{opt}", optList);
+      }else if(c.type==RANGE_BOX){
+        elm = getRangeHtml(c.value, c.attribs);
+      }
+      out.replace("{elm}",elm); 
+      out.replace("{key}",c.name);
+      out.replace("{lbl}",c.label);
+      out.replace("{val}",c.value);
+      String sKey = "sep_" + String(c.readNo);
+      int sepKeyPos = getSepKeyPos(sKey);
+      if(sepKeyPos>=0){
+        //Add a seperator
+        String sVal = _seperators[sepKeyPos].value;
+        String outSep = String(HTML_PAGE_SEPERATOR_LINE);
+        outSep.replace("{val}", sVal);
+        out = outSep + out;
+        LOG_DBG("SEP key[%i]: %s = %s\n", sepKeyPos, sKey.c_str(), sVal.c_str());
+      }  
+      LOG_DBG("HTML key[%i]: %s = %s, type: %i, lbl: %s, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.label.c_str(), c.attribs.c_str() );
+      return true;
+    }
+    //Render range 
     String getRangeHtml(String defVal, String attribs){
       char *token = NULL;
       char seps[] = ",";
@@ -502,6 +532,7 @@ class ConfigAssist{
       return ret;
 
     }
+    //Render options list
     String getOptionsListHtml(String defVal, String attribs, bool isDataList=false){
       String ret="";
       char *token = NULL;
@@ -510,8 +541,7 @@ class ConfigAssist{
       //LOG_DBG("defVal: %s attribs: %s \n",defVal.c_str(), attribs.c_str());
       if(attribs.indexOf("\n")>=0){          
           seps[0] = '\n';
-      }
-      
+      }      
       token = strtok(&attribs[0], seps);
       while( token != NULL ){
         String opt;
@@ -534,6 +564,7 @@ class ConfigAssist{
       }
       return ret;
     }
+
     // Get location of given key to retrieve other elements
     int getKeyPos(String thisKey) {
       if (_configs.empty()) return -1;
