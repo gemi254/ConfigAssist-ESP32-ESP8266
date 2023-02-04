@@ -16,7 +16,7 @@
 #endif
 
 // LOG shortcuts
-#define DEBUG_CONFIG_ASSIST    //Uncomment to serial print DBG messages
+//#define DEBUG_CONFIG_ASSIST    //Uncomment to serial print DBG messages
 #ifdef ESP32
   #define LOG_NO_COLOR
   #define LOG_COLOR_DBG
@@ -77,10 +77,6 @@ class ConfigAssist{
       loadConfigFile(ini_file); 
       //On fail load defaults from dict
       if(!_valid) loadJsonDict(_jStr);
-      //Set hostname
-      if(_valid) _hostName = get(HOSTNAME_KEY);
-      if(_hostName=="") _hostName = getDefaultHostName("ESP");
-      else _hostName.replace("{mac}", getMacID());
     }
     
     //if not Use dictionary load default minimal config
@@ -89,9 +85,15 @@ class ConfigAssist{
 
     // Is config loaded valid ?
     bool valid(){ return _valid;}
+    bool exists(String variable){ return getKeyPos(variable) >= 0; }
 
     // Start an AP with a web server and render config values loaded from json dictionary
     void setup(WEB_SERVER &server, std::function<void(void)> handler) {
+      //Set hostname
+      if(_valid) _hostName = get(HOSTNAME_KEY);
+      if(_hostName=="") _hostName = getDefaultHostName("ESP");
+      else _hostName.replace("{mac}", getMacID());
+
       LOG_INF("Config starting AP..\n");
       WiFi.mode(WIFI_AP);
       WiFi.softAP(_hostName.c_str(),"",1);
@@ -459,7 +461,7 @@ class ConfigAssist{
       sort();
       return ret;
     }
-    
+
   private:
     //Render keys,values to html lines
     bool getEditHtmlChunk(String &out){      
