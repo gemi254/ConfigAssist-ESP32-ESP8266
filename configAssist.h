@@ -66,7 +66,7 @@ struct confSeperators {
 // ConfigAssist class
 class ConfigAssist{ 
   public:
-    ConfigAssist() {_dict = false; _valid=false; _hostName="";}
+    ConfigAssist() {_dict = false; _valid=false; }
     ~ConfigAssist() {}
   private:
     enum input_types { TEXT_BOX=1, CHECK_BOX=2, OPTION_BOX=3, RANGE_BOX=4, COMBO_BOX=5};
@@ -89,16 +89,12 @@ class ConfigAssist{
 
     // Start an AP with a web server and render config values loaded from json dictionary
     void setup(WEB_SERVER &server, std::function<void(void)> handler) {
-      //Set hostname
-      if(_valid) _hostName = get(HOSTNAME_KEY);
-      if(_hostName=="") _hostName = getDefaultHostName("ESP");
-      else _hostName.replace("{mac}", getMacID());
-
-      LOG_INF("Config starting AP..\n");
+      String hostName = getHostName();
+      LOG_INF("ConfigAssist starting AP\n");
       WiFi.mode(WIFI_AP);
-      WiFi.softAP(_hostName.c_str(),"",1);
+      WiFi.softAP(hostName.c_str(),"",1);
       LOG_INF("Wifi AP SSID: %s started, use 'http://%s' to connect\n", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());      
-      if (MDNS.begin(_hostName.c_str()))  LOG_INF("AP MDNS responder Started\n");      
+      if (MDNS.begin(hostName.c_str()))  LOG_INF("AP MDNS responder Started\n");      
       server.begin();
       server.on("/",handler);
       server.on("/cfg",handler);
@@ -112,8 +108,10 @@ class ConfigAssist{
     }
 
     // Get a temponary hostname
-    static String getDefaultHostName(String appName){
-      return String(appName) + "_" + getMacID();  
+    String getHostName(){
+      String hostName = get(HOSTNAME_KEY);
+      if(hostName=="") hostName = "ESP_ASSIST_" + getMacID();
+      return hostName;
     }
 
     // Implement operator [] i.e. val = config['key']    
@@ -129,14 +127,15 @@ class ConfigAssist{
     }
     
     // Update the value of thisKey = value
-    bool put(String thisKey, String value) {      
+    bool put(String thisKey, String value, bool force=false) {      
       LOG_DBG("Put %s=%s\n", thisKey.c_str(), value.c_str()); 
-      int keyPos = getKeyPos(thisKey);
+      int keyPos = getKeyPos(thisKey);      
       if (keyPos >= 0) {
         _configs[keyPos].value = value;
         return true;
       }
-      LOG_ERR("Put failed on Key: %s=%s\n", thisKey.c_str(), value.c_str());
+      if(force) add(thisKey, value);
+      else LOG_ERR("Put failed on Key: %s=%s\n", thisKey.c_str(), value.c_str());
       return false;      
     }
     
@@ -439,7 +438,7 @@ class ConfigAssist{
       //Send config form data
       server->setContentLength(CONTENT_LENGTH_UNKNOWN);
       String out(HTML_PAGE_START);
-      out.replace("{appName}", _hostName);
+      out.replace("{host_name}", getHostName());
       server->send(200, "text/html", out); 
       //Render html keys
       sortReadOrder();      
@@ -599,8 +598,8 @@ class ConfigAssist{
       if (keyValPair.length()) {
         std::string token[2];
         int i = 0;
-        std::istringstream ss(keyValPair.c_str());
-        while (std::getline(ss, token[i++], DELIM));
+        std::istringstream pair(keyValPair.c_str());
+        while (std::getline(pair, token[i++], DELIM));
         if (i != 3) 
           if (i == 2) { //Empty param
             String key(token[0].c_str()); 
@@ -629,6 +628,5 @@ class ConfigAssist{
     std::vector<confSeperators> _seperators;
     bool _valid;
     bool _dict;
-    String _hostName;
     const char * _jStr;    
 };
