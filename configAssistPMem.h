@@ -21,7 +21,7 @@ PROGMEM const char HTML_PAGE_START[] = R"=====(
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Configuration for {appName}</title>
+<title>Configuration for {host_name}</title>
 <style>
 :root {
  --bg-table-stripe: #f6f6f5;
@@ -156,7 +156,7 @@ button:hover {
       <form method='post'>
       <table>
         <caption>
-          <h3>Config for {appName}</h3>
+          <h3>Config for {host_name}</h3>
         </caption>
         <tbody>)=====";
 
@@ -218,10 +218,10 @@ PROGMEM const char HTML_PAGE_END[] = R"=====(
           <tfoot>
             <tr>
               <td style="text-align: center;" colspan="5">
-                  <button type='submit' title='Save ini file to storage'name='SAVE'>Save</button>
-                  <button type='submit' title='Reboot esp device' onClick='if(!confirm("Reboot esp?")) return false;' name='RBT'>Reboot ESP</button>
-                  <button type='submit' title='Reset values to defaults'onClick='if(!confirm("Reset values?")) return false;' name='RST'>Reset</button>
-                  <button type='submit' title='Reload and loose change' onClick='if(!confirm("Discard changes?")) return false;' name='CANCEL'>Cancel</button>
+                  <button type='submit' title='Save configuration file to storage' name='SAVE'>Save</button>
+                  <button type='submit' title='Discard changes and return to home page' onClick='if(!confirm("Discard changes?")) return false;' name='CANCEL'>Cancel</button>
+                  <button type='submit' title='Reboot esp device' onClick='if(!confirm("Reboot esp?")) return false;' name='RBT'>Reboot</button>
+                  <button type='submit' title='Reset values to defaults' onClick='if(!confirm("Reset values?")) return false;' name='RST'>Reset</button>
               </td>
             </tr>
           </tfoot>
