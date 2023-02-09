@@ -1,7 +1,8 @@
-#define CLASS_VERSION "1.4"          // Class version
+#define CLASS_VERSION "1.5"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
-#define DELIM '~'                    // Ini file pairs seperator
-#define CONF_FILE "/config.ini"      // Ini file to save configuration
+#define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
+#define INI_FILE_DELIM '~'           // Ini file pairs seperator
+#define FILENAME_IDENTIFIER "_#"     // Keys ending is a hidden filename and not to be saved
 #define DONT_ALLOW_SPACES false      // Allow spaces in var names ?
 #define PASSWD_KEY   "_pass"         // The key part that defines a password field
 #define HOSTNAME_KEY "host_name"     // The key that defines host name
@@ -66,21 +67,21 @@ struct confSeperators {
 // ConfigAssist class
 class ConfigAssist{ 
   public:
-    ConfigAssist() {_dict = false; _valid=false; }
+    ConfigAssist() {_dict = false; _valid=false; _confFile=""; }
     ~ConfigAssist() {}
   private:
-    enum input_types { TEXT_BOX=1, CHECK_BOX=2, OPTION_BOX=3, RANGE_BOX=4, COMBO_BOX=5};
+    enum input_types { TEXT_BOX=1, TEXT_AREA=2, CHECK_BOX=3, OPTION_BOX=4, RANGE_BOX=5, COMBO_BOX=6};
   public:  
     // Load configs after storage started
-    void init(const char * jStr, String ini_file = CONF_FILE) { 
+    void init(const char * jStr, String ini_file = DEF_CONF_FILE) { 
       _jStr = jStr;
+      _confFile = ini_file;
       loadConfigFile(ini_file); 
       //On fail load defaults from dict
       if(!_valid) loadJsonDict(_jStr);
     }
-    
+
     //if not Use dictionary load default minimal config
-    //For quick connection to wifi
     void init() { init(NULL); }
 
     // Is config loaded valid ?
@@ -88,6 +89,7 @@ class ConfigAssist{
     bool exists(String variable){ return getKeyPos(variable) >= 0; }
 
     // Start an AP with a web server and render config values loaded from json dictionary
+    // for quick connection to wifi
     void setup(WEB_SERVER &server, std::function<void(void)> handler) {
       String hostName = getHostName();
       LOG_INF("ConfigAssist starting AP\n");
@@ -145,11 +147,13 @@ class ConfigAssist{
       //LOG_DBG("Adding  key %s=%s\n", key.c_str(), val.c_str()); 
       _configs.push_back(d);
     }
+
     // Add vectors pairs
     void add(confPairs &c){
        //LOG_DBG("Adding  key[%i]: %s=%s\n", readNo, key.c_str(), val.c_str()); 
       _configs.push_back({c}) ;
     }
+
     // Add seperator by key
     void addSeperator(String key, String val){
        //LOG_DBG("Adding sep key: %s=%s\n", key.c_str(), val.c_str()); 
@@ -237,32 +241,40 @@ class ConfigAssist{
           c.label = l;
           c.attribs ="";
           c.readNo = i;
-          if (obj.containsKey("options")){//Options list
+          if (obj.containsKey("options")){       //Options list
             String d = obj["default"];
             String o = obj["options"];
             c.value = d;
             c.attribs = o;
             c.type = OPTION_BOX;
-          }else if (obj.containsKey("datalist")){//Combo box
+          }else if (obj.containsKey("datalist")){ //Combo box
             String d = obj["default"];
             String l = obj["datalist"];
             c.value = d;
             c.attribs = l;
             c.type = COMBO_BOX;            
-           }else if (obj.containsKey("range")){ //Input range
+           }else if (obj.containsKey("range")){  //Input range
             String d = obj["default"];
             String r = obj["range"];
             c.value = d;
             c.attribs = r;
             c.type = RANGE_BOX;
+          }else if (obj.containsKey("file")){   //Text area
+            String f = obj["file"];
+            c.value = f;            
+            if(obj.containsKey("default")){
+              String d = obj["default"];
+              c.attribs = d;
+            }
+            c.type = TEXT_AREA;
+          }else if (obj.containsKey("checked")){ //Check box
+            String ck = obj["checked"];
+            c.value = ck;
+            c.type = CHECK_BOX;
           }else if (obj.containsKey("default")){ //Edit box
             String d = obj["default"];
             c.value = d;
             c.type = TEXT_BOX;
-          }else if (obj.containsKey("checked")){//Check box
-            String ck = obj["checked"];
-            c.value = ck;
-            c.type = CHECK_BOX;
           }else{
             LOG_ERR("Undefined value on param : %i.", i);
           }  
@@ -305,12 +317,9 @@ class ConfigAssist{
     }
      
     // Load config pairs from an ini file
-    bool loadConfigFile(String filename) {
-      #if defined(ESP32)
-        File file = STORAGE.open(filename);
-      #else
-        File file = STORAGE.open(filename,"r");
-      #endif
+    bool loadConfigFile(String filename="") {
+      if(filename=="") filename = _confFile;
+      File file = STORAGE.open(filename,"r");
       if (!file || !file.size()) {
         LOG_ERR("Failed to load: %s, sz: %u\n", filename.c_str(), file.size());
         //if (!file.size()) STORAGE.remove(CONFIG_FILE_PATH); 
@@ -332,35 +341,33 @@ class ConfigAssist{
     }
 
     // Delete configuration file
-    bool deleteConfig(String filename){
+    bool deleteConfig(String filename=""){
+      if(filename=="") filename = _confFile;
       LOG_INF("Remove config: %s\n",filename.c_str());
       return STORAGE.remove(filename);
     }
 
     // Save configs vectors in an ini file
-    bool saveConfigFile(String filename) {
+    bool saveConfigFile(String filename="") {
+      if(filename=="") filename = _confFile;
       File file = STORAGE.open(filename, "w+");
-      char configLine[512];
       if (!file){
         LOG_ERR("Failed to save config file\n");
         return false;
-      }else{
-        for (auto& row: _configs) {
-          // recreate config file with updated content
-          if (!strcmp(row.name.c_str() + strlen(row.name.c_str()) - 5, "_Pass")) {
-              // replace passwords with asterisks
-              sprintf(configLine, "%s%c%s\n", row.name.c_str(), DELIM, "************");   
-          }else {
-              sprintf(configLine, "%s%c%s\n", row.name.c_str(), DELIM, row.value.c_str());   
-          }
-          LOG_DBG("Save: %s = %s\n", row.name.c_str(), row.value.c_str());
-          file.write((uint8_t*)configLine, strlen(configLine));
-        }        
-        LOG_INF("File saved: %s\n", filename.c_str());
-        file.close();
-        
-        return true;
       }
+      //Save config file with updated content
+      for (auto& row: _configs) {
+        if(row.name==HOSTNAME_KEY){
+          row.value.replace("{mac}", getMacID());
+        }
+        char configLine[512];
+        sprintf(configLine, "%s%c%s\n", row.name.c_str(), INI_FILE_DELIM, row.value.c_str());   
+        file.write((uint8_t*)configLine, strlen(configLine));
+        LOG_DBG("Saved: %s = %s\n", row.name.c_str(), row.value.c_str());
+      }        
+      LOG_INF("File saved: %s\n", filename.c_str());
+      file.close();      
+      return true;      
     }
 
     // Respond a HTTP request for the form use the CONF_FILE
@@ -372,7 +379,7 @@ class ConfigAssist{
         
         //Discard edits and load json defaults;
         if (server->hasArg(F("RST"))) {
-          deleteConfig(CONF_FILE);
+          deleteConfig();
           _configs.clear();
           loadJsonDict(_jStr);
           //saveConfigFile(CONF_FILE);
@@ -400,6 +407,14 @@ class ConfigAssist{
           String key(server->argName(i));
           String val(server->arg(i));
           if(key=="apName" || key =="SAVE" || key=="RST" || key=="RBT" || key=="plain") continue;
+          if(key.endsWith(FILENAME_IDENTIFIER)) continue;
+          //Check if if text box with file name
+          String fileNameKey = server->argName(i) + FILENAME_IDENTIFIER;
+          if(server->hasArg(fileNameKey)){
+              String fileName = server->arg(fileNameKey);
+              saveText(fileName, val);
+              val = fileName;
+          }
           LOG_DBG("Form upd: %s = %s\n", key.c_str(), val.c_str());
           put(key, val);
         }
@@ -407,7 +422,7 @@ class ConfigAssist{
         //Save config file 
         if (server->hasArg(F("SAVE"))) {
             String out(HTML_PAGE_MESSAGE);
-            if(saveConfigFile(CONF_FILE)) out.replace("{msg}", "Config file saved");
+            if(saveConfigFile()) out.replace("{msg}", "Config file saved");
             else out.replace("{msg}", "<font color='red'>Failed to save config</font>");            
             out.replace("{title}", "Save");
             out.replace("{url}", "/cfg");
@@ -462,33 +477,76 @@ class ConfigAssist{
     }
 
   private:
-    //Render keys,values to html lines
+    // Load a file into a string
+    bool loadText(String fPath, String &txt){
+      File file = STORAGE.open(fPath, "r");
+      if (!file || !file.size()) {
+        LOG_ERR("Failed to load: %s, sz: %u B\n", fPath.c_str(), file.size());
+        return false;
+      }
+      //Load text from file
+      txt = "";
+      while (file.available()) {
+        txt += file.readString();
+      } 
+      LOG_DBG("Loaded: %s, sz: %u B\n" , fPath.c_str(), txt.length() );          
+      file.close();
+      return true;
+    }
+    
+    // Write a string to a file
+    bool saveText(String fPath, String txt){
+      STORAGE.remove(fPath);
+      File file = STORAGE.open(fPath, "w+");
+      if(!file){
+        LOG_ERR("Failed to save: %s, sz: %u B\n", fPath.c_str(), txt.length());
+        return false;
+      } 
+      file.print(txt);
+      LOG_DBG("Saved: %s, sz: %u B\n" , fPath.c_str(), txt.length() ); 
+      file.close();
+      return true;
+    }
+
+    // Render keys,values to html lines
     bool getEditHtmlChunk(String &out){      
-      //Render html keys
       confPairs c;
       out="";
       if(!getNextKeyVal(c)) return false;
       out = String(HTML_PAGE_INPUT_LINE);
       String elm;
-      if(c.type==TEXT_BOX){
+      if(c.type == TEXT_BOX){
         elm = String(HTML_PAGE_TEXT_BOX);
         if(c.name.indexOf(PASSWD_KEY)>=0)
           elm.replace("<input ", "<input type=\"password\" ");
-      }else if(c.type==CHECK_BOX){
+      }else if(c.type == TEXT_AREA){
+        String file = String(HTML_PAGE_TEXT_AREA_FNAME);        
+        file.replace("{key}", c.name + FILENAME_IDENTIFIER);
+        file.replace("{val}", c.value);
+        elm = String(HTML_PAGE_TEXT_AREA);
+        String txt="";
+        //Replace loaded text
+        if(loadText(c.value, txt)){ 
+          elm.replace("{val}", txt); 
+        }else{ //Text not yet saved, load default
+          elm.replace("{val}", c.attribs); 
+        }
+        elm = file + "\n" + elm;
+      }else if(c.type == CHECK_BOX){
         elm = String(HTML_PAGE_CHECK_BOX);
         if(c.value=="True" || c.value=="on" || c.value=="1"){
           elm.replace("{chk}"," checked");
         }else
           elm.replace("{chk}","");
-      }else if(c.type==OPTION_BOX){
+      }else if(c.type == OPTION_BOX){
         elm = String(HTML_PAGE_SELECT_BOX);
         String optList = getOptionsListHtml(c.value, c.attribs);
         elm.replace("{opt}", optList);
-      }else if(c.type==COMBO_BOX){
+      }else if(c.type == COMBO_BOX){
         elm = String(HTML_PAGE_DATA_LIST);
         String optList = getOptionsListHtml(c.value, c.attribs, true);            
         elm.replace("{opt}", optList);
-      }else if(c.type==RANGE_BOX){
+      }else if(c.type == RANGE_BOX){
         elm = getRangeHtml(c.value, c.attribs);
       }
       out.replace("{elm}",elm); 
@@ -508,7 +566,8 @@ class ConfigAssist{
       LOG_DBG("HTML key[%i]: %s = %s, type: %i, lbl: %s, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.label.c_str(), c.attribs.c_str() );
       return true;
     }
-    //Render range 
+
+    // Render range 
     String getRangeHtml(String defVal, String attribs){
       char *token = NULL;
       char seps[] = ",";
@@ -531,8 +590,8 @@ class ConfigAssist{
         i++;
       }
       return ret;
-
     }
+
     //Render options list
     String getOptionsListHtml(String defVal, String attribs, bool isDataList=false){
       String ret="";
@@ -599,7 +658,7 @@ class ConfigAssist{
         std::string token[2];
         int i = 0;
         std::istringstream pair(keyValPair.c_str());
-        while (std::getline(pair, token[i++], DELIM));
+        while (std::getline(pair, token[i++], INI_FILE_DELIM));
         if (i != 3) 
           if (i == 2) { //Empty param
             String key(token[0].c_str()); 
@@ -628,5 +687,6 @@ class ConfigAssist{
     std::vector<confSeperators> _seperators;
     bool _valid;
     bool _dict;
-    const char * _jStr;    
+    const char * _jStr;
+    String _confFile;
 };
