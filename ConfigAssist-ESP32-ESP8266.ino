@@ -41,8 +41,8 @@ const char* appConfigDict_json PROGMEM = R"~(
    "default": ""
   },{
       "name": "host_name",
-     "label": "Host name to use for MDNS and AP",
-   "default": "SetupAssist01"
+     "label": "Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac id",
+   "default": "SetupAssist_{mac}"
   },{
  "seperator": "Application settings"
   },{
@@ -108,8 +108,13 @@ const char* appConfigDict_json PROGMEM = R"~(
 'Etc/GMT+10,<-10>10'
 'Etc/GMT+11,<-11>11'
 'Etc/GMT+12,<-12>12'"  
-}]
-)~";
+},{
+   "name": "calibration_data",
+  "label": "Enter data for 2 Point calibration.</br>Data will be saved to /calibration.ini",
+   "file": "/calibration.ini",
+"default": "X1=222, Y1=1.22
+X2=900, Y2=3.24"}
+])~";
 
 #include "configAssist.h"  // Setup assistant class
 ConfigAssist conf;         // Config class
@@ -129,11 +134,7 @@ void debugMemory(const char* caller) {
 void ListDir(const char * dirname) {
   Serial.printf("Listing directory: %s\n", dirname);
   // ist details of files on file system
-  #if defined(ESP32)
-    File root = STORAGE.open(dirname);
-  #else
-    File root = STORAGE.open(dirname,"r");
-  #endif
+  File root = STORAGE.open(dirname,"r");
   File file = root.openNextFile();
   while (file) {
     #if defined(ESP32)
@@ -195,7 +196,7 @@ void setup(void) {
     if(!STORAGE.begin()) Serial.println("ESP8266 Storage failed!"); 
   #endif
   ListDir("/");
-  //Initialize ConfigAssist json dictionary
+  //Initialize ConfigAssist json dictionary pointer
   //If ini file is valid wil not be used
   conf.init(appConfigDict_json);  
 
