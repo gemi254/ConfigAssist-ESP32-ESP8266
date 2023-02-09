@@ -11,7 +11,7 @@ const char* appDefConfigDict_json PROGMEM = R"~(
   },{
       "name": "host_name",
      "label": "Enter a name for your host",
-   "default": ""
+   "default": "SetupAssist_{mac}"
   }])~";
 
 // Template for header, begin of the config form
@@ -179,6 +179,14 @@ PROGMEM const char HTML_PAGE_INPUT_LINE[] = R"=====(
 PROGMEM const char HTML_PAGE_TEXT_BOX[] = 
 R"=====(<input id="{key}" name="{key}" length="64" value="{val}">)=====";
 
+//Template for one input text area
+PROGMEM const char HTML_PAGE_TEXT_AREA[] = 
+R"=====(<textarea id="{key}" name="{key}" rows="auto" cols="auto">{val}</textarea>)=====";
+
+//Template for one input text area file name
+PROGMEM const char HTML_PAGE_TEXT_AREA_FNAME[] = 
+R"=====(<input type="hidden" name="{key}" value="{val}">)=====";
+
 //Template for one input check box
 PROGMEM const char HTML_PAGE_CHECK_BOX[] = 
 R"=====(<input type='checkbox' name='{key}'{chk}>)=====";
@@ -219,9 +227,9 @@ PROGMEM const char HTML_PAGE_END[] = R"=====(
             <tr>
               <td style="text-align: center;" colspan="5">
                   <button type='submit' title='Save configuration file to storage' name='SAVE'>Save</button>
-                  <button type='submit' title='Discard changes and return to home page' onClick='if(!confirm("Discard changes?")) return false;' name='CANCEL'>Cancel</button>
                   <button type='submit' title='Reboot esp device' onClick='if(!confirm("Reboot esp?")) return false;' name='RBT'>Reboot</button>
-                  <button type='submit' title='Reset values to defaults' onClick='if(!confirm("Reset values?")) return false;' name='RST'>Reset</button>
+                  <button type='submit' title='Discard changes and return to home page' onClick='if(!confirm("Discard changes?")) return false;' name='CANCEL'>Home</button>
+                  <button type='submit' title='Reset values to defaults' onClick='if(!confirm("Reset values?")) return false;' name='RST'>Defaults</button>
               </td>
             </tr>
           </tfoot>
