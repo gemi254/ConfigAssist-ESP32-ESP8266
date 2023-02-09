@@ -45,8 +45,9 @@ defined in the json file.  See example below..
   - The `range` field must contain a comma seperated list of `min, max, step` and can be enclosed by single quotes.
 + You can compine keywords `default` with `datalist` in order to use a value that will be edited by a **combo box**. 
   - The `datalist` field must contain a comma or line feed seperated list of default values for drop down list.
++ You can compine keywords `default` with `file` in order to use a small text be edited by a **text area**. 
+  - The `file` field must contain a valid file path that the text will be saved to. The `default` keyword can also be used to define a default value.
   
-
 A **separator title** can also be used to group configuration values under a specific title.
 ```
 const char* appConfigDict_json PROGMEM = R"~(
@@ -90,6 +91,12 @@ const char* appConfigDict_json PROGMEM = R"~(
 'Etc/GMT-1,<+01>-1'
 'Etc/GMT-2,<+02>-2'"
 }.{
+   "name": "calibration_data",
+  "label": "Enter data for 2 Point calibration.</br>Data will be saved to /calibration.ini",
+   "file": "/calibration.ini",
+"default": "X1=222, Y1=1.22
+X2=900, Y2=3.24"
+},{
 ```
 
 ## Project definitions in your main app
@@ -101,7 +108,7 @@ const char* appConfigDict_json PROGMEM = R"~(
   - `ConfigAssist conf;        //ConfigAssist class`
 
 + in your setup function you must init the config class with a pointer to the dictionary
-  - `conf.init(appConfigDict_json);` or `onf.init(NULL);` for default settings
+  - `conf.init(appConfigDict_json);` or `onf.init(NULL);` for default minimal settings
 + if you want to use a different external **ini file name**
   - `conf.init(appConfigDict_json, ini_file_name);`
  
