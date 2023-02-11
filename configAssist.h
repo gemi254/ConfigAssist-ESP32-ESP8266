@@ -1,4 +1,4 @@
-#define CLASS_VERSION "1.5"          // Class version
+#define CLASS_VERSION "1.6"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -421,7 +421,7 @@ class ConfigAssist{
 
         //Save config file 
         if (server->hasArg(F("SAVE"))) {
-            String out(HTML_PAGE_MESSAGE);
+            String out(CONFIGASSIST_HTML_MESSAGE);
             if(saveConfigFile()) out.replace("{msg}", "Config file saved");
             else out.replace("{msg}", "<font color='red'>Failed to save config</font>");            
             out.replace("{title}", "Save");
@@ -434,7 +434,7 @@ class ConfigAssist{
         
         if (server->hasArg(F("RBT"))) {
             //saveConfigFile(CONF_FILE);
-            String out(HTML_PAGE_MESSAGE);
+            String out(CONFIGASSIST_HTML_MESSAGE);
             out.replace("{title}", "Reboot device");
             out.replace("{url}", "/cfg");
             out.replace("{refresh}", "10000");
@@ -452,16 +452,22 @@ class ConfigAssist{
 
       //Send config form data
       server->setContentLength(CONTENT_LENGTH_UNKNOWN);
-      String out(HTML_PAGE_START);
+      String out(CONFIGASSIST_HTML_START);
       out.replace("{host_name}", getHostName());
       server->send(200, "text/html", out); 
+      server->sendContent(CONFIGASSIST_HTML_CSS);
+      out = CONFIGASSIST_HTML_BODY;
+      out.replace("{host_name}", getHostName());
+      server->sendContent(out);
       //Render html keys
       sortReadOrder();      
       while(getEditHtmlChunk(out)){
-        server->sendContent(out);  
+        server->sendContent(out);        
       }
       sort();
-      server->sendContent(HTML_PAGE_END);
+      out = CONFIGASSIST_HTML_END;
+      out.replace("{appVer}", CLASS_VERSION);
+      server->sendContent(out);
     }
     
     //Get edit page html table (no form)
@@ -513,17 +519,17 @@ class ConfigAssist{
       confPairs c;
       out="";
       if(!getNextKeyVal(c)) return false;
-      out = String(HTML_PAGE_INPUT_LINE);
+      out = String(CONFIGASSIST_HTML_LINE);
       String elm;
       if(c.type == TEXT_BOX){
-        elm = String(HTML_PAGE_TEXT_BOX);
+        elm = String(CONFIGASSIST_HTML_TEXT_BOX);
         if(c.name.indexOf(PASSWD_KEY)>=0)
           elm.replace("<input ", "<input type=\"password\" ");
       }else if(c.type == TEXT_AREA){
-        String file = String(HTML_PAGE_TEXT_AREA_FNAME);        
+        String file = String(CONFIGASSIST_HTML_TEXT_AREA_FNAME);        
         file.replace("{key}", c.name + FILENAME_IDENTIFIER);
         file.replace("{val}", c.value);
-        elm = String(HTML_PAGE_TEXT_AREA);
+        elm = String(CONFIGASSIST_HTML_TEXT_AREA);
         String txt="";
         //Replace loaded text
         if(loadText(c.value, txt)){ 
@@ -533,17 +539,17 @@ class ConfigAssist{
         }
         elm = file + "\n" + elm;
       }else if(c.type == CHECK_BOX){
-        elm = String(HTML_PAGE_CHECK_BOX);
+        elm = String(CONFIGASSIST_HTML_CHECK_BOX);
         if(c.value=="True" || c.value=="on" || c.value=="1"){
           elm.replace("{chk}"," checked");
         }else
           elm.replace("{chk}","");
       }else if(c.type == OPTION_BOX){
-        elm = String(HTML_PAGE_SELECT_BOX);
+        elm = String(CONFIGASSIST_HTML_SELECT_BOX);
         String optList = getOptionsListHtml(c.value, c.attribs);
         elm.replace("{opt}", optList);
       }else if(c.type == COMBO_BOX){
-        elm = String(HTML_PAGE_DATA_LIST);
+        elm = String(CONFIGASSIST_HTML_DATA_LIST);
         String optList = getOptionsListHtml(c.value, c.attribs, true);            
         elm.replace("{opt}", optList);
       }else if(c.type == RANGE_BOX){
@@ -557,10 +563,13 @@ class ConfigAssist{
       int sepKeyPos = getSepKeyPos(sKey);
       if(sepKeyPos>=0){
         //Add a seperator
+        String outSep = String(CONFIGASSIST_HTML_SEP);
         String sVal = _seperators[sepKeyPos].value;
-        String outSep = String(HTML_PAGE_SEPERATOR_LINE);
         outSep.replace("{val}", sVal);
-        out = outSep + out;
+         if(sepKeyPos > 0)
+          out = CONFIGASSIST_HTML_SEP_CLOSE + outSep + out;
+        else 
+          out = outSep + out;
         LOG_DBG("SEP key[%i]: %s = %s\n", sepKeyPos, sKey.c_str(), sVal.c_str());
       }  
       LOG_DBG("HTML key[%i]: %s = %s, type: %i, lbl: %s, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.label.c_str(), c.attribs.c_str() );
@@ -573,7 +582,7 @@ class ConfigAssist{
       char seps[] = ",";
       token = strtok(&attribs[0], seps);
       int i=0;
-      String ret(HTML_PAGE_INPUT_RANGE);
+      String ret(CONFIGASSIST_HTML_INPUT_RANGE);
       while( token != NULL ){
         String optVal(token);
         optVal.replace("'","");
@@ -606,9 +615,9 @@ class ConfigAssist{
       while( token != NULL ){
         String opt;
         if(isDataList)
-          opt = HTML_PAGE_SELECT_DATALIST_OPTION;
+          opt = CONFIGASSIST_HTML_SELECT_DATALIST_OPTION;
         else
-          opt = HTML_PAGE_SELECT_OPTION;
+          opt = CONFIGASSIST_HTML_SELECT_OPTION;
         String optVal(token);
         if(optVal=="") continue;
         optVal.replace("'","");
