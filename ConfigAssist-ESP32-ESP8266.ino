@@ -109,7 +109,7 @@ const char* appConfigDict_json PROGMEM = R"~(
 'Etc/GMT+11,<-11>11'
 'Etc/GMT+12,<-12>12'"  
 },{
-   "name": "calibration_data",
+   "name": "cal_data",
   "label": "Enter data for 2 Point calibration.</br>Data will be saved to /calibration.ini",
    "file": "/calibration.ini",
 "default": "X1=222, Y1=1.22
