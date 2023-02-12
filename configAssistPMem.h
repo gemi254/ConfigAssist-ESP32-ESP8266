@@ -114,18 +114,12 @@ body {
   display: table;
   clear: both;
 }
-/* Responsive columns */
-@media screen and (max-width: 600px) {
-.column {
-  width: 100%;
-  display: block;
-  margin-bottom: 20px;
-  margin-top: 2px;
-}
-}
 .column .card.closed{
-    height: 30px;
+    height: 26px;
     overflow: hidden;
+}
+.column .card.closed h3{
+  color: darkslategray;
 }
 .card {
   border: 1px solid #cbcaca;
@@ -139,10 +133,12 @@ body {
 .card h3{
   margin:2px;
   color: darkgray;
+  background-color: whitesmoke;
 }
 .card h3:hover{
   color: #3f51b5;
   cursor: pointer;
+  background-color: cornsilk;
 }
 .card h2{
   margin-top:2px;
@@ -174,15 +170,18 @@ tbody tr:nth-of-type(2n+1) {
 }
 .card-key {
   text-align: right;
-  font-weight: 800;  
+  font-weight: 800;
+  width: 25%;
 }
 .card-val {
   text-align: left;
+  width: 25%;
 }
 .card-lbl {
   text-align: left;
   font-style: italic;
   font-size: .8em;
+  overflow-wrap: anywhere;
 }
 button {
   background-color: #fff;
@@ -203,6 +202,39 @@ button {
 }
 button:hover {
   background-color: #f7fafa;
+}
+/* Responsive columns */
+@media screen and (max-width: 600px) {
+  .column {
+    width: 100%;
+    display: block;
+    margin-bottom: 20px;
+    margin-top: 2px;
+  }
+
+  table {
+    border: 0;
+  }
+  table tr {
+    display: block;
+    margin-bottom: 0.125em;
+  }
+
+  table td {
+    display: block;
+    font-size: 0.8em;
+    text-align: right;
+  }
+  table td:last-child {
+    border-bottom: 0;
+  }  
+  .card-key{
+    text-align: left;
+    width:auto; 
+  }  
+  .card-val{
+    width:auto; 
+  }
 }
 </style>)=====";
 
