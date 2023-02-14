@@ -36,11 +36,10 @@
   #define LOG_ERR Serial.printf
   #define LOG_WRN Serial.printf
   #define LOG_INF Serial.printf
-
   #if defined(DEBUG_CONFIG_ASSIST)
     #define LOG_DBG Serial.printf
   #else
-    void printfNull(const char *format, ...) {}
+    void printfNull(const char *format, ...) { }
     #define LOG_DBG printfNull    
   #endif
 #endif
@@ -113,6 +112,7 @@ class ConfigAssist{
     String getHostName(){
       String hostName = get(HOSTNAME_KEY);
       if(hostName=="") hostName = "ESP_ASSIST_" + getMacID();
+      else hostName.replace("{mac}", getMacID());
       return hostName;
     }
 
@@ -449,14 +449,13 @@ class ConfigAssist{
       LOG_DBG("Generate form _valid: %i, _dict: %i\n", _valid, _dict);
       //Load dictionary if no pressent
       if(!_dict) loadJsonDict(_jStr, true);
-
       //Send config form data
       server->setContentLength(CONTENT_LENGTH_UNKNOWN);
       String out(CONFIGASSIST_HTML_START);
       out.replace("{host_name}", getHostName());
-      server->send(200, "text/html", out); 
+      server->sendContent(out);
       server->sendContent(CONFIGASSIST_HTML_CSS);
-      out = CONFIGASSIST_HTML_BODY;
+      out = String(CONFIGASSIST_HTML_BODY);
       out.replace("{host_name}", getHostName());
       server->sendContent(out);
       //Render html keys
@@ -465,7 +464,7 @@ class ConfigAssist{
         server->sendContent(out);        
       }
       sort();
-      out = CONFIGASSIST_HTML_END;
+      out = String(CONFIGASSIST_HTML_END);
       out.replace("{appVer}", CLASS_VERSION);
       server->sendContent(out);
     }
@@ -567,7 +566,7 @@ class ConfigAssist{
         String sVal = _seperators[sepKeyPos].value;
         outSep.replace("{val}", sVal);
          if(sepKeyPos > 0)
-          out = CONFIGASSIST_HTML_SEP_CLOSE + outSep + out;
+          out = String(CONFIGASSIST_HTML_SEP_CLOSE) + outSep + out;
         else 
           out = outSep + out;
         LOG_DBG("SEP key[%i]: %s = %s\n", sepKeyPos, sKey.c_str(), sVal.c_str());
@@ -598,6 +597,7 @@ class ConfigAssist{
         token = strtok( NULL, seps );
         i++;
       }
+      ret.replace("{val}",defVal);
       return ret;
     }
 
@@ -615,9 +615,9 @@ class ConfigAssist{
       while( token != NULL ){
         String opt;
         if(isDataList)
-          opt = CONFIGASSIST_HTML_SELECT_DATALIST_OPTION;
+          opt = String(CONFIGASSIST_HTML_SELECT_DATALIST_OPTION);
         else
-          opt = CONFIGASSIST_HTML_SELECT_OPTION;
+          opt = String(CONFIGASSIST_HTML_SELECT_OPTION);
         String optVal(token);
         if(optVal=="") continue;
         optVal.replace("'","");
