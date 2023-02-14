@@ -96,23 +96,23 @@ R"=====(<style>
  --caption: darkgray;
 }
 body {
-  font-family: Arial, Helvetica, sans-serif;
+	font-family: Arial, Helvetica, sans-serif;
 }
 .column {
-  float: center;
-  width: 100%;
-  padding: 0 10px;
-  box-sizing: border-box;
+	float: center;
+	width: 100%;
+	padding: 0 10px;
+	box-sizing: border-box;
   margin-top: 10px;
 }
 .row {
-  margin: 0 -5px;
+	margin: 0 -5px;
 }
 /* Clear floats after the columns */
 .row:after {
-  content: "";
-  display: table;
-  clear: both;
+	content: "";
+	display: table;
+	clear: both;
 }
 .column .card.closed{
     height: 26px;
@@ -123,15 +123,15 @@ body {
 }
 .card {
   border: 1px solid #cbcaca;
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
-  padding: 10px;
-  text-align: center;
-  background-color: #ffffff;
-  margin-bottom: 8px;
-  border-radius: 5px;
+	box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+	padding: 10px;
+	text-align: center;
+	background-color: #ffffff;
+	margin-bottom: 8px;
+	border-radius: 5px;
 }
 .card h3{
-  margin:2px;
+	margin:2px;
   color: darkgray;
   background-color: whitesmoke;
 }
@@ -141,67 +141,67 @@ body {
   background-color: cornsilk;
 }
 .card h2{
-  margin-top:2px;
-  margin-bottom:8px;
-  color: var(--caption);
+	margin-top:2px;
+	margin-bottom:8px;
+	color: var(--caption);
 }
 .container {
-  display: flex;
-  justify-content: center;
-  flex-direction: row;
+	display: flex;
+	justify-content: center;
+	flex-direction: row;
 }
 table {
-  width: 100%;
+	width: 100%;
 }
 table th, table td {
-  padding: .325em;
-  border: 1px solid var(--b-table);
+	padding: .325em;
+	border: 1px solid var(--b-table);
 }
 tbody tr:nth-of-type(2n+1) {
-  background-color: var(--bg-table-stripe)
+	background-color: var(--bg-table-stripe)
 }
 .card-header{
   margin-bottom: 15px;
 }
 .card-header:hover {
-  background-color: #f7fafa;
+	background-color: #f7fafa;
 }
 .card-body {  
 }
 .card-key {
-  text-align: right;
+	text-align: right;
   font-weight: 800;
   width: 25%;
 }
 .card-val {
-  text-align: left;
+	text-align: left;
   width: 25%;
 }
 .card-lbl {
-  text-align: left;
-  font-style: italic;
+	text-align: left;
+	font-style: italic;
   font-size: .8em;
   overflow-wrap: anywhere;
 }
 button {
-  background-color: #fff;
-  border: 1px solid #d5d9d9;
-  border-radius: 4px;
-  box-shadow: rgb(213 217 217 / 50%) 0 2px 5px 0;
-  box-sizing: border-box;
-  font-weight: 900;
-  color: #0f1111;
-  cursor: pointer;
-  display: inline-block;
-  padding: 0 10px 0 11px;
-  margin: 2px;
-  line-height: 29px;
-  position: relative;
-  text-align: center;
-  vertical-align: middle;
+	background-color: #fff;
+	border: 1px solid #d5d9d9;
+	border-radius: 4px;
+	box-shadow: rgb(213 217 217 / 50%) 0 2px 5px 0;
+	box-sizing: border-box;
+	font-weight: 900;
+	color: #0f1111;
+	cursor: pointer;
+	display: inline-block;
+	padding: 0 10px 0 11px;
+	margin: 2px;
+	line-height: 29px;
+	position: relative;
+	text-align: center;
+	vertical-align: middle;
 }
 button:hover {
-  background-color: #f7fafa;
+	background-color: #f7fafa;
 }
 /* Responsive columns */
 @media screen and (max-width: 600px) {
@@ -278,16 +278,10 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
      </div> <!-- card-body -->
      </div> <!-- card -->
      <div class="card">
-      <table>
-          <tr>
-            <td style="text-align: center;" colspan="5">
-              <button type='submit' title='Save configuration file to storage' name='SAVE'>Save</button>
-              <button type='submit' title='Reboot esp device' onClick='if(!confirm("Reboot esp?")) return false;' name='RBT'>Reboot</button>
-              <button type='submit' title='Discard changes and return to home page' onClick='if(!confirm("Discard changes?")) return false;' name='CANCEL'>Home</button>
-              <button type='submit' title='Reset values to defaults' onClick='if(!confirm("Reset values?")) return false;' name='RST'>Defaults</button>
-            </td>
-        </tr>
-      </table>
+        <button type='submit' title='Save configuration file to storage' name='SAVE'>Save</button>
+        <button type='submit' title='Reboot esp device' onClick='if(!confirm("Reboot esp?")) return false;' name='RBT'>Reboot</button>
+        <button type='submit' title='Discard changes and return to home page' onClick='if(!confirm("Discard changes?")) return false;' name='CANCEL'>Home</button>
+        <button type='submit' title='Reset values to defaults' onClick='if(!confirm("Reset values?")) return false;' name='RST'>Defaults</button>
      </div> <!-- card -->
      </form>
     </div> <!-- column -->
