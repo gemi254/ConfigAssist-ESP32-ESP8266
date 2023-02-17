@@ -1,4 +1,4 @@
-#define CLASS_VERSION "1.6"          // Class version
+#define CLASS_VERSION "1.7"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -455,6 +455,8 @@ class ConfigAssist{
       out.replace("{host_name}", getHostName());
       server->sendContent(out);
       server->sendContent(CONFIGASSIST_HTML_CSS);
+      server->sendContent(CONFIGASSIST_HTML_CSS_CTRLS);      
+      server->sendContent(CONFIGASSIST_HTML_SCRIPT);
       out = String(CONFIGASSIST_HTML_BODY);
       out.replace("{host_name}", getHostName());
       server->sendContent(out);
