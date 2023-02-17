@@ -14,51 +14,6 @@ const char* appDefConfigDict_json PROGMEM = R"~(
    "default": "SetupAssist_{mac}"
   }])~";
 
-//Template for one input text box
-PROGMEM const char CONFIGASSIST_HTML_TEXT_BOX[] = 
-R"=====(<input id="{key}" name="{key}" length="64" value="{val}">)=====";
-
-//Template for one input text area
-PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA[] = 
-R"=====(<textarea id="{key}" name="{key}" rows="auto" cols="auto">{val}</textarea>)=====";
-
-//Template for one input text area file name
-PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA_FNAME[] = 
-R"=====(<input type="hidden" name="{key}" value="{val}">)=====";
-
-//Template for one input check box
-PROGMEM const char CONFIGASSIST_HTML_CHECK_BOX[] = 
-R"=====(<input type='checkbox' name='{key}'{chk}>)=====";
-
-//Template for one input select box
-PROGMEM const char CONFIGASSIST_HTML_SELECT_BOX[] = R"=====(
-            <select name='{key}' style='width:100%'>
-              {opt}
-            </select>
-)=====";
-
-//Template for one input select option
-PROGMEM const char CONFIGASSIST_HTML_SELECT_OPTION[] = 
-R"=====(            <option value='{optVal}'{sel}>{optVal}</option>
-)=====";
-
-//Template for one input select datalist option
-PROGMEM const char CONFIGASSIST_HTML_SELECT_DATALIST_OPTION[] = 
-R"=====(            <option value='{optVal}'></option>
-)=====";
-
-//Template for one input select datalist
-PROGMEM const char CONFIGASSIST_HTML_DATA_LIST[] = 
-R"=====(<input type="text" name="{key}" list="{key}_list" value="{val}"/>
-          <datalist id='{key}_list'>
-              {opt}
-          </datalist>
-)=====";
-
-//Template for one input select range
-PROGMEM const char CONFIGASSIST_HTML_INPUT_RANGE[] = R"=====(
-            <input type='range' min='{min}' max='{max}' step='{step}' value='{val}' name='{key}'>)=====";
-
 //Template for message page
 PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
 <!DOCTYPE html>
@@ -91,9 +46,9 @@ R"=====(<!DOCTYPE HTML>
 PROGMEM const char CONFIGASSIST_HTML_CSS[] = 
 R"=====(<style>
 :root {
- --bg-table-stripe: #f6f6f5;
- --b-table: #999a9b47;
- --caption: darkgray;
+  --bg-table-stripe: #f6f6f5;
+  --b-table: #999a9b47;
+  --caption: darkgray;  
 }
 body {
 	font-family: Arial, Helvetica, sans-serif;
@@ -177,6 +132,14 @@ tbody tr:nth-of-type(2n+1) {
 	text-align: left;
   width: 25%;
 }
+.card-val-ctrl{
+  position: relative;
+  display: flex;
+  flex-wrap: nowrap;
+  line-height: var(--elmDbl);
+  margin-top: var(--elmHalf);
+
+}
 .card-lbl {
 	text-align: left;
 	font-style: italic;
@@ -237,6 +200,250 @@ button:hover {
   }
 }
 </style>)=====";
+//Html controls
+PROGMEM const char CONFIGASSIST_HTML_CSS_CTRLS[] = R"=====(
+<style>
+:root {
+/* colors used on web page - see https://www.w3schools.com/colors/colors_names.asp */
+--toggleActive: lightslategrey;
+--toggleInactive: lightgray;
+--sliderBodyBackground: darkgray;
+--sliderText: black;
+--sliderThumb: lightgray;
+--sliderBackground: WhiteSmoke; 
+
+/* element sizes, 1rem represents the font size of the root element */
+--elmSize: 1rem;
+--elmHalf: calc(var(--elmSize) / 2);
+--elmQuart: calc(var(--elmSize) / 4);
+--elmDbl: calc(var(--elmSize) * 2);
+--inputHeight: calc(var(--elmSize) * 1.5);
+}
+input {
+  min-width: calc(var(--elmSize) * 11);
+  height: var(--inputHeight);
+  border-radius: var(--elmQuart);
+  border: 1px solid gray;
+}
+
+textarea {
+  min-width: calc(var(--elmSize) * 11);      
+  border-radius: var(--elmQuart);        
+  border: 1px solid gray;
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: calc(var(--elmHalf) * 3/4);
+  background: var(--sliderBodyBackground);
+  cursor: pointer;
+  margin-top: calc(var(--elmSize) * 3/4);
+  min-width: calc(var(--elmSize) * 8);
+  border: 1px solid lightgray;
+}
+
+input[type=range]:focus {
+  outline: 0;
+  border: 1px solid gray;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 2px;
+  cursor: pointer;
+  background: var(--sliderBackground); 
+  border-radius: var(--elmHalf);
+}
+
+input[type=range]::-webkit-slider-thumb {
+  height: calc(var(--elmSize) * 1.1);
+  width: calc(var(--elmSize) * 1.1);     
+  border-radius: 50%;
+  background: var(--sliderThumb); 
+  cursor: pointer;
+  -webkit-appearance: none;
+  margin-top: calc(-1.1 * var(--elmHalf));
+}
+
+input[type=range]:focus::-webkit-slider-runnable-track {
+  background: var(--sliderBackground); 
+}
+
+.range-value{
+  position: absolute;
+  top: -60%;
+}
+
+.range-value span{
+  width: var(--elmDbl);
+  height: var(--elmSize);
+  line-height: var(--elmSize);
+  text-align: center;
+  background: var(--sliderThumb); 
+  color: var(--sliderText); 
+  font-size: calc(var(--elmSize) * 0.9);
+  font-weight: bold;
+  display: block;
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 0);
+  border-radius: var(--elmQuart);
+  top: var(--elmHalf);            
+}
+
+.range-max,.range-min {
+  display: inline-block;
+  padding: 0 var(--elmQuart);
+}
+
+/* checkbox toggle switch slider */            
+.switch {
+  position: relative;
+  display: inline-block;
+  width: calc(var(--elmSize) * 1.9);
+  height: calc(var(--elmSize) * 1.3);
+  /*top: var(--elmHalf);*/
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  border-radius: var(--elmSize);
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--toggleInactive);
+  width: calc(var(--elmSize) * 2.3);                      
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  border-radius: 50%;
+  content: "";
+  height: var(--elmSize);
+  width: var(--elmSize);
+  left: var(--elmQuart);
+  top: calc(var(--elmQuart)*.5);
+  background: var(--sliderBackground);
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: var(--toggleActive);
+}
+input:focus + .slider {
+  outline: auto;
+}
+
+input:checked + .slider:before {
+  transform: translateX(calc(var(--elmSize) * 0.9));
+}
+
+select {
+  outline: 0;
+  border-radius: var(--elmQuart);
+  height: var(--inputHeight);
+  margin-top: 2px;
+}
+select:focus{
+  outline: auto;
+}
+.selectField {
+    height: var(--inputHeight);
+}
+</style>)=====";
+
+PROGMEM const char CONFIGASSIST_HTML_SCRIPT[] = R"=====(
+<script>
+document.addEventListener('DOMContentLoaded', function (event) {
+  const $ = document.querySelector.bind(document);
+  const $$ = document.querySelectorAll.bind(document);
+
+  function updateRange(range) {
+      const rangeVal = $('#'+range.id).parentElement.children.rangeVal;
+      const rangeFontSize = parseInt(window.getComputedStyle($('input[type=range]')).fontSize); 
+      let position = (range.clientWidth - rangeFontSize) * (range.value - range.min) / (range.max - range.min);
+      position += range.offsetLeft + (rangeFontSize / 2);
+      rangeVal.innerHTML = '<span>'+range.value+'</span>';
+      rangeVal.style.left = 'calc('+position+'px)';
+    }
+  
+  // input events
+  document.addEventListener("input", function (event) {
+    if (event.target.type === 'range') updateRange(event.target);
+  });
+  
+  // recalc range markers positions 
+  window.addEventListener('resize', function (event) {
+    $$('input[type=range]').forEach(el => {updateRange(el);});
+  });
+
+  $$('input[type=range]').forEach(el => {updateRange(el);});  
+})
+</script>
+)=====";
+
+//Template for one input text box
+PROGMEM const char CONFIGASSIST_HTML_TEXT_BOX[] = 
+R"=====(<input id="{key}" name="{key}" length="64" value="{val}">)=====";
+
+//Template for one input text area
+PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA[] = 
+R"=====(<textarea id="{key}" name="{key}" rows="auto" cols="auto">{val}</textarea>)=====";
+
+//Template for one input text area file name
+PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA_FNAME[] = 
+R"=====(<input type="hidden" name="{key}" value="{val}">)=====";
+
+//Template for one input check box  <label for="{key}">{key}</label>
+PROGMEM const char CONFIGASSIST_HTML_CHECK_BOX[] = R"=====(
+            <div class="card-val-ctrl">              
+              <div class="switch">
+                  <input id="{key}" type="checkbox" checked="{chk}">
+                  <label class="slider" for="{key}"></label>
+              </div>
+            </div>)=====";
+
+//Template for one input select box
+PROGMEM const char CONFIGASSIST_HTML_SELECT_BOX[] = R"=====(
+            <select name='{key}' style='width:100%'>
+              {opt}
+            </select>)=====";
+
+//Template for one input select option
+PROGMEM const char CONFIGASSIST_HTML_SELECT_OPTION[] = 
+R"=====(            <option value='{optVal}'{sel}>{optVal}</option>
+)=====";
+
+//Template for one input select datalist option
+PROGMEM const char CONFIGASSIST_HTML_SELECT_DATALIST_OPTION[] = 
+R"=====(            <option value='{optVal}'></option>
+)=====";
+
+//Template for one input select datalist
+PROGMEM const char CONFIGASSIST_HTML_DATA_LIST[] = 
+R"=====(<input type="text" name="{key}" list="{key}_list" value="{val}"/>
+          <datalist id='{key}_list'>
+              {opt}
+          </datalist>)=====";
+
+//Template for one input select range <label for="{key}">{key}</label>
+PROGMEM const char CONFIGASSIST_HTML_INPUT_RANGE[] = R"=====(
+            <div class="card-val-ctrl">              
+              <div class="range-min">{min}</div>
+              <input title="{lbl}" type="range" id="{key}" min="{min}" max="{max}" value="{val}">
+              <div class="range-value" name="rangeVal"></div>
+              <div class="range-max">{max}</div>            
+            </div>)=====";
 
 // Template html body
 PROGMEM const char CONFIGASSIST_HTML_BODY[] = R"=====(
