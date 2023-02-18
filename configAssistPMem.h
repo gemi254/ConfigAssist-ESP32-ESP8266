@@ -369,14 +369,14 @@ document.addEventListener('DOMContentLoaded', function (event) {
   const $$ = document.querySelectorAll.bind(document);
 
   function updateRange(range) {
-      const rangeVal = $('#'+range.id).parentElement.children.rangeVal;
-      const rangeFontSize = parseInt(window.getComputedStyle($('input[type=range]')).fontSize); 
-      let position = (range.clientWidth - rangeFontSize) * (range.value - range.min) / (range.max - range.min);
-      position += range.offsetLeft + (rangeFontSize / 2);
-      rangeVal.innerHTML = '<span>'+range.value+'</span>';
-      rangeVal.style.left = 'calc('+position+'px)';
-    }
-  
+    const rangeVal = $('#'+range.id).parentElement.children.rangeVal;
+    const rangeFontSize = parseInt(window.getComputedStyle($('input[type=range]')).fontSize); 
+    let position = (range.clientWidth - rangeFontSize) * (range.value - range.min) / (range.max - range.min);
+    position += range.offsetLeft + (rangeFontSize / 2);
+    rangeVal.innerHTML = '<span>'+range.value+'</span>';
+    rangeVal.style.left = 'calc('+position+'px)';
+  }
+
   // input events
   document.addEventListener("input", function (event) {
     if (event.target.type === 'range') updateRange(event.target);
@@ -408,7 +408,7 @@ R"=====(<input type="hidden" name="{key}" value="{val}">)=====";
 PROGMEM const char CONFIGASSIST_HTML_CHECK_BOX[] = R"=====(
             <div class="card-val-ctrl">              
               <div class="switch">
-                  <input id="{key}" type="checkbox" checked="{chk}">
+                  <input id="{key}" name="{key}" type="checkbox"{chk}>
                   <label class="slider" for="{key}"></label>
               </div>
             </div>)=====";
@@ -440,7 +440,7 @@ R"=====(<input type="text" name="{key}" list="{key}_list" value="{val}"/>
 PROGMEM const char CONFIGASSIST_HTML_INPUT_RANGE[] = R"=====(
             <div class="card-val-ctrl">              
               <div class="range-min">{min}</div>
-              <input title="{lbl}" type="range" id="{key}" min="{min}" max="{max}" value="{val}">
+              <input title="{lbl}" type="range" name="{key}" id="{key}" min="{min}" max="{max}" value="{val}">
               <div class="range-value" name="rangeVal"></div>
               <div class="range-max">{max}</div>            
             </div>)=====";
