@@ -15,21 +15,20 @@
   #define WEB_SERVER ESP8266WebServer
   #define STORAGE LittleFS // one of: SPIFFS LittleFS SD_MMC 
 #endif
-
 // LOG shortcuts
-//#define DEBUG_CONFIG_ASSIST    //Uncomment to serial print DBG messages
+#define DEBUG_CONFIG_ASSIST    //Uncomment to serial print DBG messages
 #ifdef ESP32
   #define LOG_NO_COLOR
   #define LOG_COLOR_DBG
-  #define DBG_FORMAT(format) LOG_COLOR_DBG "[%s DEBUG @ %s:%u] " format LOG_NO_COLOR "", esp_log_system_timestamp(), pathToFileName(__FILE__), __LINE__
-  #define LOG_ERR(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
-  #define LOG_WRN(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
-  #define LOG_INF(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
+  #define DBG_FORMAT(format, type) LOG_COLOR_DBG "[%s %s @ %s:%u] " format LOG_NO_COLOR "", esp_log_system_timestamp(), type, pathToFileName(__FILE__), __LINE__
+  #define LOG_ERR(format, ...) Serial.printf(DBG_FORMAT(format,"ERR"), ##__VA_ARGS__)
+  #define LOG_WRN(format, ...) Serial.printf(DBG_FORMAT(format,"WRN"), ##__VA_ARGS__)
+  #define LOG_INF(format, ...) Serial.printf(DBG_FORMAT(format,"INF"), ##__VA_ARGS__)  
   #if defined(DEBUG_CONFIG_ASSIST)
-    #define LOG_DBG(format, ...) Serial.printf(DBG_FORMAT(format), ##__VA_ARGS__)
+    #define LOG_DBG(format, ...) Serial.printf(DBG_FORMAT(format,"DBG"), ##__VA_ARGS__)
   #else
     void printfNull(const char *format, ...) {}
-    #define LOG_DBG(format, ...) printfNull(DBG_FORMAT(format), ##__VA_ARGS__)
+    #define LOG_DBG(format, ...) printfNull(DBG_FORMAT(format,"DBG"), ##__VA_ARGS__)
   #endif
 #else
   //#define LOG_DBG(format, ...) Serial.printf(format, ##__VA_ARGS__)
@@ -335,6 +334,7 @@ class ConfigAssist{
         } 
         sort();
       }
+      file.close();
       LOG_INF("Loaded config: %s\n",filename.c_str());
       _valid = true;
       return true;
@@ -540,7 +540,7 @@ class ConfigAssist{
         }
         elm = file + "\n" + elm;
       }else if(c.type == CHECK_BOX){
-        elm = String(CONFIGASSIST_HTML_CHECK_BOX);
+        elm = String(CONFIGASSIST_HTML_CHECK_BOX);        
         if(c.value=="True" || c.value=="on" || c.value=="1"){
           elm.replace("{chk}"," checked");
         }else
