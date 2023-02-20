@@ -1,4 +1,4 @@
-#define CLASS_VERSION "1.7"          // Class version
+#define CLASS_VERSION "1.8"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -67,7 +67,7 @@ struct confSeperators {
 // ConfigAssist class
 class ConfigAssist{ 
   public:
-    ConfigAssist() {_dict = false; _valid=false; _confFile=""; }
+    ConfigAssist() {_jsonLoaded = false; _iniValid=false; _confFile=""; }
     ~ConfigAssist() {}
   public:  
     // Load configs after storage started
@@ -76,14 +76,14 @@ class ConfigAssist{
       _confFile = ini_file;
       loadConfigFile(ini_file); 
       //On fail load defaults from dict
-      if(!_valid) loadJsonDict(_jStr);
+      if(!_iniValid) loadJsonDict(_jStr);
     }
 
     // if not Use dictionary load default minimal config
     void init() { init(NULL); }
 
     // Is config loaded valid ?
-    bool valid(){ return _valid;}
+    bool valid(){ return _iniValid;}
     bool exists(String variable){ return getKeyPos(variable) >= 0; }
 
     // Start an AP with a web server and render config values loaded from json dictionary
@@ -226,7 +226,7 @@ class ConfigAssist{
       
       if (error) { 
         LOG_ERR("Deserialize Json failed: %s\n", error.c_str());
-        _dict = false;   
+        _jsonLoaded = false;   
         return false;    
       }
       //Parse json description
@@ -310,8 +310,7 @@ class ConfigAssist{
       //sort vector for binarry search
       sort();
       sortSeperators();
-      _dict = true;
-      if(!update) _valid = true;
+      _jsonLoaded = true;
       LOG_INF("Loaded json dict\n");
       return i;
     }
@@ -323,7 +322,7 @@ class ConfigAssist{
       if (!file || !file.size()) {
         LOG_ERR("Failed to load: %s, sz: %u\n", filename.c_str(), file.size());
         //if (!file.size()) STORAGE.remove(CONFIG_FILE_PATH); 
-        _valid = false;       
+        _iniValid = false;       
         return false;
       }else{
         _configs.reserve(MAX_PARAMS);
@@ -337,7 +336,7 @@ class ConfigAssist{
       }
       file.close();
       LOG_INF("Loaded config: %s\n",filename.c_str());
-      _valid = true;
+      _iniValid = true;
       return true;
     }
 
@@ -357,16 +356,20 @@ class ConfigAssist{
         return false;
       }
       //Save config file with updated content
+      size_t szOut=0;
       for (auto& row: _configs) {
         if(row.name==HOSTNAME_KEY){
           row.value.replace("{mac}", getMacID());
         }
+        if(row.type==CHECK_BOX){ //Save 0,1 on booleans
+          row.value = (row.value == "on") ? "1" : "0";
+        }
         char configLine[512];
         sprintf(configLine, "%s%c%s\n", row.name.c_str(), INI_FILE_DELIM, row.value.c_str());   
-        file.write((uint8_t*)configLine, strlen(configLine));
-        LOG_DBG("Saved: %s = %s\n", row.name.c_str(), row.value.c_str());
+        szOut+=file.write((uint8_t*)configLine, strlen(configLine));
+        LOG_DBG("Saved: %s = %s, type: %i\n", row.name.c_str(), row.value.c_str(), row.type);
       }        
-      LOG_INF("File saved: %s\n", filename.c_str());
+      LOG_INF("File saved: %s, sz: %zu B\n", filename.c_str(), szOut);
       file.close();      
       return true;      
     }
@@ -384,8 +387,8 @@ class ConfigAssist{
           _configs.clear();
           loadJsonDict(_jStr);
           //saveConfigFile(CONF_FILE);
-          LOG_INF("_valid: %i\n", _valid);
-          if(!_valid){
+          LOG_INF("_iniValid: %i\n", _iniValid);
+          if(!_iniValid){
             server->send(200, "text/html", "Failed to load config.");
           }else{
             server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/cfg\">");
@@ -447,9 +450,9 @@ class ConfigAssist{
         }
         return;
       }
-      LOG_DBG("Generate form _valid: %i, _dict: %i\n", _valid, _dict);
+      LOG_DBG("Generate form, iniValid: %i, jsonLoaded: %i\n", _iniValid, _jsonLoaded);
       //Load dictionary if no pressent
-      if(!_dict) loadJsonDict(_jStr, true);
+      if(!_jsonLoaded) loadJsonDict(_jStr, true);
       //Send config form data
       server->setContentLength(CONTENT_LENGTH_UNKNOWN);
       String out(CONFIGASSIST_HTML_START);
@@ -698,8 +701,8 @@ class ConfigAssist{
     enum input_types { TEXT_BOX=1, TEXT_AREA=2, CHECK_BOX=3, OPTION_BOX=4, RANGE_BOX=5, COMBO_BOX=6};
     std::vector<confPairs> _configs;
     std::vector<confSeperators> _seperators;
-    bool _valid;
-    bool _dict;
+    bool _iniValid;
+    bool _jsonLoaded;
     const char * _jStr;
     String _confFile;
 };

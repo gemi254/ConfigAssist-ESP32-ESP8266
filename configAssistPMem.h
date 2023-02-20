@@ -493,7 +493,7 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
      </form>
     </div> <!-- column -->
   </br>
-  <center><small>ConfigAssist Ver: {appVer}</small></center>
+  <center><small style="color: lightgray;">ConfigAssist Ver: {appVer}</small></center>
   </br>
   </div> <!-- row -->
 </div> <!-- container -->
