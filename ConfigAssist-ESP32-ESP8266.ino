@@ -239,12 +239,16 @@ void setup(void) {
     Serial.println("MDNS responder started");
   }
 
+  //Get int/bool value
+  bool debug = conf["debug"].toInt();
+  Serial.printf("Boolean value: %i\n", debug);
+  
   //Get float value
   float float_value = atof(conf["float_val"].c_str());
   Serial.printf("Float value: %1.5f\n", float_value);
   
   //Change a value
-  //conf.put("led_pin","4");
+  conf.put("led_pin","4");
 
   //Register handlers for web server    
   server.on("/cfg", handleAssistRoot);
