@@ -29,6 +29,7 @@ The application variables can be used directly by accessing the **class** itself
 i.e.
 
 + `String ssid = conf["st_ssid"];`
++ `bool debug = conf["debug"].toInt();`
 + `int pinNo = conf["st_ssid"].toInt();`
 + `digitalWrite(conf["led_pin"].toInt(), 0)`;
 + `float float_value = atof(conf["float_value"].c_str());`
@@ -40,7 +41,7 @@ defined in the json file.  See example below..
 
 + if you use keywords `name, default` an **edit box** will be generated to edit the variable.
 + If you keyword name contains ``_pass`` a **password field** will be used. See **PASSWD_KEY** definition. 
-+ If you use keyword `checked` instead of `default` in order to use a Boolean value that will be edited by a **check box**
++ If you use keyword `checked` instead of `default` a Boolean value will be used that will be edited by a **check box**
 + You can compine keywords `default` with `options` in order to use a select list that will be edited by a **drop list**. 
   - The `options` field must contain a comma seperated list of values and can be enclosed by single quotes.
 + You can compine keywords `default` with `range` in order to use a value that will be edited by a **input range**. 
