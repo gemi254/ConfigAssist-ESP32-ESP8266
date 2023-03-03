@@ -114,7 +114,7 @@ const char* appConfigDict_json PROGMEM = R"~(
    "file": "/calibration.ini",
 "default": "X1=222, Y1=1.22
 X2=900, Y2=3.24"}
-])~";
+])~"; 
 
 #include "configAssist.h"  // Setup assistant class
 ConfigAssist conf;         // Config class
@@ -196,6 +196,7 @@ void setup(void) {
     if(!STORAGE.begin()) Serial.println("ESP8266 Storage failed!"); 
   #endif
   ListDir("/");
+  
   //Initialize ConfigAssist json dictionary pointer
   //If ini file is valid wil not be used
   conf.init(appConfigDict_json);  
@@ -241,24 +242,42 @@ void setup(void) {
 
   //Get int/bool value
   bool debug = conf["debug"].toInt();
-  Serial.printf("Boolean value: %i\n", debug);
+  Serial.printf("Boolean value: %i\n", debug);  
   
   //Get float value
   float float_value = atof(conf["float_val"].c_str());
   Serial.printf("Float value: %1.5f\n", float_value);
   
   //Change a value
-  conf.put("led_pin","4");
+  //conf.put("led_pin","3");
+  
+  //Also change an int/bool value
+  //conf.put("led_pin", 4);
 
   //Register handlers for web server    
   server.on("/cfg", handleAssistRoot);
   server.on("/", handleRoot);
   server.on("/inline", []() {
     server.send(200, "text/plain", "this works as well");
+    conf.dump();
   });
   server.onNotFound(handleNotFound);
   server.begin();
   Serial.println("HTTP server started");
+  
+  //On the fly generate an ini info file on SPIFFS
+  {
+    if(debug) STORAGE.remove("/info.ini");
+    ConfigAssist info("/info.ini");
+    //Add a key even if not exists. It will be not editable
+    if(!info.valid()){
+      info.put("var1", "test1", true);
+      info.put("var2", 1234, true);
+      info.saveConfigFile();
+    }else{
+      Serial.printf("Info file: var1:  %s, var2: %s\n", info["var1"].c_str(), info["var2"].c_str() );      
+    }
+  }
 }
 
 void loop(void) {
