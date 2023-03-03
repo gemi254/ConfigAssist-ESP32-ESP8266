@@ -5,7 +5,11 @@ A lightweight library allowing quick configuration for **esp32/esp8266** devices
 </p>
 
 ## Description
-**ConfigAssist** will help to automate definition of variables used in a typical **esp32/esp8266** application. It will automatically generate a web form with html controls allowing quick editing for variables like  **Wifi ssid**, **Wifi password**, **host_name**. Variables descriptions and default values are based on a **text description** in json format, including a `variable name`, a `default value` a `label` and `attributes`. Each variable must be defined describing the **variable type**, the **default value**, the **label** that will be displayed to user and some **attribues** in case of special variables like list box.
+**ConfigAssist** will help to automate definition of variables used in a typical **esp32/esp8266** application. It will automatically generate a web form with html controls allowing quick editing for variables like  **Wifi ssid**, **Wifi password**, **host_name**. 
+
+Variables descriptions and default values are based on a **text description** in json format, including a `variable name`, a `default value` a `label` and `attributes`. 
+
+Each variable must be defined describing the **variable type**, the **default value**, the **label** that will be displayed to user and some **attribues** in case of special variables like list box.
  ```
    "name": "st_ssid",
   "label": "Name for WLAN (Ssid to connect)",
@@ -18,8 +22,12 @@ The configuration data will be stored in the **SPIFFS** as an **ini file** <em>(
 ## How it works
 On first run when no data (ini file) is present in local **storage**, **ConfigAssist** will start an **AccessPoint** and load the
 default json dictionary with variables to be edited. A web form will be generated in order to 
+
 initialize application variables using a **web page** from the remote host connected to AccesPoint.
+
 Data will be saved on local storage and will be available on next reboot. If configuration file is valid during next boot the **json dictionary** will not be loaded reducing memory consumption and speeding up the whole process.
+
+If data is not changed **ConfigAssist** will not overwrite the file.
 
 ConfigAssist uses **c++ vectors** to dynamically allocate and store variables and **binary search** for speeding the access process.
 
@@ -147,6 +155,16 @@ void setup()
   }
   ...
   ```
+**ConfigAssist** can also used to quick generate and store ini files.
+Just call the class constructor with a filename to be saved.
+```
+ConfigAssist info("/info.ini");
+```
+and add the parameters to be stored with
+```
+info.put("var1", "test1", true);
+info.saveConfigFile();
+```
 
 ## Compile
 Download the files **configAssist.h** and **configAssistPMem.h** and put it in the same directory
