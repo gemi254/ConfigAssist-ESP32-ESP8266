@@ -1,4 +1,4 @@
-#define CLASS_VERSION "1.8"          // Class version
+#define CLASS_VERSION "1.9"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -21,6 +21,8 @@
 #define logPrint Serial.printf
 //void logPrint(const char *format, ...);
 void logPrintNull(const char *format, ...) {}
+
+#define IS_BOOL_TRUE(x) (x=="On" || x=="on" || x=="True" || x=="true" || x=="1")
 
 #ifdef ESP32
   #define LOG_NO_COLOR
@@ -68,19 +70,37 @@ struct confSeperators {
 class ConfigAssist{ 
   public:
     ConfigAssist() {_jsonLoaded = false; _iniValid=false; _confFile=""; }
+    ConfigAssist(String ini_file) {  
+      _jStr = NULL;  _jsonLoaded = false; _iniValid = false; _dirty = false; 
+      if (ini_file == "") _confFile = DEF_CONF_FILE; 
+      else _confFile = ini_file;
+      init( _confFile );
+    }
     ~ConfigAssist() {}
   public:  
     // Load configs after storage started
-    void init(const char * jStr, String ini_file = DEF_CONF_FILE) { 
-      _jStr = jStr;
+    // Simple ini file, on the fly no dict
+    void init(String ini_file = DEF_CONF_FILE) { 
+      _jStr = NULL;
       _confFile = ini_file;
       loadConfigFile(ini_file); 
       //On fail load defaults from dict
-      if(!_iniValid) loadJsonDict(_jStr);
+      if(!_iniValid){
+        _dirty = true;
+      }      
     }
-
-    // if not Use dictionary load default minimal config
-    void init() { init(NULL); }
+    // Editable Ini file, with json dict
+    void init(const char * jStr, String ini_file = DEF_CONF_FILE) { 
+      if(jStr) _jStr = jStr;
+      else _jStr = appDefConfigDict_json;
+      _confFile = ini_file;
+      loadConfigFile(ini_file); 
+      //On fail load defaults from dict
+      if(!_iniValid){
+        loadJsonDict(_jStr);
+        _dirty = true;
+      }      
+    }
 
     // Is config loaded valid ?
     bool valid(){ return _iniValid;}
@@ -127,29 +147,43 @@ class ConfigAssist{
       return String(""); 
     }
     
-    // Update the value of thisKey = value
+    // Update the value of thisKey = value (int)
+    bool put(String thisKey, int value, bool force=false) {  return  put(thisKey, String(value), force); } 
+    
+    // Update the value of thisKey = value (string)
     bool put(String thisKey, String value, bool force=false) {      
-      LOG_DBG("Put %s=%s\n", thisKey.c_str(), value.c_str()); 
       int keyPos = getKeyPos(thisKey);      
       if (keyPos >= 0) {
-        _configs[keyPos].value = value;
+        //Save 0,1 on booleans
+        if(_configs[keyPos].type == CHECK_BOX){
+          value = String(IS_BOOL_TRUE(value));
+        }
+        //LOG_DBG("Check : %s, %s\n", _configs[keyPos].value.c_str(), value.c_str());
+        if(_configs[keyPos].value != value){
+          LOG_DBG("Put %s=%s\n", thisKey.c_str(), value.c_str()); 
+          _configs[keyPos].value = value;
+          _dirty = true;
+        }
         return true;
       }
-      if(force) add(thisKey, value);
+      if(force) {
+         add(thisKey, value);
+         _dirty = true; 
+      }
       else LOG_ERR("Put failed on Key: %s=%s\n", thisKey.c_str(), value.c_str());
       return false;      
     }
     
     // Add vectors by key (name in confPairs)
-    void add(String key, String val){
-      confPairs d = {key, val, "", "", 0, 1 };
-      //LOG_DBG("Adding  key %s=%s\n", key.c_str(), val.c_str()); 
+    void add(String key, String val){      
+      confPairs d = {key, val, "", "", -1 , TEXT_BOX };
+      //LOG_DBG("Adding key %s=%s\n", key.c_str(), val.c_str()); 
       _configs.push_back(d);
     }
 
     // Add vectors pairs
     void add(confPairs &c){
-       //LOG_DBG("Adding  key[%i]: %s=%s\n", readNo, key.c_str(), val.c_str()); 
+       //LOG_DBG("Adding key[%i]: %s=%s\n", readNo, key.c_str(), val.c_str()); 
       _configs.push_back({c}) ;
     }
 
@@ -216,9 +250,9 @@ class ConfigAssist{
     }
     
     // Load json description file. 
-    // On update=true update only additional pair info
+    // On update=true update only additional pair info    
     int loadJsonDict(String jStr, bool update=false) { 
-      if(jStr==NULL) return loadJsonDict(appDefConfigDict_json, update);      
+      if(jStr==NULL) return -1; 
       DeserializationError error;
       const int capacity = JSON_ARRAY_SIZE(MAX_PARAMS)+ MAX_PARAMS*JSON_OBJECT_SIZE(8);
       DynamicJsonDocument doc(capacity);
@@ -227,7 +261,7 @@ class ConfigAssist{
       if (error) { 
         LOG_ERR("Deserialize Json failed: %s\n", error.c_str());
         _jsonLoaded = false;   
-        return false;    
+        return -1;    
       }
       //Parse json description
       JsonArray array = doc.as<JsonArray>();
@@ -350,6 +384,10 @@ class ConfigAssist{
     // Save configs vectors in an ini file
     bool saveConfigFile(String filename="") {
       if(filename=="") filename = _confFile;
+      if(!_dirty){
+        LOG_INF("Alread saved: %s\n", filename.c_str() );
+        return true;
+      } 
       File file = STORAGE.open(filename, "w+");
       if (!file){
         LOG_ERR("Failed to save config file\n");
@@ -361,17 +399,19 @@ class ConfigAssist{
         if(row.name==HOSTNAME_KEY){
           row.value.replace("{mac}", getMacID());
         }
+        /***
         if(row.type==CHECK_BOX){ //Save 0,1 on booleans
           row.value = (row.value == "on") ? "1" : "0";
-        }
+        }*/
         char configLine[512];
         sprintf(configLine, "%s%c%s\n", row.name.c_str(), INI_FILE_DELIM, row.value.c_str());   
         szOut+=file.write((uint8_t*)configLine, strlen(configLine));
         LOG_DBG("Saved: %s = %s, type: %i\n", row.name.c_str(), row.value.c_str(), row.type);
-      }        
-      LOG_INF("File saved: %s, sz: %zu B\n", filename.c_str(), szOut);
-      file.close();      
-      return true;      
+      }
+      LOG_INF("File saved: %s, sz: %u B\n", filename.c_str(), szOut);
+      file.close();
+      _dirty = false;
+      return true;
     }
 
     // Respond a HTTP request for the form use the CONF_FILE
@@ -402,16 +442,13 @@ class ConfigAssist{
           return;
         }    
 
-        //Reset all check boxes.Only If checked will be posted
-        for(uint8_t k=0; k < _configs.size(); ++k) {
-          if(_configs[k].type==CHECK_BOX) _configs[k].value = "0";
-        }
         //Update configs from form post vals
         for(uint8_t i=0; i<server->args(); ++i ){
           String key(server->argName(i));
           String val(server->arg(i));
           if(key=="apName" || key =="SAVE" || key=="RST" || key=="RBT" || key=="plain") continue;
           if(key.endsWith(FILENAME_IDENTIFIER)) continue;
+
           //Check if if text box with file name
           String fileNameKey = server->argName(i) + FILENAME_IDENTIFIER;
           if(server->hasArg(fileNameKey)){
@@ -421,6 +458,16 @@ class ConfigAssist{
           }
           LOG_DBG("Form upd: %s = %s\n", key.c_str(), val.c_str());
           put(key, val);
+        }
+
+        //Reset check boxes. Only the checked will be posted
+        for(uint8_t k=0; k < _configs.size(); ++k) {
+          if(_configs[k].type==CHECK_BOX){
+            //LOG_DBG("CheckBox: %s %s\n",_configs[k].name.c_str(), _configs[k].value.c_str());
+            if(IS_BOOL_TRUE(_configs[k].value) && !server->hasArg(_configs[k].name) ){
+              put(_configs[k].name, "0");
+            }
+          } 
         }
 
         //Save config file 
@@ -450,7 +497,7 @@ class ConfigAssist{
         }
         return;
       }
-      LOG_DBG("Generate form, iniValid: %i, jsonLoaded: %i\n", _iniValid, _jsonLoaded);
+      LOG_DBG("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniValid, _jsonLoaded, _dirty);      
       //Load dictionary if no pressent
       if(!_jsonLoaded) loadJsonDict(_jStr, true);
       //Send config form data
@@ -524,6 +571,8 @@ class ConfigAssist{
       confPairs c;
       out="";
       if(!getNextKeyVal(c)) return false;
+      //Values added manually not editable
+      if(c.readNo<0) return true;
       out = String(CONFIGASSIST_HTML_LINE);
       String elm;
       if(c.type == TEXT_BOX){
@@ -545,7 +594,7 @@ class ConfigAssist{
         elm = file + "\n" + elm;
       }else if(c.type == CHECK_BOX){
         elm = String(CONFIGASSIST_HTML_CHECK_BOX);        
-        if(c.value=="True" || c.value=="on" || c.value=="1"){
+        if(IS_BOOL_TRUE(c.value)){
           elm.replace("{chk}"," checked");
         }else
           elm.replace("{chk}","");
@@ -703,6 +752,7 @@ class ConfigAssist{
     std::vector<confSeperators> _seperators;
     bool _iniValid;
     bool _jsonLoaded;
+    bool _dirty;
     const char * _jStr;
     String _confFile;
 };
