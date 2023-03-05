@@ -198,8 +198,8 @@ void setup(void) {
   ListDir("/");
   
   //Initialize ConfigAssist json dictionary pointer
-  //If ini file is valid wil not be used
-  conf.init(appConfigDict_json);  
+  //If ini file is valid json will not be used
+  conf.initJsonDict(appConfigDict_json);  
 
   //Failed to load config or ssid empty
   if(!conf.valid() || conf["st_ssid"]=="" ){ 
@@ -277,7 +277,7 @@ void setup(void) {
     }else{
       Serial.printf("Info file: var1:  %s, var2: %s\n", info["var1"].c_str(), info["var2"].c_str() );      
     }
-  }
+  }  
 }
 
 void loop(void) {
