@@ -69,39 +69,45 @@ struct confSeperators {
 // ConfigAssist class
 class ConfigAssist{ 
   public:
-    ConfigAssist() {_jsonLoaded = false; _iniValid=false; _confFile=""; }
+    ConfigAssist() {_jsonLoaded = false; _iniValid=false; _confFile = DEF_CONF_FILE; }
     ConfigAssist(String ini_file) {  
       _jStr = NULL;  _jsonLoaded = false; _iniValid = false; _dirty = false; 
-      if (ini_file == "") _confFile = DEF_CONF_FILE; 
-      else _confFile = ini_file;
+      if (ini_file != "") _confFile = ini_file;
+      else _confFile = DEF_CONF_FILE; 
       init( _confFile );
     }
     ~ConfigAssist() {}
   public:  
     // Load configs after storage started
     // Simple ini file, on the fly no dict
-    void init(String ini_file = DEF_CONF_FILE) { 
+    void init(String ini_file) { 
       _jStr = NULL;
-      _confFile = ini_file;
-      loadConfigFile(ini_file); 
-      //On fail load defaults from dict
+      if(ini_file!="") _confFile = ini_file;
+      loadConfigFile(_confFile);
+      //On fail load defaults from dict  = DEF_CONF_FILE
       if(!_iniValid){
         _dirty = true;
       }      
     }
     // Editable Ini file, with json dict
-    void init(const char * jStr, String ini_file = DEF_CONF_FILE) { 
+    void init(String ini_file, const char * jStr) { 
       if(jStr) _jStr = jStr;
       else _jStr = appDefConfigDict_json;
-      _confFile = ini_file;
-      loadConfigFile(ini_file); 
+
+      if(ini_file!="") _confFile = ini_file;
+      loadConfigFile(_confFile); 
+      
       //On fail load defaults from dict
       if(!_iniValid){
         loadJsonDict(_jStr);
         _dirty = true;
       }      
     }
-
+    //Init with dict only, default ini
+    void initJsonDict(const char * jStr) { 
+      init(_confFile,  jStr);
+    }
+    
     // Is config loaded valid ?
     bool valid(){ return _iniValid;}
     bool exists(String variable){ return getKeyPos(variable) >= 0; }
@@ -165,13 +171,15 @@ class ConfigAssist{
           _dirty = true;
         }
         return true;
-      }
-      if(force) {
+      }else if(force) {
          add(thisKey, value);
+         sort();
          _dirty = true; 
-      }
-      else LOG_ERR("Put failed on Key: %s=%s\n", thisKey.c_str(), value.c_str());
-      return false;      
+         return true;
+      }else{
+        LOG_ERR("Put failed on Key: %s=%s\n", thisKey.c_str(), value.c_str());
+      } 
+      return false;    
     }
     
     // Add vectors by key (name in confPairs)
@@ -351,6 +359,7 @@ class ConfigAssist{
      
     // Load config pairs from an ini file
     bool loadConfigFile(String filename="") {
+      LOG_DBG("Loading config: %s\n",filename.c_str());
       if(filename=="") filename = _confFile;
       File file = STORAGE.open(filename,"r");
       if (!file || !file.size()) {
