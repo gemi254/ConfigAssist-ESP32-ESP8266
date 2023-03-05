@@ -126,7 +126,7 @@ X2=900, Y2=3.24"
 + in your setup function you must init the config class with a pointer to the dictionary
   - `conf.initJsonDict(appConfigDict_json);` or `conf.init("/info.ini");` for default minimal settings
 + if you want to use a different external **ini file name**
-  - `conf.init(appConfigDict_json, ini_file_name);`
+  - `conf.init(ini_file_name, appConfigDict_json);`
  
 ## WIFI Access point handler
 Define a web server handler function for the **configAssist** class. This function will be passed to 
