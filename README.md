@@ -124,7 +124,7 @@ X2=900, Y2=3.24"
   - `ConfigAssist conf;        //ConfigAssist class`
 
 + in your setup function you must init the config class with a pointer to the dictionary
-  - `conf.init(appConfigDict_json);` or `onf.init(NULL);` for default minimal settings
+  - `conf.initJsonDict(appConfigDict_json);` or `conf.init("/info.ini");` for default minimal settings
 + if you want to use a different external **ini file name**
   - `conf.init(appConfigDict_json, ini_file_name);`
  
