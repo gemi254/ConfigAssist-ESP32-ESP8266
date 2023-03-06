@@ -16,35 +16,39 @@
   #define STORAGE LittleFS // one of: SPIFFS LittleFS SD_MMC 
 #endif
 
-// LOG shortcuts
-//#define DEBUG_CONFIG_ASSIST    //Uncomment to serial print DBG messages
-#define logPrint Serial.printf
-//void logPrint(const char *format, ...);
-void logPrintNull(const char *format, ...) {}
-
 #define IS_BOOL_TRUE(x) (x=="On" || x=="on" || x=="True" || x=="true" || x=="1")
 
+// LOG shortcuts
+static void logPrint(const char *level, const char *format, ...);
+#ifndef LOG_LEVEL 
+  #define LOG_LEVEL '3' //Set to 0 for stop printng messages, 1 to print error only
+#endif  
 #ifdef ESP32
-  #define LOG_NO_COLOR
-  #define LOG_COLOR_DBG
-  #define DBG_FORMAT(format, type) LOG_COLOR_DBG "[%s %s @ %s:%u] " format LOG_NO_COLOR "", esp_log_system_timestamp(), type, pathToFileName(__FILE__), __LINE__
-  #define LOG_ERR(format, ...) logPrint(DBG_FORMAT(format,"ERR"), ##__VA_ARGS__)
-  #define LOG_WRN(format, ...) logPrint(DBG_FORMAT(format,"WRN"), ##__VA_ARGS__)
-  #define LOG_INF(format, ...) logPrint(DBG_FORMAT(format,"INF"), ##__VA_ARGS__)  
-  #if defined(DEBUG_CONFIG_ASSIST)
-    #define LOG_DBG(format, ...) logPrint(DBG_FORMAT(format,"DBG"), ##__VA_ARGS__)
-  #else    
-    #define LOG_DBG(format, ...) logPrintNull(DBG_FORMAT(format,"DBG"), ##__VA_ARGS__)
-  #endif
+  #define DBG_FORMAT(format, type) "[%s %s @ %s:%u] " format "", esp_log_system_timestamp(), type, pathToFileName(__FILE__), __LINE__
 #else
-  #define LOG_ERR logPrint
-  #define LOG_WRN logPrint
-  #define LOG_INF logPrint
-  #if defined(DEBUG_CONFIG_ASSIST)
-    #define LOG_DBG logPrint
-  #else
-    #define LOG_DBG logPrintNull    
-  #endif
+  #define DBG_FORMAT(format, type) "[%s %s %u] " format "",type, __FILE__, __LINE__ 
+#endif
+#define LOG_ERR(format, ...) logPrint("1", DBG_FORMAT(format,"ERR"), ##__VA_ARGS__)
+#define LOG_WRN(format, ...) logPrint("2", DBG_FORMAT(format,"WRN"), ##__VA_ARGS__)
+#define LOG_INF(format, ...) logPrint("3", DBG_FORMAT(format,"INF"), ##__VA_ARGS__)  
+#define LOG_DBG(format, ...) logPrint("4", DBG_FORMAT(format,"DBG"), ##__VA_ARGS__)
+
+#ifndef CONFIG_ASSIST_LOG_PRINT_CUSTOM  //Application is not providing logPrint function
+#define MAX_OUT 200
+static va_list arglist;
+static char fmtBuf[MAX_OUT];
+static char outBuf[MAX_OUT];
+//Logging with level to serial
+static void logPrint(const char *level, const char *format, ...){
+  if(level[0] > LOG_LEVEL) return;
+  strncpy(fmtBuf, format, MAX_OUT);
+  fmtBuf[MAX_OUT - 1] = 0;
+  va_start(arglist, format); 
+  vsnprintf(outBuf, MAX_OUT, fmtBuf, arglist);
+  va_end(arglist);
+  //size_t msgLen = strlen(outBuf);
+  Serial.print(outBuf);
+}
 #endif
 
 //Structure for config elements
