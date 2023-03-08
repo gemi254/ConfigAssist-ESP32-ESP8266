@@ -1,12 +1,13 @@
 # ConfigAssist
-A lightweight library allowing quick configuration for **esp32/esp8266** devices by editing application variables using a **responsive** configuration portal and a json definition dictionary. Variables are updated instantly using async get requests and saved automatically on a file in local storage.
+A lightweight library allowing quick configuration for **esp32/esp8266** devices by editing application variables using a **responsive** configuration portal and a json definition dictionary. Variables are updated instantly using **async get requests** and saved automatically on a file in local storage.
 
 <p align="center">
   <img src="docs/config.png">
 </p>
 
 ## Description
-**ConfigAssist** will help to automate definition of variables used in a typical **esp32/esp8266** application. It will automatically generate a web portal with html controls allowing quick editing for variables like  **Wifi ssid**, **Wifi password**, **host_name**. Every time
+**ConfigAssist** will help to automate definition of variables used in a typical **esp32/esp8266** application. It will automatically generate a web portal with html controls allowing quick editing for variables like  **Wifi ssid**, **Wifi password**, **host_name**. Every time a variable is changed in the web page, it will automatically updated in ConfigAssist
+using an async javascript get requests. At end the data are saved to the ini file as soon as the user leaves the page. 
 
 Variables descriptions and default values are based on a **text description** in json format, including a `variable name`, a `default value` a `label` and `attributes`. 
 
@@ -21,14 +22,11 @@ Browser with connection to the device. After editing and saving it will be avail
 The configuration data will be stored in the **SPIFFS** as an **ini file** <em>(Plain Text)</em> and will be  loaded on each reboot.
 
 ## How it works
-On first run when no data (ini file) is present in local **storage**, **ConfigAssist** will start an **AccessPoint** and load the
-default json dictionary with variables to be edited. A web form will be generated in order to 
+On first run when no data (**ini file**) is present in local storage, **ConfigAssist** will start an **AccessPoint** and load the default json dictionary with variables to be edited.  **ConfigAssist** will generate a html page in order to edit config variables from the remote host connected to AccesPoint.
 
-initialize application variables using a **web page** from the remote host connected to AccesPoint.
+On each change in the html page data will be updated and will be available immediately to the application. Also the data will be saved automatically on local storage when the user finish editing. If the configuration file is valid during next boot the **json dictionary** will not be loaded reducing memory consumption and speeding up the whole process.
 
-Data will be saved on local storage and will be available on next reboot. If configuration file is valid during next boot the **json dictionary** will not be loaded reducing memory consumption and speeding up the whole process.
-
-If data is not changed **ConfigAssist** will not overwrite the file.
+Not that if data is not changed **ConfigAssist** will not overwrite the file.
 
 ConfigAssist uses **c++ vectors** to dynamically allocate and store variables and **binary search** for speeding the access process.
 
