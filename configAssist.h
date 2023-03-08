@@ -1,4 +1,4 @@
-#define CLASS_VERSION "1.9"          // Class version
+#define CLASS_VERSION "2.0"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -144,7 +144,7 @@ class ConfigAssist{
       else hostName.replace("{mac}", getMacID());
       return hostName;
     }
-
+    
     // Implement operator [] i.e. val = config['key']    
     String operator [] (String k) { return get(k); }
      
@@ -430,12 +430,18 @@ class ConfigAssist{
     // Respond a HTTP request for the form use the CONF_FILE
     // to save. Save, Reboot ESP, Reset to defaults, cancel edits
     void handleFormRequest(WEB_SERVER * server){
+      /*
+      for(uint8_t i=0; i<server->args(); ++i ){        
+          String key(server->argName(i));
+          String val(server->arg(i));
+          LOG_DBG("handleFormRequest key: %s, val: %s\n", key.c_str(), val.c_str());
+      }*/
+
       //Save config form
       if (server->args() > 0) {
-        server->setContentLength(CONTENT_LENGTH_UNKNOWN);
-        
+        server->setContentLength(CONTENT_LENGTH_UNKNOWN);        
         //Discard edits and load json defaults;
-        if (server->hasArg(F("RST"))) {
+        if (server->hasArg(F("_RST"))) {
           deleteConfig();
           _configs.clear();
           loadJsonDict(_jStr);
@@ -450,16 +456,18 @@ class ConfigAssist{
           return;
         }      
         //Reload and loose changes
-        if (server->hasArg(F("CANCEL"))) {
+        if (server->hasArg(F("_CANCEL"))) {
           server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/\">");
           return;
         }    
-
         //Update configs from form post vals
+        String reply = "";
         for(uint8_t i=0; i<server->args(); ++i ){
           String key(server->argName(i));
           String val(server->arg(i));
-          if(key=="apName" || key =="SAVE" || key=="RST" || key=="RBT" || key=="plain") continue;
+          key = urlDecode(key);
+          val = urlDecode(val);
+          if(key=="apName" || key =="_SAVE" || key=="_RST" || key=="_RBT" || key=="plain") continue;
           if(key.endsWith(FILENAME_IDENTIFIER)) continue;
 
           //Check if if text box with file name
@@ -470,46 +478,41 @@ class ConfigAssist{
               val = fileName;
           }
           LOG_DBG("Form upd: %s = %s\n", key.c_str(), val.c_str());
-          put(key, val);
+          if(!put(key, val)) reply = "ERROR: " + key;
         }
 
-        //Reset check boxes. Only the checked will be posted
-        for(uint8_t k=0; k < _configs.size(); ++k) {
-          if(_configs[k].type==CHECK_BOX){
-            //LOG_DBG("CheckBox: %s %s\n",_configs[k].name.c_str(), _configs[k].value.c_str());
-            if(IS_BOOL_TRUE(_configs[k].value) && !server->hasArg(_configs[k].name) ){
-              put(_configs[k].name, "0");
-            }
-          } 
-        }
-
-        //Save config file 
-        if (server->hasArg(F("SAVE"))) {
-            String out(CONFIGASSIST_HTML_MESSAGE);
-            if(saveConfigFile()) out.replace("{msg}", "Config file saved");
-            else out.replace("{msg}", "<font color='red'>Failed to save config</font>");            
-            out.replace("{title}", "Save");
-            out.replace("{url}", "/cfg");
-            out.replace("{refresh}", "3000");            
-            server->send(200, "text/html", out);
-            server->client().flush(); 
-            delay(500);
-        }
-        
-        if (server->hasArg(F("RBT"))) {
-            //saveConfigFile(CONF_FILE);
+        //Reboot esp
+        if (server->hasArg(F("_RBT"))) {
+            saveConfigFile();
             String out(CONFIGASSIST_HTML_MESSAGE);
             out.replace("{title}", "Reboot device");
             out.replace("{url}", "/cfg");
             out.replace("{refresh}", "10000");
-            out.replace("{msg}", "Device will restart in a few seconds");      
+            out.replace("{msg}", "Configuration saved.<br>Device will restart in a few seconds");      
             server->send(200, "text/html", out);
             server->client().flush(); 
             delay(1000);
             ESP.restart();
+        }        
+        //Save config file 
+        if (server->hasArg(F("_SAVE"))) {
+            //String out(CONFIGASSIST_HTML_MESSAGE);            
+            if(saveConfigFile()) reply = "Config saved.";
+            else reply = "ERROR: Failed to save config.";
+            delay(100);
         }
+        if(reply.startsWith("ERROR:"))
+          server->send(500, "text/html", reply);            
+        else
+          server->send(200, "text/html", reply);
         return;
       }
+      //Generate html page and send it to client
+      sendHtmlEditPage(server);
+    }
+    
+    // Send edit html to client
+    void sendHtmlEditPage(WEB_SERVER * server){
       LOG_DBG("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniValid, _jsonLoaded, _dirty);      
       //Load dictionary if no pressent
       if(!_jsonLoaded) loadJsonDict(_jStr, true);
@@ -534,7 +537,6 @@ class ConfigAssist{
       out.replace("{appVer}", CLASS_VERSION);
       server->sendContent(out);
     }
-    
     //Get edit page html table (no form)
     String getEditHtml(){
       sortReadOrder();      
@@ -548,6 +550,19 @@ class ConfigAssist{
     }
 
   private:
+    // Decode given string from url
+    String urlDecode(String inVal) {
+      // replace url encoded characters
+      std::string decodeVal(inVal.c_str()); 
+      std::string replaceVal = decodeVal;
+      std::smatch match; 
+      while (regex_search(decodeVal, match, std::regex("(%)([0-9A-Fa-f]{2})"))) {
+        std::string s(1, static_cast<char>(std::strtoul(match.str(2).c_str(),nullptr,16))); // hex to ascii 
+        replaceVal = std::regex_replace(replaceVal, std::regex(match.str(0)), s);
+        decodeVal = match.suffix().str();
+      }
+      return String(replaceVal.c_str());      
+    }
     // Load a file into a string
     bool loadText(String fPath, String &txt){
       File file = STORAGE.open(fPath, "r");
