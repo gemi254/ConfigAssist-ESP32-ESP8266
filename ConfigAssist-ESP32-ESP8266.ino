@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <sstream>
 #include <vector>
+#include <regex>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #if defined(ESP32)
@@ -127,8 +128,7 @@ void debugMemory(const char* caller) {
     Serial.printf("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
   #else
     Serial.printf("%s > Free: heap %u\n", caller, ESP.getFreeHeap());
-  #endif
-   pingMillis = millis();
+  #endif   
 }
 // List storage file system
 void ListDir(const char * dirname) {
@@ -287,7 +287,11 @@ void loop(void) {
   #endif  
   
   //Display info
-  if (millis() - pingMillis >= 10000) debugMemory("Loop");
+  if (millis() - pingMillis >= 10000){
+    //if debug is enabled in config display memory debug messages    
+    if(conf["debug"].toInt()) debugMemory("Loop");
+    pingMillis = millis();
+  } 
   
   //allow the cpu to switch to other tasks  
   delay(2);
