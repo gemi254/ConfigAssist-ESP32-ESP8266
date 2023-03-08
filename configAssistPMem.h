@@ -377,6 +377,9 @@ document.addEventListener('DOMContentLoaded', function (event) {
     rangeVal.style.left = 'calc('+position+'px)';
   }
 
+  //Update all ranges
+  $$('input[type=range]').forEach(el => {updateRange(el);});  
+
   // input events
   document.addEventListener("input", function (event) {
     if (event.target.type === 'range') updateRange(event.target);
@@ -386,8 +389,45 @@ document.addEventListener('DOMContentLoaded', function (event) {
   window.addEventListener('resize', function (event) {
     $$('input[type=range]').forEach(el => {updateRange(el);});
   });
+  
+  // Add button handlers
+  $$('button[type=button]').forEach(el => {    
+    el.addEventListener('click', function (event) {    
+       if(event.returnValue) updateKey(event.target.name, 1);
+    });
+  });
+ 
+   // onChange events
+  document.addEventListener("change", function (event) {
+    const e = event.target;
+    const value = e.value.trim();
+    const et = event.target.type;
+    // input fields of given class 
+    if (e.nodeName == 'INPUT' || e.nodeName == 'SELECT' || e.nodeName == 'TEXTAREA') {  
+      if (e.type === 'checkbox') updateKey(e.id, e.checked ? 1 : 0);
+      else updateKey(e.id, value);
+    }  
+  });
 
-  $$('input[type=range]').forEach(el => {updateRange(el);});  
+  // Save config before unload
+  window.addEventListener('beforeunload', function (event) {
+      updateKey("_SAVE", 1);
+      console.log("Unload.. saved");
+  });
+  
+  async function updateKey(key, value) {      
+      if(value == null ) return;      
+      const baseHost = document.location.origin;
+      const url = baseHost + "/cfg?" + key + "=" + value
+      if(key=="_RST"||key=="_RBT"){
+        document.location = url;
+      }
+      const response = await fetch(encodeURI(url));
+      if (!response.ok){
+        const html = await response.text();
+        if(html!="") $('#msg').innerHTML = html;
+      }      
+    }
 })
 </script>
 )=====";
@@ -402,7 +442,7 @@ R"=====(<textarea id="{key}" name="{key}" rows="auto" cols="auto">{val}</textare
 
 //Template for one input text area file name
 PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA_FNAME[] = 
-R"=====(<input type="hidden" name="{key}" value="{val}">)=====";
+R"=====(<input type="hidden" id="{key}" name="{key}" value="{val}">)=====";
 
 //Template for one input check box  <label for="{key}">{key}</label>
 PROGMEM const char CONFIGASSIST_HTML_CHECK_BOX[] = R"=====(
@@ -415,7 +455,7 @@ PROGMEM const char CONFIGASSIST_HTML_CHECK_BOX[] = R"=====(
 
 //Template for one input select box
 PROGMEM const char CONFIGASSIST_HTML_SELECT_BOX[] = R"=====(
-            <select name='{key}' style='width:100%'>
+            <select id="{key}" name='{key}' style='width:100%'>
               {opt}
             </select>)=====";
 
@@ -431,7 +471,7 @@ R"=====(            <option value='{optVal}'></option>
 
 //Template for one input select datalist
 PROGMEM const char CONFIGASSIST_HTML_DATA_LIST[] = 
-R"=====(<input type="text" name="{key}" list="{key}_list" value="{val}"/>
+R"=====(<input type="text" id="{key}" name="{key}" list="{key}_list" value="{val}"/>
           <datalist id='{key}_list'>
               {opt}
           </datalist>)=====";
@@ -440,7 +480,7 @@ R"=====(<input type="text" name="{key}" list="{key}_list" value="{val}"/>
 PROGMEM const char CONFIGASSIST_HTML_INPUT_RANGE[] = R"=====(
             <div class="card-val-ctrl">              
               <div class="range-min">{min}</div>
-              <input title="{lbl}" type="range" name="{key}" id="{key}" min="{min}" max="{max}" value="{val}">
+              <input title="{lbl}" type="range" id="{key}" name="{key}" min="{min}" max="{max}" value="{val}">
               <div class="range-value" name="rangeVal"></div>
               <div class="range-max">{max}</div>            
             </div>)=====";
@@ -452,7 +492,6 @@ PROGMEM const char CONFIGASSIST_HTML_BODY[] = R"=====(
 <div class="container">
   <div class="row">
     <div class="column">
-    <form method='post'>
       <div class="card">
         <h2><font style="color: darkblue;">{host_name}</font> config</h2>
       </div>)=====";
@@ -485,15 +524,13 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
      </div> <!-- card-body -->
      </div> <!-- card -->
      <div class="card">
-        <button type='submit' title='Save configuration file to storage' name='SAVE'>Save</button>
-        <button type='submit' title='Reboot esp device' onClick='if(!confirm("Reboot esp?")) return false;' name='RBT'>Reboot</button>
-        <button type='submit' title='Discard changes and return to home page' onClick='if(!confirm("Discard changes?")) return false;' name='CANCEL'>Home</button>
-        <button type='submit' title='Reset values to defaults' onClick='if(!confirm("Reset values?")) return false;' name='RST'>Defaults</button>
+        <button type="button" onClick="window.location.href = '/'" title='Save configuration file to storage' name="_SAVE">HOME</button>
+        <button type='button' title='Reboot esp device' onClick='if(!confirm("Reboot esp?")) return false;' name='_RBT'>Reboot</button>
+        <button type='button' title='Reset values to defaults' onClick='if(!confirm("Reset values?")) return false;' name='_RST'>Defaults</button>
      </div> <!-- card -->
-     </form>
     </div> <!-- column -->
   </br>
-  <center><small style="color: lightgray;">ConfigAssist Ver: {appVer}</small></center>
+  <center><small id="msg" style="color: lightgray;">ConfigAssist Ver: {appVer}</small></center>
   </br>
   </div> <!-- row -->
 </div> <!-- container -->
