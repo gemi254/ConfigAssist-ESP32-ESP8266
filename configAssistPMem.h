@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
   document.addEventListener("input", function (event) {
     if (event.target.type === 'range') updateRange(event.target);
   });
-  
+
   // recalc range markers positions 
   window.addEventListener('resize', function (event) {
     $$('input[type=range]').forEach(el => {updateRange(el);});
@@ -394,6 +394,13 @@ document.addEventListener('DOMContentLoaded', function (event) {
   $$('button[type=button]').forEach(el => {    
     el.addEventListener('click', function (event) {    
        if(event.returnValue) updateKey(event.target.name, 1);
+    });
+  });
+
+  // Add dblClick handlers
+  $$('input').forEach(el => {    
+    el.addEventListener('dblclick', function (event) {    
+       updateKey(event.target.name, event.target.value);
     });
   });
  
@@ -428,6 +435,33 @@ document.addEventListener('DOMContentLoaded', function (event) {
         if(html!="") $('#msg').innerHTML = html;
       }      
     }
+
+  async function getWifiScan() {      
+      const baseHost = document.location.origin;
+      const url = baseHost + "/scan"
+      const response = await fetch(encodeURI(url));
+      var json = await response.json();
+      if (!response.ok){        
+        console.log('Error:', json)
+      }else{
+        json = json.sort((a, b) => {
+          if (a.rssi > b.rssi) {
+            return -1;
+          }
+        });
+        const td = $('#st_ssid').parentElement
+        html = td.innerHTML
+        html = html.replace('name="st_ssid"', 'name="st_ssid" list="st_wifi_list"')
+        html += '<datalist id="st_wifi_list">\n'
+        for(x in json){
+          html += '<option value="'+json[x].ssid+'"></option>\n'
+        }
+        html += '</datalist>'        
+        td.innerHTML = html
+      }
+    }
+  
+  getWifiScan()
 })
 </script>
 )=====";
