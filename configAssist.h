@@ -1,4 +1,4 @@
-#define CLASS_VERSION "2.0"          // Class version
+#define CLASS_VERSION "2.1"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -73,7 +73,7 @@ struct confSeperators {
 // ConfigAssist class
 class ConfigAssist{ 
   public:
-    ConfigAssist() {_jsonLoaded = false; _iniValid=false; _confFile = DEF_CONF_FILE; }
+    ConfigAssist() {_jsonLoaded = false; _iniValid=false; _confFile = DEF_CONF_FILE;  }
     ConfigAssist(String ini_file) {  
       _jStr = NULL;  _jsonLoaded = false; _iniValid = false; _dirty = false; 
       if (ini_file != "") _confFile = ini_file;
@@ -115,21 +115,55 @@ class ConfigAssist{
     // Is config loaded valid ?
     bool valid(){ return _iniValid;}
     bool exists(String variable){ return getKeyPos(variable) >= 0; }
-
     // Start an AP with a web server and render config values loaded from json dictionary
     // for quick connection to wifi
     void setup(WEB_SERVER &server, std::function<void(void)> handler) {
       String hostName = getHostName();
       LOG_INF("ConfigAssist starting AP\n");
-      WiFi.mode(WIFI_AP);
+      WiFi.mode(WIFI_AP_STA);
+      scanWifi();
       WiFi.softAP(hostName.c_str(),"",1);
       LOG_INF("Wifi AP SSID: %s started, use 'http://%s' to connect\n", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());      
       if (MDNS.begin(hostName.c_str()))  LOG_INF("AP MDNS responder Started\n");      
       server.begin();
-      server.on("/",handler);
-      server.on("/cfg",handler);
+      server.on("/", handler);
+      server.on("/cfg", handler);
+      server.on("/scan", sendScanRes);
+      _server = &server;
       LOG_INF("AP HTTP server started");
-    } 
+    }
+
+    // Build json on Wifi scan complete     
+    static void scanComplete(int networksFound) {
+      LOG_INF("%d network(s) found\n", networksFound);
+      _jWifi = "[";
+
+      for (int i = 0; i < networksFound; ++i){
+          if(i) _jWifi += ",\n";
+          _jWifi += "{";
+          _jWifi += "\"rssi\":"+String(WiFi.RSSI(i));
+          _jWifi += ",\"ssid\":\""+WiFi.SSID(i)+"\"";
+          _jWifi += "}";
+        }
+      _jWifi += "]";
+      LOG_DBG("Scaned wifi: %s", _jWifi.c_str());
+    }
+    
+    // Send wifi scan results to client
+    static void sendScanRes(){
+      _server->sendContent(_jWifi);
+    }
+    
+    // Get json scan results string
+    String getScanRes(){
+      return _jWifi;
+    }
+
+    // Start async wifi scan
+    static void scanWifi(){
+      WiFi.scanNetworksAsync(scanComplete, true);
+    }
+
     // Get a temponary hostname
     static String getMacID(){
       String mac = WiFi.macAddress();
@@ -783,4 +817,9 @@ class ConfigAssist{
     bool _dirty;
     const char * _jStr;
     String _confFile;
+    static WEB_SERVER *_server;
+    static String _jWifi;
 };
+
+String ConfigAssist::_jWifi="";
+WEB_SERVER *ConfigAssist::_server = NULL;
