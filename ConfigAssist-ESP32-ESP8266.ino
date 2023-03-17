@@ -253,14 +253,19 @@ void setup(void) {
   
   //Also change an int/bool value
   //conf.put("led_pin", 4);
-
+  
   //Register handlers for web server    
   server.on("/cfg", handleAssistRoot);
   server.on("/", handleRoot);
+  server.on("/scan", []() {
+    server.send(200, "text/plain", conf.getScanRes().c_str() );
+    conf.scanWifi();
+  });
   server.on("/inline", []() {
     server.send(200, "text/plain", "this works as well");
-    conf.dump();
+    conf.dump();           
   });
+  
   server.onNotFound(handleNotFound);
   server.begin();
   Serial.println("HTTP server started");
@@ -279,7 +284,7 @@ void setup(void) {
     }
   }  
 }
-
+//App main loop 
 void loop(void) {
   server.handleClient();
   #if not defined(ESP32)
@@ -296,3 +301,4 @@ void loop(void) {
   //allow the cpu to switch to other tasks  
   delay(2);
 }
+
