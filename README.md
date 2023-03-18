@@ -8,7 +8,7 @@ A lightweight library allowing quick configuration for **esp32/esp8266** devices
 ## Description
 **ConfigAssist** will help to automate definition of variables used in a typical **esp32/esp8266** application. It will automatically generate a web portal with html controls allowing quick editing for variables like  **Wifi ssid**, **Wifi password**, **host_name**. Every time a variable is changed in the web page, it will automatically updated in ConfigAssist using an **async** javascript get request. As the user leaves the page at end the data are saved to the ini file.
 
-**ConfigAssist** will also perform a **Wifi scan** and attach a **drop down list** on field **st_ssid** with nearby available wifi **access points**. The list will be sorted by **signal stength** with wifi with strongest signal to be placed first. User can choose a valid **ssid** from the list.
+**ConfigAssist** will also perform a **Wifi scan** and attach a **drop down list** on field **st_ssid** with nearby available wifi **access points**. The list will be sorted by **signal stength** with strongest wifi signal to be placed first. Users can choose a valid **ssid** from the list.
 
 Variables **descriptions** and **default values** are based on a **text description** in json format, including a `variable name`, a `default value` a `label` and `attributes` and acts as a template.
 
