@@ -1,4 +1,4 @@
-#define CLASS_VERSION "2.1"          // Class version
+#define CLASS_VERSION "2.1a"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -132,7 +132,6 @@ class ConfigAssist{
       _server = &server;
       LOG_INF("AP HTTP server started");
     }
-
     // Build json on Wifi scan complete     
     static void scanComplete(int networksFound) {
       LOG_INF("%d network(s) found\n", networksFound);
@@ -151,7 +150,11 @@ class ConfigAssist{
     
     // Send wifi scan results to client
     static void sendScanRes(){
-      _server->sendContent(_jWifi);
+      #ifdef ESP32
+        int n = WiFi.scanComplete();
+        scanComplete(n);
+      #endif
+      _server->sendContent(_jWifi);      
     }
     
     // Get json scan results string
@@ -161,7 +164,11 @@ class ConfigAssist{
 
     // Start async wifi scan
     static void scanWifi(){
-      WiFi.scanNetworksAsync(scanComplete, true);
+      #ifdef ESP8266
+        WiFi.scanNetworksAsync(scanComplete, true);
+      #else
+        WiFi.scanNetworks(/*async*/true,/*show_hidden*/true);
+      #endif
     }
 
     // Get a temponary hostname
@@ -584,6 +591,25 @@ class ConfigAssist{
     }
 
   private:
+    // Is string numeric
+    bool isNumeric(String s){ //1.0, -.232, .233, -32.32
+      unsigned int l = s.length();
+      if(l==0) return false;
+      bool dec=false, sign=false;
+      for(unsigned int i = 0; i < l; ++i) {
+        if (s.charAt(i) == '.'){
+          if(dec) return false;
+          else dec = true;
+        }else if(s.charAt(i) == '+' || s.charAt(i) == '-' ){
+          if(sign) return false;
+          else sign = true;
+        }else if (!isDigit(s.charAt(i))){
+          //LOG_INF("%c\n", s.charAt(i));
+          return false;
+        }
+      }
+      return true;
+    }
     // Decode given string from url
     String urlDecode(String inVal) {
       // replace url encoded characters
@@ -627,7 +653,7 @@ class ConfigAssist{
       file.close();
       return true;
     }
-
+    
     // Render keys,values to html lines
     bool getEditHtmlChunk(String &out){      
       confPairs c;
@@ -640,7 +666,9 @@ class ConfigAssist{
       if(c.type == TEXT_BOX){
         elm = String(CONFIGASSIST_HTML_TEXT_BOX);
         if(c.name.indexOf(PASSWD_KEY)>=0)
-          elm.replace("<input ", "<input type=\"password\" ");
+          elm.replace("<input ", "<input type=\"password\" ");        
+        else if(isNumeric(c.value))  
+          elm.replace("<input ", "<input type=\"number\" ");        
       }else if(c.type == TEXT_AREA){
         String file = String(CONFIGASSIST_HTML_TEXT_AREA_FNAME);        
         file.replace("{key}", c.name + FILENAME_IDENTIFIER);
