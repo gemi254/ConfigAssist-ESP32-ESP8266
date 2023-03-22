@@ -8,7 +8,7 @@ A lightweight library allowing quick configuration for **esp32/esp8266** devices
 ## Description
 **ConfigAssist** will help to automate definition of variables used in a typical **esp32/esp8266** application. It will automatically generate a web portal with html controls allowing quick editing for variables like  **Wifi ssid**, **Wifi password**, **host_name**. Every time a variable is changed in the web page, it will automatically updated in ConfigAssist using an **async** javascript get request. As the user leaves the page at end the data are saved to the ini file.
 
-**ConfigAssist** will also perform a **Wifi scan** and attach a **drop down list** on field **st_ssid** with nearby available wifi **access points**. The list will be sorted by **signal stength** with strongest wifi signal to be placed first. Users can choose a valid **ssid** from the list.
+**ConfigAssist** will also perform a **Wifi scan** and attach a **drop down list** on field **st_ssid** with nearby available wifi **access points**. The list will be sorted by **signal stength** with strongest wifi signal to be placed first and will be automatically refreshed every 15 seconds. Users can choose a valid **ssid** from the list.
 
 Variables **descriptions** and **default values** are based on a **text description** in json format, including a `variable name`, a `default value` a `label` and `attributes` and acts as a template.
 
@@ -45,7 +45,7 @@ In your application sketch file you must define a json dictionary that includes 
 for the html edit form to be generated. Each variable will be displayed on edit page with the order 
 defined in the json file.  See example below..
 
-+ if you use keywords `name, default` an **edit box** will be generated to edit the variable.
++ if you use keywords `name, default` an **edit box** will be generated to edit the variable. You can add `attribs` keywords to specify min,max,step for a nummeric field.
 + If you keyword name contains ``_pass`` a **password field** will be used. See **PASSWD_KEY** definition. 
 + If you use keyword `checked` instead of `default` a Boolean value will be used that will be edited by a **check box**
 + You can compine keywords `default` with `options` in order to use a select list that will be edited by a **drop list**. 
@@ -91,6 +91,11 @@ const char* appConfigDict_json PROGMEM = R"~(
    "options": "'BMP280', 'DHT12', 'DHT21', 'DHT22'",
    "default": "DHT22"
  },{
+      "name": "led_pin",
+     "label": "Enter the pin that the led is connected",
+   "default": "4",
+   "attribs": "min='2' max='16' step='1'"
+  },{ 
       "name": "refresh_rate",
      "label": "Enter the sensor update refresh rate",
      "range": "10, 50, 1",
