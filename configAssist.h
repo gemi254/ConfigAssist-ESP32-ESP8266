@@ -1,4 +1,4 @@
-#define CLASS_VERSION "2.1a"          // Class version
+#define CLASS_VERSION "2.2"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -17,6 +17,8 @@
 #endif
 
 #define IS_BOOL_TRUE(x) (x=="On" || x=="on" || x=="True" || x=="true" || x=="1")
+
+#define USE_WIFISCAN                    //Uncoment to enable drop down list on st_ssid field
 
 // LOG shortcuts
 static void logPrint(const char *level, const char *format, ...);
@@ -118,58 +120,74 @@ class ConfigAssist{
     // Start an AP with a web server and render config values loaded from json dictionary
     // for quick connection to wifi
     void setup(WEB_SERVER &server, std::function<void(void)> handler) {
-      String hostName = getHostName();
+      String hostName = getHostName();      
       LOG_INF("ConfigAssist starting AP\n");
-      WiFi.mode(WIFI_AP_STA);
-      scanWifi();
+      _server = &server;
+      #ifdef USE_WIFISCAN
+        WiFi.mode(WIFI_AP_STA);
+        startScanWifi();
+      #else
+        WiFi.mode(WIFI_AP);
+      #endif
       WiFi.softAP(hostName.c_str(),"",1);
       LOG_INF("Wifi AP SSID: %s started, use 'http://%s' to connect\n", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());      
       if (MDNS.begin(hostName.c_str()))  LOG_INF("AP MDNS responder Started\n");      
       server.begin();
-      server.on("/", handler);
+      server.onNotFound([] { _server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/cfg\">"); });
       server.on("/cfg", handler);
-      server.on("/scan", sendScanRes);
-      _server = &server;
+      #ifdef USE_WIFISCAN
+        server.on("/scan", [] { checkScanRes();  _server->sendContent(_jWifi); } );
+      #else
+        server.on("/scan", []{ return "[{}]"; });        
+      #endif
       LOG_INF("AP HTTP server started");
     }
+
+  #ifdef USE_WIFISCAN
+    // Get json scan results string
+    String scanRes(){  return _jWifi;  }
+
     // Build json on Wifi scan complete     
     static void scanComplete(int networksFound) {
-      LOG_INF("%d network(s) found\n", networksFound);
+      LOG_INF("%d network(s) found\n", networksFound);      
+      if( networksFound <= 0 ) return;
+      
       _jWifi = "[";
-
       for (int i = 0; i < networksFound; ++i){
           if(i) _jWifi += ",\n";
           _jWifi += "{";
           _jWifi += "\"rssi\":"+String(WiFi.RSSI(i));
           _jWifi += ",\"ssid\":\""+WiFi.SSID(i)+"\"";
           _jWifi += "}";
+          LOG_DBG("%i,%s\n", WiFi.RSSI(i), WiFi.SSID(i).c_str());
         }
       _jWifi += "]";
-      LOG_DBG("Scaned wifi: %s", _jWifi.c_str());
+      LOG_DBG("Scan complete \n");    
     }
-    
+
     // Send wifi scan results to client
-    static void sendScanRes(){
-      #ifdef ESP32
-        int n = WiFi.scanComplete();
+    static void checkScanRes(){
+      int n = WiFi.scanComplete();
+      if(n>0){
         scanComplete(n);
-      #endif
-      _server->sendContent(_jWifi);      
-    }
-    
-    // Get json scan results string
-    String getScanRes(){
-      return _jWifi;
+        WiFi.scanDelete();
+        startScanWifi();
+      }        
     }
 
     // Start async wifi scan
-    static void scanWifi(){
-      #ifdef ESP8266
-        WiFi.scanNetworksAsync(scanComplete, true);
-      #else
+    static void startScanWifi(){
+      int n = WiFi.scanComplete();
+      if(n==-1){
+        LOG_DBG("Scan in progress..\n");
+      }else if(n==-2){
+        LOG_DBG("Starting async scan..\n");          
         WiFi.scanNetworks(/*async*/true,/*show_hidden*/true);
-      #endif
+      }else{
+        LOG_DBG("Scan complete status: %i\n", n);
+      }
     }
+  #endif
 
     // Get a temponary hostname
     static String getMacID(){
@@ -361,6 +379,10 @@ class ConfigAssist{
           }else if (obj.containsKey("default")){ //Edit box
             String d = obj["default"];
             c.value = d;
+            if(obj.containsKey("attribs")){
+              String a = obj["attribs"];
+              c.attribs = a;
+            } 
             c.type = TEXT_BOX;
           }else{
             LOG_ERR("Undefined value on param : %i.", i);
@@ -471,13 +493,6 @@ class ConfigAssist{
     // Respond a HTTP request for the form use the CONF_FILE
     // to save. Save, Reboot ESP, Reset to defaults, cancel edits
     void handleFormRequest(WEB_SERVER * server){
-      /*
-      for(uint8_t i=0; i<server->args(); ++i ){        
-          String key(server->argName(i));
-          String val(server->arg(i));
-          LOG_DBG("handleFormRequest key: %s, val: %s\n", key.c_str(), val.c_str());
-      }*/
-
       //Save config form
       if (server->args() > 0) {
         server->setContentLength(CONTENT_LENGTH_UNKNOWN);        
@@ -500,7 +515,16 @@ class ConfigAssist{
         if (server->hasArg(F("_CANCEL"))) {
           server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/\">");
           return;
-        }    
+        }
+        //Reboot esp?    
+        if (server->hasArg(F("_RBT_CONFIRM"))) {
+          LOG_DBG("Restarting..\n");
+          server->send(200, "text/html", "OK");
+          server->client().flush(); 
+          delay(1000);
+          ESP.restart();
+          return;
+        }
         //Update configs from form post vals
         String reply = "";
         for(uint8_t i=0; i<server->args(); ++i ){
@@ -521,7 +545,7 @@ class ConfigAssist{
           LOG_DBG("Form upd: %s = %s\n", key.c_str(), val.c_str());
           if(!put(key, val)) reply = "ERROR: " + key;
         }
-
+       
         //Reboot esp
         if (server->hasArg(F("_RBT"))) {
             saveConfigFile();
@@ -532,12 +556,10 @@ class ConfigAssist{
             out.replace("{msg}", "Configuration saved.<br>Device will restart in a few seconds");      
             server->send(200, "text/html", out);
             server->client().flush(); 
-            delay(1000);
-            ESP.restart();
+            return;
         }        
         //Save config file 
         if (server->hasArg(F("_SAVE"))) {
-            //String out(CONFIGASSIST_HTML_MESSAGE);            
             if(saveConfigFile()) reply = "Config saved.";
             else reply = "ERROR: Failed to save config.";
             delay(100);
@@ -577,6 +599,7 @@ class ConfigAssist{
       out = String(CONFIGASSIST_HTML_END);
       out.replace("{appVer}", CLASS_VERSION);
       server->sendContent(out);
+      //LOG_DBG("Generate form end\n");
     }
     //Get edit page html table (no form)
     String getEditHtml(){
@@ -666,9 +689,11 @@ class ConfigAssist{
       if(c.type == TEXT_BOX){
         elm = String(CONFIGASSIST_HTML_TEXT_BOX);
         if(c.name.indexOf(PASSWD_KEY)>=0)
-          elm.replace("<input ", "<input type=\"password\" ");        
-        else if(isNumeric(c.value))  
-          elm.replace("<input ", "<input type=\"number\" ");        
+          elm.replace("<input ", "<input type=\"password\" " +c.attribs);
+        else if(isNumeric(c.value))
+          elm.replace("<input ", "<input type=\"number\" " +c.attribs);
+        else 
+          elm.replace("<input ", "<input " +c.attribs);
       }else if(c.type == TEXT_AREA){
         String file = String(CONFIGASSIST_HTML_TEXT_AREA_FNAME);        
         file.replace("{key}", c.name + FILENAME_IDENTIFIER);
@@ -846,8 +871,13 @@ class ConfigAssist{
     const char * _jStr;
     String _confFile;
     static WEB_SERVER *_server;
-    static String _jWifi;
+    #ifdef USE_WIFISCAN
+      static String _jWifi;
+    #endif
 };
 
-String ConfigAssist::_jWifi="";
 WEB_SERVER *ConfigAssist::_server = NULL;
+
+#ifdef USE_WIFISCAN
+String ConfigAssist::_jWifi="[{}]";
+#endif
