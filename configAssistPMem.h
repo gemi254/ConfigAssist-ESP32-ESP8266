@@ -20,12 +20,23 @@ PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
 <html lang="en" class="">
     <head>
       <meta charset='utf-8'>
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
         <title>{title}</title>
         <script>
-          setTimeout(function() {
+        document.addEventListener('DOMContentLoaded', function (event) {
+            setTimeout(function() {
                       location.href = '{url}';
                   }, {refresh});
+            const baseHost = document.location.origin;
+            const url = baseHost + "/cfg?_RBT_CONFIRM=1";
+            try{
+              console.log('Restarting')
+              const response = fetch(encodeURI(url));
+            } catch (e) {
+              console.log(e)
+            }
+        });
         </script>                  
     </head>
     <body>
@@ -367,6 +378,8 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT[] = R"=====(
 document.addEventListener('DOMContentLoaded', function (event) {
   const $ = document.querySelector.bind(document);
   const $$ = document.querySelectorAll.bind(document);
+  let scanTimer = null;
+  let refreshInterval = 15000;
 
   function updateRange(range) {
     const rangeVal = $('#'+range.id).parentElement.children.rangeVal;
@@ -418,50 +431,64 @@ document.addEventListener('DOMContentLoaded', function (event) {
 
   // Save config before unload
   window.addEventListener('beforeunload', function (event) {
-      updateKey("_SAVE", 1);
-      console.log("Unload.. saved");
+    updateKey("_SAVE", 1);
+    console.log("Unload.. saved");
   });
   
   async function updateKey(key, value) {      
-      if(value == null ) return;      
-      const baseHost = document.location.origin;
-      const url = baseHost + "/cfg?" + key + "=" + value
-      if(key=="_RST"||key=="_RBT"){
-        document.location = url;
-      }
-      const response = await fetch(encodeURI(url));
-      if (!response.ok){
-        const html = await response.text();
-        if(html!="") $('#msg').innerHTML = html;
-      }      
+    if(value == null ) return;      
+    const baseHost = document.location.origin;
+    const url = baseHost + "/cfg?" + key + "=" + value
+    if(key=="_RST" || key=="_RBT"){
+      document.location = url;
     }
+    const response = await fetch(encodeURI(url));
+    if (!response.ok){
+      const html = await response.text();
+      if(html!="") $('#msg').innerHTML = html;
+    }      
+  }
 
   async function getWifiScan() {      
-      const baseHost = document.location.origin;
-      const url = baseHost + "/scan"
+    const baseHost = document.location.origin;
+    const url = baseHost + "/scan"
+    try{
       const response = await fetch(encodeURI(url));
-      var json = await response.json();
+      var json = await response.json();       
       if (!response.ok){        
         console.log('Error:', json)
       }else{
+        //console.log(json)
+        if(json=="[{}]") return;
         json = json.sort((a, b) => {
           if (a.rssi > b.rssi) {
             return -1;
           }
         });
-        const td = $('#st_ssid').parentElement
-        html = td.innerHTML
-        html = html.replace('name="st_ssid"', 'name="st_ssid" list="st_wifi_list"')
-        html += '<datalist id="st_wifi_list">\n'
-        for(x in json){
-          html += '<option value="'+json[x].ssid+'"></option>\n'
+        var options = "";
+        for(n in json){
+          options  += '<option value="' + json[n].ssid + '"></option>\n'
         }
-        html += '</datalist>'        
-        td.innerHTML = html
+
+        const ed = $('#st_ssid')
+        const td = ed.parentElement
+        if(!ed.getAttribute('list')){
+          list = document.createElement('datalist')
+          list.id = 'st_wifi_list'
+          td.appendChild(list)
+          $('#st_wifi_list').innerHTML =  options
+          ed.setAttribute('list','st_wifi_list')
+        }else{
+          $('#st_wifi_list').innerHTML =  options
+        }
       }
-    }
-  
-  getWifiScan()
+    } catch(e) {
+      console.log(e)
+    } 
+    clearTimeout(scanTimer);
+    scanTimer = setTimeout(getWifiScan, refreshInterval);
+  }
+  scanTimer = setTimeout(getWifiScan, 1000);  
 })
 </script>
 )=====";
