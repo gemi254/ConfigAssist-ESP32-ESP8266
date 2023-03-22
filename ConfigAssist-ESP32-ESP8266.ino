@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <sstream>
 #include <vector>
 #include <regex>
 #include <ArduinoJson.h>
@@ -53,13 +52,15 @@ const char* appConfigDict_json PROGMEM = R"~(
   },{
       "name": "led_pin",
      "label": "Enter the pin that the led is connected",
-   "default": "33"
+   "default": "4",
+   "attribs": "min='2' max='16' step='1'"
   },{
  "seperator": "Other settings"
   },{
       "name": "float_val",
      "label": "Enter a float val",
-   "default": "3.14159"
+   "default": "3.14159",
+   "attribs": "min='2.0' max='5' step='.001'"
    },{
       "name": "debug",
      "label": "Check to enable debug",
@@ -253,13 +254,20 @@ void setup(void) {
   
   //Also change an int/bool value
   //conf.put("led_pin", 4);
-  
+  #ifdef USE_WIFISCAN
+    conf.startScanWifi();
+  #endif
   //Register handlers for web server    
   server.on("/cfg", handleAssistRoot);
   server.on("/", handleRoot);
   server.on("/scan", []() {
-    server.send(200, "text/plain", conf.getScanRes().c_str() );
-    conf.scanWifi();
+    #ifdef USE_WIFISCAN
+      conf.checkScanRes();
+      LOG_DBG("Send scan resp..\n");
+      server.send(200, "text/plain", conf.scanRes().c_str() );      
+    #else
+      server.send(200, "text/plain", "[{}]" );
+    #endif
   });
   server.on("/inline", []() {
     server.send(200, "text/plain", "this works as well");
