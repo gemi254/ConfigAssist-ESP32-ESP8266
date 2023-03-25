@@ -1,4 +1,4 @@
-#define CLASS_VERSION "2.2"          // Class version
+#define CLASS_VERSION "2.3"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -17,8 +17,6 @@
 #endif
 
 #define IS_BOOL_TRUE(x) (x=="On" || x=="on" || x=="True" || x=="true" || x=="1")
-
-#define USE_WIFISCAN                    //Uncoment to enable drop down list on st_ssid field
 
 // LOG shortcuts
 static void logPrint(const char *level, const char *format, ...);
@@ -109,7 +107,7 @@ class ConfigAssist{
         _dirty = true;
       }      
     }
-    //Init with dict only, default ini
+    // Dictionary only, default ini file
     void initJsonDict(const char * jStr) { 
       init(_confFile,  jStr);
     }
@@ -117,77 +115,25 @@ class ConfigAssist{
     // Is config loaded valid ?
     bool valid(){ return _iniValid;}
     bool exists(String variable){ return getKeyPos(variable) >= 0; }
+    
     // Start an AP with a web server and render config values loaded from json dictionary
-    // for quick connection to wifi
-    void setup(WEB_SERVER &server, std::function<void(void)> handler) {
+    void setup(WEB_SERVER &server, bool apEnable = false){
       String hostName = getHostName();      
-      LOG_INF("ConfigAssist starting AP\n");
+      LOG_INF("ConfigAssist setup webserver\n");
       _server = &server;
-      #ifdef USE_WIFISCAN
+      if(apEnable){
         WiFi.mode(WIFI_AP_STA);
-        startScanWifi();
-      #else
-        WiFi.mode(WIFI_AP);
-      #endif
-      WiFi.softAP(hostName.c_str(),"",1);
-      LOG_INF("Wifi AP SSID: %s started, use 'http://%s' to connect\n", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());      
-      if (MDNS.begin(hostName.c_str()))  LOG_INF("AP MDNS responder Started\n");      
-      server.begin();
-      server.onNotFound([] { _server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/cfg\">"); });
-      server.on("/cfg", handler);
-      #ifdef USE_WIFISCAN
-        server.on("/scan", [] { checkScanRes();  _server->sendContent(_jWifi); } );
-      #else
-        server.on("/scan", []{ return "[{}]"; });        
-      #endif
-      LOG_INF("AP HTTP server started");
-    }
-
-  #ifdef USE_WIFISCAN
-    // Get json scan results string
-    String scanRes(){  return _jWifi;  }
-
-    // Build json on Wifi scan complete     
-    static void scanComplete(int networksFound) {
-      LOG_INF("%d network(s) found\n", networksFound);      
-      if( networksFound <= 0 ) return;
-      
-      _jWifi = "[";
-      for (int i = 0; i < networksFound; ++i){
-          if(i) _jWifi += ",\n";
-          _jWifi += "{";
-          _jWifi += "\"rssi\":"+String(WiFi.RSSI(i));
-          _jWifi += ",\"ssid\":\""+WiFi.SSID(i)+"\"";
-          _jWifi += "}";
-          LOG_DBG("%i,%s\n", WiFi.RSSI(i), WiFi.SSID(i).c_str());
-        }
-      _jWifi += "]";
-      LOG_DBG("Scan complete \n");    
-    }
-
-    // Send wifi scan results to client
-    static void checkScanRes(){
-      int n = WiFi.scanComplete();
-      if(n>0){
-        scanComplete(n);
-        WiFi.scanDelete();
-        startScanWifi();
-      }        
-    }
-
-    // Start async wifi scan
-    static void startScanWifi(){
-      int n = WiFi.scanComplete();
-      if(n==-1){
-        LOG_DBG("Scan in progress..\n");
-      }else if(n==-2){
-        LOG_DBG("Starting async scan..\n");          
-        WiFi.scanNetworks(/*async*/true,/*show_hidden*/true);
-      }else{
-        LOG_DBG("Scan complete status: %i\n", n);
+        WiFi.softAP(hostName.c_str(),"",1);
+        LOG_INF("Wifi AP SSID: %s started, use 'http://%s' to connect\n", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());      
+        if (MDNS.begin(hostName.c_str()))  LOG_INF("AP MDNS responder Started\n");  
+        server.begin();
       }
+      startScanWifi();      
+      server.on("/cfg",[this] { this->handleFormRequest(this->_server);  } );
+      server.on("/scan", [] { checkScanRes();  _server->sendContent(_jWifi); } );
+      server.onNotFound([] { _server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/cfg\">"); });
+      LOG_DBG("ConfigAssist setup done. %x", this);      
     }
-  #endif
 
     // Get a temponary hostname
     static String getMacID(){
@@ -320,8 +266,7 @@ class ConfigAssist{
       }
     }
     
-    // Load json description file. 
-    // On update=true update only additional pair info    
+    // Load json description file. On update=true update only additional pair info    
     int loadJsonDict(String jStr, bool update=false) { 
       if(jStr==NULL) return -1; 
       DeserializationError error;
@@ -493,6 +438,7 @@ class ConfigAssist{
     // Respond a HTTP request for the form use the CONF_FILE
     // to save. Save, Reboot ESP, Reset to defaults, cancel edits
     void handleFormRequest(WEB_SERVER * server){
+      if(server == NULL ) server = _server;
       //Save config form
       if (server->args() > 0) {
         server->setContentLength(CONTENT_LENGTH_UNKNOWN);        
@@ -860,7 +806,47 @@ class ConfigAssist{
       if (_configs.size() > MAX_PARAMS) 
         LOG_WRN("Config file entries: %u exceed max: %u\n", _configs.size(), MAX_PARAMS);
     }
-     
+    
+    // Build json on Wifi scan complete     
+    static void scanComplete(int networksFound) {
+      LOG_INF("%d network(s) found\n", networksFound);      
+      if( networksFound <= 0 ) return;
+      
+      _jWifi = "[";
+      for (int i = 0; i < networksFound; ++i){
+          if(i) _jWifi += ",\n";
+          _jWifi += "{";
+          _jWifi += "\"rssi\":"+String(WiFi.RSSI(i));
+          _jWifi += ",\"ssid\":\""+WiFi.SSID(i)+"\"";
+          _jWifi += "}";
+          LOG_DBG("%i,%s\n", WiFi.RSSI(i), WiFi.SSID(i).c_str());
+        }
+      _jWifi += "]";
+      LOG_DBG("Scan complete \n");    
+    }
+
+    // Send wifi scan results to client
+    static void checkScanRes(){
+      int n = WiFi.scanComplete();
+      if(n>0){
+        scanComplete(n);
+        WiFi.scanDelete();
+        startScanWifi();
+      }        
+    }
+
+    // Start async wifi scan
+    static void startScanWifi(){
+      int n = WiFi.scanComplete();
+      if(n==-1){
+        LOG_DBG("Scan in progress..\n");
+      }else if(n==-2){
+        LOG_DBG("Starting async scan..\n");          
+        WiFi.scanNetworks(/*async*/true,/*show_hidden*/true);
+      }else{
+        LOG_DBG("Scan complete status: %i\n", n);
+      }
+    }  
   private: 
     enum input_types { TEXT_BOX=1, TEXT_AREA=2, CHECK_BOX=3, OPTION_BOX=4, RANGE_BOX=5, COMBO_BOX=6};
     std::vector<confPairs> _configs;
@@ -871,13 +857,9 @@ class ConfigAssist{
     const char * _jStr;
     String _confFile;
     static WEB_SERVER *_server;
-    #ifdef USE_WIFISCAN
-      static String _jWifi;
-    #endif
+    static String _jWifi;
 };
 
 WEB_SERVER *ConfigAssist::_server = NULL;
-
-#ifdef USE_WIFISCAN
 String ConfigAssist::_jWifi="[{}]";
-#endif
+
