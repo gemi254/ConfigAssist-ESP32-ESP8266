@@ -127,15 +127,21 @@ X2=900, Y2=3.24"
 + if you want to use a different external **ini file name**
   - `conf.init(ini_file_name, appConfigDict_json);`
  
-## WIFI Access point handler
-Define a web server handler function for the **configAssist** class. This function will be passed to 
-conf.setup() in order for configAssist to automatically handle AP form requests
+## WIFI Access point handlers
+**ConfigAssist** must be initialized with a pointer to a web server to automatically handle AP form requests.
+Setup will add web handlers /cfg, /scan, to the server and if apEnable = true will enable Access Point.
 ```
-// Handler function for AP config form
-static void handleAssistRoot() { 
-  conf.handleFormRequest(&server); 
-}
+conf.setup(server, /*Start AP*/ true);
 ```
+You can add /cfg handler to your application after connecting the device to the internet.
+Editing config will be enabled for station users.
+
+```
+//ConfigAssist will register handlers to the webserver
+//After connecting to the internet AP will not be started
+conf.setup(server);
+```
+
 ## Setup function
 ```
 void setup()
@@ -148,8 +154,8 @@ void setup()
   //Failed to load config or ssid empty
   if(!conf.valid() || conf["st_ssid"]=="" ){ 
     //Start Access point server and edit config
-    //Will reboot for saved data to be loaded
-    conf.setup(server, handleAssistRoot);
+    //Data will be availble instantly 
+    conf.setup(server, true);
     return;
   }
   ...
