@@ -160,10 +160,6 @@ void handleRoot() {
   digitalWrite(conf["led_pin"].toInt(), 1);  
 }
 
-// Handler function for AP config form
-static void handleAssistRoot() { 
-  conf.handleFormRequest(&server); 
-}
 // Handle page not found
 void handleNotFound() {
   digitalWrite(conf["led_pin"].toInt(), 1);
@@ -205,8 +201,8 @@ void setup(void) {
   //Failed to load config or ssid empty
   if(!conf.valid() || conf["st_ssid"]=="" ){ 
     //Start Access point server and edit config
-    //Will reboot for saved data to be loaded
-    conf.setup(server, handleAssistRoot);
+    //Data will be availble instantly 
+    conf.setup(server, true);
     return;
   }
   debugMemory("Loaded config");
@@ -233,7 +229,7 @@ void setup(void) {
   }else{
     //Fall back to Access point for editing config
     Serial.println("Connect failed.");
-    conf.setup(server, handleAssistRoot);
+    conf.setup(server, true);
     return;
   }
   
@@ -254,21 +250,13 @@ void setup(void) {
   
   //Also change an int/bool value
   //conf.put("led_pin", 4);
-  #ifdef USE_WIFISCAN
-    conf.startScanWifi();
-  #endif
+  
   //Register handlers for web server    
-  server.on("/cfg", handleAssistRoot);
   server.on("/", handleRoot);
-  server.on("/scan", []() {
-    #ifdef USE_WIFISCAN
-      conf.checkScanRes();
-      LOG_DBG("Send scan resp..\n");
-      server.send(200, "text/plain", conf.scanRes().c_str() );      
-    #else
-      server.send(200, "text/plain", "[{}]" );
-    #endif
-  });
+  
+  //Add handlers to web server 
+  conf.setup(server);
+  
   server.on("/inline", []() {
     server.send(200, "text/plain", "this works as well");
     conf.dump();           
