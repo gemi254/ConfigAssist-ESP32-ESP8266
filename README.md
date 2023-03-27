@@ -41,6 +41,7 @@ i.e.
 ## Variables definition with JSON dictionary
 In your application sketch file you must define a json dictionary that includes all the information needed for the html edit form to be generated. Each variable will be displayed on edit page with the order defined in the json file.  See example below...
 
+
 + If you use keywords `name, default` an **edit box** will be generated to edit the variable. You can add `attribs` keywords to specify min, max, step for a numeric field.
 + If you keyword name contains ``_pass`` a **password field** will be used. See **PASSWD_KEY** definition. 
 + If you use keyword `checked` instead of `default` a Boolean value will be used that will be edited by a **check box**
