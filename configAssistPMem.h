@@ -379,6 +379,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
   const $ = document.querySelector.bind(document);
   const $$ = document.querySelectorAll.bind(document);
   let scanTimer = null;
+  let setTimeTimer = null;
   let refreshInterval = 15000;
 
   function updateRange(range) {
@@ -434,7 +435,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     updateKey("_SAVE", 1);
     console.log("Unload.. saved");
   });
-  
+
   async function updateKey(key, value) {      
     if(value == null ) return;      
     const baseHost = document.location.origin;
@@ -448,8 +449,31 @@ document.addEventListener('DOMContentLoaded', function (event) {
       if(html!="") $('#msg').innerHTML = html;
     }      
   }
+  /*{SUB_SCRIPT}*/   
+})
+</script>
+)=====";
 
-  async function getWifiScan() {      
+PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
+  async function sendTime() {
+    let now = new Date();
+    let nowUTC = Math.floor(now.getTime() / 1000);
+    let offs = new Date().getTimezoneOffset()/60;
+    //updateKey("clockUTC", nowUTC); 
+    const baseHost = document.location.origin;
+    const url = baseHost + "/cfg?clockUTC" + "=" + nowUTC + "&offs=" + offs
+    const response = await fetch(encodeURI(url));
+    if (!response.ok){
+      const html = await response.text();
+      if(html!="") $('#msg').innerHTML = html;
+    }
+  }
+  
+  setTimeTimer = setTimeout(sendTime, 200);  
+)=====";
+
+PROGMEM const char CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN[] = R"=====(
+async function getWifiScan() {      
     const baseHost = document.location.origin;
     const url = baseHost + "/scan"
     try{
@@ -488,9 +512,8 @@ document.addEventListener('DOMContentLoaded', function (event) {
     clearTimeout(scanTimer);
     scanTimer = setTimeout(getWifiScan, refreshInterval);
   }
-  scanTimer = setTimeout(getWifiScan, 1000);  
-})
-</script>
+  
+  scanTimer = setTimeout(getWifiScan, 2000); 
 )=====";
 
 //Template for one input text box
