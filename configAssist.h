@@ -1,4 +1,4 @@
-#define CLASS_VERSION "2.3"          // Class version
+#define CLASS_VERSION "2.4"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -6,6 +6,10 @@
 #define DONT_ALLOW_SPACES false      // Allow spaces in var names ?
 #define PASSWD_KEY   "_pass"         // The key part that defines a password field
 #define HOSTNAME_KEY "host_name"     // The key that defines host name
+#define TIMEZONE_KEY "time_zone"     // The key that defines time zone for setting time
+
+#define USE_WIFISCAN true            //Set to false to disable wifi scan
+#define USE_TIMESYNC true            //Set to false to disable sync esp with browser if out of sync
 
 // Define Platform libs
 #if defined(ESP32)
@@ -420,10 +424,6 @@ class ConfigAssist{
         if(row.name==HOSTNAME_KEY){
           row.value.replace("{mac}", getMacID());
         }
-        /***
-        if(row.type==CHECK_BOX){ //Save 0,1 on booleans
-          row.value = (row.value == "on") ? "1" : "0";
-        }*/
         char configLine[512];
         sprintf(configLine, "%s%c%s\n", row.name.c_str(), INI_FILE_DELIM, row.value.c_str());   
         szOut+=file.write((uint8_t*)configLine, strlen(configLine));
@@ -434,7 +434,40 @@ class ConfigAssist{
       _dirty = false;
       return true;
     }
+    
+    String getLocalTime() {      
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+      time_t currEpoch = tv.tv_sec;
+      char timeFormat[20];
+      strftime(timeFormat, sizeof(timeFormat), "%d/%m/%Y %H:%M:%S", localtime(&currEpoch));
+      return String(timeFormat);
+    }
 
+    void checkTime(uint32_t timeUtc, int timeOffs){
+      struct timeval tvLocal;
+      gettimeofday(&tvLocal, NULL);
+      
+      uint8_t diff = abs((int)timeUtc - tvLocal.tv_sec);
+      LOG_DBG("Time dif: %i\n", diff);
+      if( diff > 5 ){ //5 Secs
+        LOG_DBG("LocalTime: %s\n", getLocalTime().c_str());  
+        struct timeval tvRemote;
+        tvRemote.tv_sec = timeUtc;
+        settimeofday(&tvRemote, NULL);
+        
+        String tmz;
+        if(getKeyPos(TIMEZONE_KEY) >= 0) tmz = get(TIMEZONE_KEY);
+        if(tmz==""){
+          String tmz = "GMT";
+          if(timeOffs >= 0) tmz += "+" + String(timeOffs);
+          else tmz += String(timeOffs);
+        } 
+        setenv("TZ", tmz.c_str(), 1);
+        tzset();
+        LOG_INF("LocalTime after sync: %s, tmz=%s\n", getLocalTime().c_str(), tmz.c_str());
+      }      
+    }
     // Respond a HTTP request for the form use the CONF_FILE
     // to save. Save, Reboot ESP, Reset to defaults, cancel edits
     void handleFormRequest(WEB_SERVER * server){
@@ -462,6 +495,7 @@ class ConfigAssist{
           server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/\">");
           return;
         }
+ 
         //Reboot esp?    
         if (server->hasArg(F("_RBT_CONFIRM"))) {
           LOG_DBG("Restarting..\n");
@@ -471,6 +505,7 @@ class ConfigAssist{
           ESP.restart();
           return;
         }
+        
         //Update configs from form post vals
         String reply = "";
         for(uint8_t i=0; i<server->args(); ++i ){
@@ -480,7 +515,16 @@ class ConfigAssist{
           val = urlDecode(val);
           if(key=="apName" || key =="_SAVE" || key=="_RST" || key=="_RBT" || key=="plain") continue;
           if(key.endsWith(FILENAME_IDENTIFIER)) continue;
-
+          if(key=="clockUTC"){
+              // Synchronize to browser clock if out of sync
+              String offs("0");
+              if(server->hasArg("offs")){
+                offs = String(server->arg("offs"));
+              }
+              checkTime(val.toInt(), offs.toInt());
+              server->send(200, "text/html", "OK");
+              return;
+          }
           //Check if if text box with file name
           String fileNameKey = server->argName(i) + FILENAME_IDENTIFIER;
           if(server->hasArg(fileNameKey)){
@@ -532,7 +576,12 @@ class ConfigAssist{
       server->sendContent(out);
       server->sendContent(CONFIGASSIST_HTML_CSS);
       server->sendContent(CONFIGASSIST_HTML_CSS_CTRLS);      
-      server->sendContent(CONFIGASSIST_HTML_SCRIPT);
+      String script(CONFIGASSIST_HTML_SCRIPT);
+      String subScript = "";
+      if(USE_TIMESYNC) subScript = CONFIGASSIST_HTML_SCRIPT_TIME_SYNC;  
+      if(USE_WIFISCAN) subScript += CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN;
+      script.replace("/*{SUB_SCRIPT}*/", subScript);
+      server->sendContent(script);
       out = String(CONFIGASSIST_HTML_BODY);
       out.replace("{host_name}", getHostName());
       server->sendContent(out);
