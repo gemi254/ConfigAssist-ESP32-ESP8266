@@ -10,6 +10,11 @@ A lightweight library allowing quick configuration for **esp32/esp8266** devices
 
 **ConfigAssist** will also perform a **Wifi Scan** on setup and attach a **drop down list** on the field **st_ssid** with nearby available wifi **access points**. The list will be sorted by **signal strength** with strongest wifi signal to be placed first and will be automatically refreshed every 15 seconds. Users can choose a valid **ssid** from the list.
 
+**ConfigAssist** will also check and synchronize the clock of esp devices with browser time. So even if no internet connection and no **npt** server is available the 
+device will have the correct time. if **TIMEZONE_KEY** exists in config ConfigAssist will set the device timezone string.
+
+Theese features can be disabled by setting **USE_WIFISCAN** and **USE_TIMESYNC** to false.
+
 Variables **descriptions** and **default values** are based on a **text description** in json format that acts as a template defining the **type**, **label** and extra **info** for each variable. All config vars must be defined there describing the **variable type** the **default value** the **label** that will be displayed to user and some **attributes** in case of special variables like **datalist** for list box, min, max, step for **input number** etc.
  ```
    "name": "st_ssid",
