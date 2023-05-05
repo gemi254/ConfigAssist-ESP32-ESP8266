@@ -1,4 +1,4 @@
-#define CLASS_VERSION "2.4"          // Class version
+#define CLASS_VERSION "2.5"          // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -8,8 +8,8 @@
 #define HOSTNAME_KEY "host_name"     // The key that defines host name
 #define TIMEZONE_KEY "time_zone"     // The key that defines time zone for setting time
 
-#define USE_WIFISCAN true            //Set to false to disable wifi scan
-#define USE_TIMESYNC true            //Set to false to disable sync esp with browser if out of sync
+#define USE_WIFISCAN true            // Set to false to disable wifi scan
+#define USE_TIMESYNC true            // Set to false to disable sync esp with browser if out of sync
 
 // Define Platform libs
 #if defined(ESP32)
@@ -97,6 +97,7 @@ class ConfigAssist{
         _dirty = true;
       }      
     }
+
     // Editable Ini file, with json dict
     void init(String ini_file, const char * jStr) { 
       if(jStr) _jStr = jStr;
@@ -111,6 +112,7 @@ class ConfigAssist{
         _dirty = true;
       }      
     }
+
     // Dictionary only, default ini file
     void initJsonDict(const char * jStr) { 
       init(_confFile,  jStr);
@@ -132,11 +134,11 @@ class ConfigAssist{
         if (MDNS.begin(hostName.c_str()))  LOG_INF("AP MDNS responder Started\n");  
         server.begin();
       }
-      startScanWifi();      
+      if(USE_WIFISCAN)  startScanWifi();      
       server.on("/cfg",[this] { this->handleFormRequest(this->_server);  } );
-      server.on("/scan", [] { checkScanRes();  _server->sendContent(_jWifi); } );
-      server.onNotFound([] { _server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/cfg\">"); });
-      LOG_DBG("ConfigAssist setup done. %x", this);      
+      server.on("/scan", [this] { this->handleWifiScanRequest(); } );
+      server.onNotFound([this] { this->handleNotFound(); } );
+      LOG_DBG("ConfigAssist setup done. %x\n", this);      
     }
 
     // Get a temponary hostname
@@ -434,7 +436,7 @@ class ConfigAssist{
       _dirty = false;
       return true;
     }
-    
+    // Get system local time
     String getLocalTime() {      
       struct timeval tv;
       gettimeofday(&tv, NULL);
@@ -443,19 +445,21 @@ class ConfigAssist{
       strftime(timeFormat, sizeof(timeFormat), "%d/%m/%Y %H:%M:%S", localtime(&currEpoch));
       return String(timeFormat);
     }
-
+    
+    // Compare browser with system time and correct if needed
     void checkTime(uint32_t timeUtc, int timeOffs){
       struct timeval tvLocal;
       gettimeofday(&tvLocal, NULL);
       
-      uint8_t diff = abs((int)timeUtc - tvLocal.tv_sec);
-      LOG_DBG("Time dif: %i\n", diff);
-      if( diff > 5 ){ //5 Secs
-        LOG_DBG("LocalTime: %s\n", getLocalTime().c_str());  
+      long diff = (long)timeUtc - tvLocal.tv_sec;
+      LOG_DBG("Remote utc: %lu, local: %lu\n", timeUtc, tvLocal.tv_sec);
+      LOG_DBG("Time diff: %u\n",diff);      
+      if( abs(diff) > 5L ){ //5 Secs
+        LOG_DBG("LocalTime: %s\n", getLocalTime().c_str());          
         struct timeval tvRemote;
+        tvRemote.tv_usec = 0;
         tvRemote.tv_sec = timeUtc;
         settimeofday(&tvRemote, NULL);
-        
         String tmz;
         if(getKeyPos(TIMEZONE_KEY) >= 0) tmz = get(TIMEZONE_KEY);
         if(tmz==""){
@@ -466,8 +470,20 @@ class ConfigAssist{
         setenv("TZ", tmz.c_str(), 1);
         tzset();
         LOG_INF("LocalTime after sync: %s, tmz=%s\n", getLocalTime().c_str(), tmz.c_str());
+        
       }      
     }
+
+    // Respond a HTTP request for /scan results
+    void handleWifiScanRequest(){
+      checkScanRes();  _server->sendContent(_jWifi); 
+    }
+
+    // Respond a not found HTTP request
+    void handleNotFound(){
+      _server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/cfg\">");
+    }
+
     // Respond a HTTP request for the form use the CONF_FILE
     // to save. Save, Reboot ESP, Reset to defaults, cancel edits
     void handleFormRequest(WEB_SERVER * server){
@@ -596,6 +612,7 @@ class ConfigAssist{
       server->sendContent(out);
       //LOG_DBG("Generate form end\n");
     }
+    
     //Get edit page html table (no form)
     String getEditHtml(){
       sortReadOrder();      
@@ -628,9 +645,9 @@ class ConfigAssist{
       }
       return true;
     }
-    // Decode given string from url
+    
+    // Decode given string, replace encoded characters
     String urlDecode(String inVal) {
-      // replace url encoded characters
       std::string decodeVal(inVal.c_str()); 
       std::string replaceVal = decodeVal;
       std::smatch match; 
@@ -641,6 +658,7 @@ class ConfigAssist{
       }
       return String(replaceVal.c_str());      
     }
+
     // Load a file into a string
     bool loadText(String fPath, String &txt){
       File file = STORAGE.open(fPath, "r");
@@ -911,4 +929,3 @@ class ConfigAssist{
 
 WEB_SERVER *ConfigAssist::_server = NULL;
 String ConfigAssist::_jWifi="[{}]";
-
