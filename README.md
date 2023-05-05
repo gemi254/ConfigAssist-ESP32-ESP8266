@@ -198,3 +198,6 @@ as your **sketch foler**. Then include the **configAssist,h** in your applicatio
 + if your variables exceed **MAX_PARAMS** increase this value in class header.
 
 ###### If you get compilation errors on arduino-esp32 you need to update your arduino-esp32 library in the IDE using Boards Manager
+
+## Other examples
+You can see an advanced example of **ConfigAssist** usage on <a target="_blank" title="PlantStatus LilyGO TTGO Higrow" href="https://github.com/gemi254/PlantStatus-LilyGO-TTGO-Higrow">**PlantStatus**</a> a plant monitoring and logging application
