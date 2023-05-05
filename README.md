@@ -8,10 +8,10 @@ A lightweight library allowing quick configuration for **esp32/esp8266** devices
 ## Description
 **ConfigAssist** will help to automate definition of variables used in a typical **esp32/esp8266** application. It will automatically generate a web portal with html controls allowing quick editing for variables like  **Wifi ssid**, **Wifi password**, **host_name**. Every time a variable is changed in the web page, it will automatically updated by ConfigAssist using an **async** JavaScript get request. As the user leaves or closes the page at end the data are saved to the ini file.
 
-**ConfigAssist** will also perform a **Wifi Scan** on setup and attach a **drop down list** on the field **st_ssid** with nearby available wifi **access points**. The list will be sorted by **signal strength** with strongest wifi signal to be placed first and will be automatically refreshed every 15 seconds. Users can choose a valid **ssid** from the list.
+**ConfigAssist** will also perform a **Wifi Scan** on setup and attach a **drop down list** on the field **st_ssid** with nearby available wifi **access points**. The list will be sorted by **signal strength** with strongest wifi signal be placed first and will be automatically refreshed every 15 seconds. Users can choose a valid **ssid** from the list.
 
-**ConfigAssist** will also check and synchronize the clock of esp devices with browser time. So even if no internet connection and no **npt** server is available the 
-device will have the correct time. if **TIMEZONE_KEY** exists in config ConfigAssist will set the device timezone string.
+**ConfigAssist** will also check and synchronize the internal clock of esp devices with the browser time. So even if no internet connection (AP mode) and no **npt** server is available the 
+device will have the correct time. if **TIMEZONE_KEY** string exists in config ConfigAssist will set the device timezone string or it will use browser offset.
 
 Theese features can be disabled by setting **USE_WIFISCAN** and **USE_TIMESYNC** to false.
 
@@ -28,7 +28,7 @@ Application variables can be used with operator **[]** i.e. ```conf['variable']`
 ## How it works
 On first run when no data (**ini file**) is present in local storage, **ConfigAssist** will start an **Access Point** and load the default json dictionary with variable definitions to be edited.  **ConfigAssist** will generate an html page with html controls allowing data to be edited from connected devices.
 
-On each **change** in the html page data will be **updated** and will be available immediately to the application. Also the data will be saved automatically on local storage when the user finishes editing. If the configuration file is valid during next boot the **json dictionary** will not be loaded reducing memory consumption and speeding up the whole process. Note that if data is not changed **ConfigAssist** will not overwrite the file.
+On each **change** in the html page data will be **updated** and will be available immediately to the application. Also the data will be saved automatically on local storage when the user finishes editing. If the configuration file is valid during next boot, **json dictionary** will not be loaded reducing memory consumption and speeding up the whole process. Note that if data is not changed **ConfigAssist** will not overwrite the file.
 
 ConfigAssist uses **c++ vectors** to dynamically allocate and store variables and **binary search** for speeding the access process.
 
@@ -154,8 +154,8 @@ void setup()
   // Must have storage to read from
   STORAGE.begin(true);
   
- //Initialize config with application's json dictionary
- conf.init(appConfigDict_json);  
+  //Initialize config with application's json dictionary
+  conf.init(appConfigDict_json);  
 
   //Failed to load config or ssid empty
   if(!conf.valid() || conf["st_ssid"]=="" ){ 
@@ -164,7 +164,18 @@ void setup()
     conf.setup(server, true);
     return;
   }
+  
   ...
+  
+  //Check connection
+  if(WiFi.status() == WL_CONNECTED ){
+    Serial.printf("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", conf["st_ssid"].c_str(), WiFi.localIP().toString().c_str()); 
+  }else{
+    //Fall back to Access point for editing config
+    Serial.println("Connect failed.");
+    conf.setup(server, true);
+    return;
+  }
   ```
   
 **ConfigAssist** can also used to quick generate and store ini files.
