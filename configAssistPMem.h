@@ -458,14 +458,13 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
   async function sendTime() {
     let now = new Date();
     let nowUTC = Math.floor(now.getTime() / 1000);
-    let offs = new Date().getTimezoneOffset()/60;
-    //updateKey("clockUTC", nowUTC); 
+    let offs = now.getTimezoneOffset()/60;
     const baseHost = document.location.origin;
     const url = baseHost + "/cfg?clockUTC" + "=" + nowUTC + "&offs=" + offs
     const response = await fetch(encodeURI(url));
     if (!response.ok){
       const html = await response.text();
-      if(html!="") $('#msg').innerHTML = html;
+      if(html!="" && $('#msg')) $('#msg').innerHTML = html;
     }
   }
   
@@ -482,8 +481,7 @@ async function getWifiScan() {
       if (!response.ok){        
         console.log('Error:', json)
       }else{
-        //console.log(json)
-        if(json=="[{}]") return;
+        if(json.length == 1 && Object.keys(json[0]).length < 2 ) return;
         json = json.sort((a, b) => {
           if (a.rssi > b.rssi) {
             return -1;
@@ -494,7 +492,7 @@ async function getWifiScan() {
           options  += '<option value="' + json[n].ssid + '"></option>\n'
         }
 
-        const ed = $('#st_ssid')
+        const ed = $('#st_ssid') || $('#st_ssid1')
         const td = ed.parentElement
         if(!ed.getAttribute('list')){
           list = document.createElement('datalist')
