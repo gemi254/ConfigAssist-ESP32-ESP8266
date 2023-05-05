@@ -13,6 +13,7 @@
   #include <WiFiClient.h>
   #include <ESP8266WebServer.h>
   #include <ESP8266mDNS.h>
+  #include "TZ.h"
 #endif
 #include <FS.h>
 
@@ -150,7 +151,11 @@ void ListDir(const char * dirname) {
 // Handler function for ST config form
 void handleRoot() {
   digitalWrite(conf["led_pin"].toInt(), 0); 
-  String out("<h3>hello from {name}<h3><a href='/cfg'>Edit config</a>"); 
+
+  String out("<h2>Hello from {name}</h2>");
+  out += "<h4>Device time: " + conf.getLocalTime() +"</h4>";
+  out += "<a href='/cfg'>Edit config</a>";   
+
   #if defined(ESP32)
     out.replace("{name}", "ESP32");
   #else 
