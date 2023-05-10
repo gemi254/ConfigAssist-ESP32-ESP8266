@@ -1,7 +1,7 @@
-#if !defined(___CONFIG_ASSIST_H)
-#define  ___CONFIG_ASSIST_H
+#if !defined(_CONFIG_ASSIST_H)
+#define  _CONFIG_ASSIST_H
 
-#define CLASS_VERSION "2.6"          // Class version
+#define CLASS_VERSION "2.6.0"        // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -174,4 +174,4 @@ void logPrint(const char *level, const char *format, ...);
 #define LOG_DBG(format, ...) logPrint("4", DBG_FORMAT(format,"DBG"), ##__VA_ARGS__)
 
 
-#endif
+#endif // _CONFIG_ASSIST_H
