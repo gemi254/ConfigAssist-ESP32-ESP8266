@@ -123,13 +123,14 @@ X2=900, Y2=3.24"
 ## Project definitions in your main app
 
 + include the **configAssist**  class
-  - `#include "configAssist.h"  // Setup assistant class`
+  - `#include <configAssist.h>  //ConfigAssist class`
 
 + Define your static instance
-  - `ConfigAssist conf;        //ConfigAssist class`
+  - `ConfigAssist conf;         //ConfigAssist class`
 
 + in your setup function you must init the config class with a pointer to the dictionary
   - `conf.initJsonDict(appConfigDict_json);` or `conf.init("/info.ini");` for default minimal settings
+
 + if you want to use a different external **ini file name**
   - `conf.init(ini_file_name, appConfigDict_json);`
  
@@ -190,8 +191,8 @@ info.saveConfigFile();
 ```
 
 ## Compile
-Download the files **configAssist.h** and **configAssistPMem.h** and put it in the same directory
-as your **sketch foler**. Then include the **configAssist,h** in your application and compile..
+Donwload library files and place them on ./libraries directory under ArduinoProjects
+Then include the **configAssist,h** in your application and compile..
 
 + compile for arduino-esp3 or arduino-esp8266.
 + In order to compile you must install **ArduinoJson** library.
