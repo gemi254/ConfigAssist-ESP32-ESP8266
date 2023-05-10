@@ -1,0 +1,31 @@
+
+
+###########################################
+# Syntax Coloring Map For configAssist-library
+###########################################
+
+###########################################
+# Datatypes (KEYWORD1)
+###########################################
+
+configAssist KEYWORD1
+
+###########################################
+# Methods and Functions (KEYWORD2)
+###########################################
+
+init KEYWORD2
+initJsonDict KEYWORD2
+handleFormRequest KEYWORD2
+loadJsonDict KEYWORD2
+setup KEYWORD2
+loadConfigFile KEYWORD2
+get KEYWORD2
+put KEYWORD2
+add KEYWORD2
+getHostName KEYWORD2
+getLocalTime KEYWORD2
+getJsonConfig KEYWORD2
+getEditHtml KEYWORD2
+deleteConfig KEYWORD2
+handleWifiScanRequest KEYWORD2
