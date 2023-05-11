@@ -1,0 +1,7 @@
+2.6.1 (2023-05-11)
+  * Added function getCSS() to get configAssist css on application main page
+  * Added function getTimeSyncScript() to get configAssist time sync script
+  * Added function getMessageHtml() to get configAssist simple message page
+
+2.6.0 (2023-05-10)
+  * Created configAssist library
