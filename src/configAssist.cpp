@@ -2,13 +2,13 @@
 #include <vector>
 #include <regex>
 #include <ArduinoJson.h>
-#include <LittleFS.h>
 #if defined(ESP32)
   #include <WebServer.h>
   #include "SPIFFS.h"
   #include <ESPmDNS.h>
   #include <SD_MMC.h>
 #else
+  #include <LittleFS.h>
   #include <ESP8266WiFi.h>
   #include <WiFiClient.h>
   #include <ESP8266WebServer.h>
@@ -23,7 +23,6 @@
 WEB_SERVER *ConfigAssist::_server = NULL;
 String ConfigAssist::_jWifi="[{}]";
 
-
 ConfigAssist::ConfigAssist() {
   _jsonLoaded = false; _iniValid=false; _confFile = DEF_CONF_FILE; 
 }
@@ -37,6 +36,7 @@ ConfigAssist::ConfigAssist(String ini_file) {
     
 ConfigAssist::~ConfigAssist() {}
 
+// Initialize with an ini filename
 void ConfigAssist::init(String ini_file) { 
   _jStr = NULL;
   if(ini_file!="") _confFile = ini_file;
@@ -573,7 +573,19 @@ String ConfigAssist::getEditHtml(){
   sort();
   return ret;
 }
-
+// Get page css
+String ConfigAssist::getCSS(){
+  return String(CONFIGASSIST_HTML_CSS);
+}
+// Get browser time synchronization java script
+String ConfigAssist::getTimeSyncScript(){
+  return String(CONFIGASSIST_HTML_SCRIPT_TIME_SYNC);
+}
+// Get html custom message page
+String ConfigAssist::getMessageHtml(){
+  return String(CONFIGASSIST_HTML_MESSAGE);
+}
+// Is string numeric
 bool ConfigAssist::isNumeric(String s){ //1.0, -.232, .233, -32.32
   unsigned int l = s.length();
   if(l==0) return false;
@@ -861,8 +873,9 @@ void ConfigAssist::startScanWifi(){
     LOG_DBG("Scan complete status: %i\n", n);
   }
 }  
+
 //Is Application providing logPrint function?
-#ifndef CONFIG_ASSIST_LOG_PRINT_CUSTOM  
+#ifndef CONFIG_ASSIST_LOG_PRINT_CUSTOM
   #define MAX_OUT 200
   static va_list arglist;
   static char fmtBuf[MAX_OUT];
