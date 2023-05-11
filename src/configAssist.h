@@ -1,7 +1,7 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
 
-#define CLASS_VERSION "2.6.0"        // Class version
+#define CLASS_VERSION "2.6.1"        // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -113,7 +113,13 @@ class ConfigAssist{
     void sendHtmlEditPage(WEB_SERVER * server);    
     // Get edit page html table (no form)
     String getEditHtml();
-
+    // Get page css
+    String getCSS();
+    // Get browser time synchronization java script
+    String getTimeSyncScript();
+    // Get html custom message page
+    String getMessageHtml();
+    
   private:
     // Is string numeric
     bool isNumeric(String s);    
@@ -172,6 +178,5 @@ void logPrint(const char *level, const char *format, ...);
 #define LOG_WRN(format, ...) logPrint("2", DBG_FORMAT(format,"WRN"), ##__VA_ARGS__)
 #define LOG_INF(format, ...) logPrint("3", DBG_FORMAT(format,"INF"), ##__VA_ARGS__)  
 #define LOG_DBG(format, ...) logPrint("4", DBG_FORMAT(format,"DBG"), ##__VA_ARGS__)
-
 
 #endif // _CONFIG_ASSIST_H
