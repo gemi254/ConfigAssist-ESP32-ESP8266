@@ -1,12 +1,12 @@
 {
     "name": "ConfigAssist",
-    "keywords": "configuration, responsive, captive-portal, ini, variables, wifi",
-    "description": "A lightweight library allowing quick configuration for esp32/esp8266 devices using async requests. Edit application vars using a responsive captive portal and a json definition  dictionary and saving them on a file in local storage.",
+    "keywords": "configuration, form, setup, responsive, captive portal, ini, variables, wifi, access point",
+    "description": "A lightweight library allowing quick configuration for esp32/esp8266 devices using async requests. Edit application vars using a responsive captive portal and a json definition dictionary and saving them on a file in local storage.",
     "repository": {
         "type": "git",
         "url": "https://github.com/gemi254/ConfigAssist-ESP32-ESP8266.git"
     },
-    "version": "2.6.0",
+    "version": "2.6.1",
     "homepage": "https://github.com/gemi254/ConfigAssist-ESP32-ESP8266",
     "examples": "examples/*/*.ino",
     "frameworks": "arduino",
