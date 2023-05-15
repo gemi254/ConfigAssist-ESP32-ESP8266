@@ -874,22 +874,36 @@ void ConfigAssist::startScanWifi(){
   }
 }  
 
-//Is Application providing logPrint function?
-#ifndef CONFIG_ASSIST_LOG_PRINT_CUSTOM
-  #define MAX_OUT 200
-  static va_list arglist;
-  static char fmtBuf[MAX_OUT];
-  static char outBuf[MAX_OUT];
-  //Logging with level to serial
-  void logPrint(const char *level, const char *format, ...){
-    if(level[0] > LOG_LEVEL) return;
-    strncpy(fmtBuf, format, MAX_OUT);
-    fmtBuf[MAX_OUT - 1] = 0;
-    va_start(arglist, format); 
-    vsnprintf(outBuf, MAX_OUT, fmtBuf, arglist);
-    va_end(arglist);
-    //size_t msgLen = strlen(outBuf);
-    Serial.print(outBuf);
-  }
-#endif
+// LogPrint function
+#define MAX_FMT 128
+static char fmtBuf[MAX_FMT];
+static char outBuf[256];
+static va_list arglist;
+bool ca_logToFile = LOG_TO_FILE;
+char ca_logLevel = LOG_LEVEL;
+File ca_logFile;
 
+//Logging with level to serial or file
+void logPrint(const char *level, const char *format, ...){
+  if(level[0] > ca_logLevel) return;
+  strncpy(fmtBuf, format, MAX_FMT);
+  fmtBuf[MAX_FMT - 1] = 0;
+  va_start(arglist, format); 
+  vsnprintf(outBuf, MAX_FMT, fmtBuf, arglist);
+  va_end(arglist);
+  //size_t msgLen = strlen(outBuf);
+  Serial.print(outBuf);
+  
+  if (ca_logToFile){
+    if(!ca_logFile) ca_logFile = STORAGE.open(LOG_FILENAME, FILE_APPEND);
+    if(!ca_logFile){
+      Serial.printf("Failed to open log file: %s\n", LOG_FILENAME);
+      ca_logToFile = false;
+    }else{
+      //Serial.printf("Opened log %s\n", LOG_FILENAME);
+    }
+
+    ca_logFile.print(outBuf);
+    ca_logFile.flush();
+  }
+}
