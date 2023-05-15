@@ -1,3 +1,6 @@
+2.6.2 (2023-05-15)
+  * Allow application to logging into a file with logLevel 
+  
 2.6.1 (2023-05-11)
   * Added function getCSS() to get configAssist css on application main page
   * Added function getTimeSyncScript() to get configAssist time sync script
