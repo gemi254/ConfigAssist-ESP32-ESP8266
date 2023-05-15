@@ -6,7 +6,6 @@
   #include <ESP8266WebServer.h>  
 #endif
 
-#define LOG_LEVEL '4' //Errors & Warnings & info
 #include <configAssist.h>  // Config assist class
 
 void setup() {
@@ -15,7 +14,7 @@ void setup() {
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
-  Serial.print("Starting..\n");
+  LOG_INF("Starting..\n");
 
   #if defined(ESP32)  
     if(!STORAGE.begin(true)) Serial.println("ESP32 Storage failed!"); 
