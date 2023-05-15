@@ -1,7 +1,7 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
 
-#define CLASS_VERSION "2.6.1"        // Class version
+#define CLASS_VERSION "2.6.2"        // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -13,6 +13,18 @@
 
 #define USE_WIFISCAN true            // Set to false to disable wifi scan
 #define USE_TIMESYNC true            // Set to false to disable sync esp with browser if out of sync
+
+#define LOG_TO_FILE false            // Enable logging to file.
+#define LOG_FILENAME "/log"          // Log file name
+
+// Define default log level
+#ifndef LOG_LEVEL 
+//#define LOG_LEVEL '0' //Nothing
+//#define LOG_LEVEL '1' //Errors 
+//#define LOG_LEVEL '2' //Errors & Warnings
+  #define LOG_LEVEL '3' //Errors & Warnings & Info
+//#define LOG_LEVEL '4' //Errors & Warnings & Info & Debug
+#endif 
 
 // Define Platform libs
 #if defined(ESP32)
@@ -48,7 +60,7 @@ class ConfigAssist{
     ConfigAssist(String ini_file);    
     ~ConfigAssist();
   public:  
-    // Load configs after storage started
+    // Load configs after storage is started
     // Simple ini file, on the fly no dict
     void init(String ini_file);
     // Editable Ini file, with json dict
@@ -159,12 +171,6 @@ class ConfigAssist{
     static WEB_SERVER *_server;
     static String _jWifi;
 };
-
-
-// LOG shortcuts
-#ifndef LOG_LEVEL 
-  #define LOG_LEVEL '3' //Set to 0 for stop printng messages, 1 to print error only
-#endif  
 
 #ifdef ESP32
   #define DBG_FORMAT(format, type) "[%s %s @ %s:%u] " format "", esp_log_system_timestamp(), type, pathToFileName(__FILE__), __LINE__
