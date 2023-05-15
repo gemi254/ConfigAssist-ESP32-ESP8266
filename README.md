@@ -198,19 +198,19 @@ info.saveConfigFile();
 In you application you use **LOG_ERR**, **LOG_WRN**, **LOG_INF**, **LOG_DBG** macros instead of **Serial.prinf**
 to print your messages. **ConfigAssist** can record these messages with **timestamps** to a file.
 
-+ if you want to serial print to log file
-  - define config assist external variables
-
-   `extern bool ca_logToFile;
-
-    extern byte ca_logLevel;`  
- 
- - Then enable record to file in your **setup** function.
- - `//Enable configAssist logging to file`
- - `ca_logToFile = true;`
-    
- - `//Set configAssist default log level`
- - `ca_logLevel = DEF_LOG_LEVEL;`
+if you want to enable serial print to a log file..
++ define **ConfigAssist**  external variables
+  ```
+  extern bool ca_logToFile;
+  extern byte ca_logLevel;  
+  ```
++ Then enable record to file in your **setup** function use..
+  ```
+  //Enable configAssist logging to file
+  ca_logToFile = true;    
+  //Set configAssist default log level
+  ca_logLevel = DEF_LOG_LEVEL;
+  ```
   
 ## Compile
 Donwload library files and place them on ./libraries directory under ArduinoProjects
