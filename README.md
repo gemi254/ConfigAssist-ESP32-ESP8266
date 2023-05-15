@@ -1,4 +1,5 @@
 # ConfigAssist
+
 A lightweight library allowing quick configuration for **esp32/esp8266** devices by editing application variables using a **responsive** configuration portal and a json definition dictionary. Variables are updated instantly using **async get requests** and saved automatically on a file in local storage.
 
 <p align="center">
@@ -6,6 +7,7 @@ A lightweight library allowing quick configuration for **esp32/esp8266** devices
 </p>
 
 ## Description
+
 **ConfigAssist** will help to automate definition of variables used in a typical **esp32/esp8266** application. It will automatically generate a web portal with html controls allowing quick editing for variables like  **Wifi ssid**, **Wifi password**, **host_name**. Every time a variable is changed in the web page, it will automatically updated by ConfigAssist using an **async** JavaScript get request. As the user leaves or closes the page at end the data are saved to the ini file.
 
 **ConfigAssist** will also perform a **Wifi Scan** on setup and attach a **drop down list** on the field **st_ssid** with nearby available wifi **access points**. The list will be sorted by **signal strength** with strongest wifi signal be placed first and will be automatically refreshed every 15 seconds. Users can choose a valid **ssid** from the list.
@@ -44,6 +46,7 @@ i.e.
 + `float float_value = atof(conf["float_value"].c_str());`
 
 ## Variables definition with JSON dictionary
+
 In your application sketch file you must define a json dictionary that includes all the information needed for the html edit form to be generated. Each variable will be displayed on edit page with the order defined in the json file.  See example below...
 
 
@@ -133,8 +136,9 @@ X2=900, Y2=3.24"
 
 + if you want to use a different external **ini file name**
   - `conf.init(ini_file_name, appConfigDict_json);`
- 
+  
 ## WIFI Access point handlers
+
 **ConfigAssist** must be initialized with a pointer to a web server to automatically handle AP form requests.
 Setup will add web handlers /cfg, /scan, to the server and if apEnable = true will enable Access Point.
 ```
@@ -189,7 +193,25 @@ and add the parameters to be stored with
 info.put("var1", "test1", true);
 info.saveConfigFile();
 ```
+## Logging to a file
+**ConfigAssist** can redirect serial print functions to a file in a spiffs and a **Debug log** can be generated.
+In you application you use **LOG_ERR**, **LOG_WRN**, **LOG_INF**, **LOG_DBG** macros instead of **Serial.prinf**
+to print your messages. **ConfigAssist** can record these messages with **timestamps** to a file.
 
++ if you want to serial print to log file
+  - define config assist external variables
+
+   `extern bool ca_logToFile;
+
+    extern byte ca_logLevel;`  
+ 
+ - Then enable record to file in your **setup** function.
+ - `//Enable configAssist logging to file`
+ - `ca_logToFile = true;`
+    
+ - `//Set configAssist default log level`
+ - `ca_logLevel = DEF_LOG_LEVEL;`
+  
 ## Compile
 Donwload library files and place them on ./libraries directory under ArduinoProjects
 Then include the **configAssist,h** in your application and compile..
