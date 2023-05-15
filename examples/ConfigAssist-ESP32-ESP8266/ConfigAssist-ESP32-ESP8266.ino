@@ -118,35 +118,35 @@ const char* appConfigDict_json PROGMEM = R"~(
 X2=900, Y2=3.24"}
 ])~"; 
 
-ConfigAssist conf;         // Config class
-String hostName;           // Default Host name
+ConfigAssist conf;                    // Config class
+String hostName;                      // Default Host name
+unsigned long pingMillis = millis();  // Ping 
 
 // *********** Helper funcions ************
-unsigned long pingMillis = millis();  // Ping 
 void debugMemory(const char* caller) {      
   #if defined(ESP32)
-    Serial.printf("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
+    LOG_DBG("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
   #else
-    Serial.printf("%s > Free: heap %u\n", caller, ESP.getFreeHeap());
+    LOG_DBG("%s > Free: heap %u\n", caller, ESP.getFreeHeap());
   #endif   
 }
 // List storage file system
 void ListDir(const char * dirname) {
-  Serial.printf("Listing directory: %s\n", dirname);
+  LOG_INF("Listing directory: %s\n", dirname);
   // ist details of files on file system
   File root = STORAGE.open(dirname,"r");
   File file = root.openNextFile();
   while (file) {
     #if defined(ESP32)
-      Serial.printf("File: %s, size: %u B\n", file.path(), file.size());
+      LOG_DBG("File: %s, size: %u B\n", file.path(), file.size());
     #else
-      Serial.printf("File: %s, size: %u B\n", file.fullName(), file.size());
+      LOG_DBG("File: %s, size: %u B\n", file.fullName(), file.size());
     #endif
     file = root.openNextFile();
   }
   Serial.println("");
 }
-// Handler function for ST config form
+// Handler function for Home page
 void handleRoot() {
   digitalWrite(conf["led_pin"].toInt(), 0); 
 
@@ -158,12 +158,13 @@ void handleRoot() {
     out.replace("{name}", "ESP32");
   #else 
     out.replace("{name}", "ESP8266!");
-  #endif    
+  #endif
+  out += "<script>" + conf.getTimeSyncScript() + "</script>";
   server.send(200, "text/html", out);
   digitalWrite(conf["led_pin"].toInt(), 1);  
 }
 
-// Handle page not found
+// Handler for page not found
 void handleNotFound() {
   digitalWrite(conf["led_pin"].toInt(), 1);
   String message = "File Not Found\n\n";
@@ -187,7 +188,7 @@ void setup(void) {
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
-  Serial.print("Starting..\n");
+  LOG_INF("Starting..\n");
   debugMemory("setup");
   //Start local storage
   #if defined(ESP32)  
@@ -217,7 +218,7 @@ void setup(void) {
   //Connect to Wifi station with ssid from conf file
   uint32_t startAttemptTime = millis();
   WiFi.mode(WIFI_STA);
-  Serial.printf("Wifi Station starting, connecting to: %s\n", conf["st_ssid"].c_str());
+  LOG_DBG("Wifi Station starting, connecting to: %s\n", conf["st_ssid"].c_str());
   WiFi.begin(conf["st_ssid"].c_str(), conf["st_pass"].c_str());
   while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000)  {
     digitalWrite(conf["led_pin"].toInt(), 0);
@@ -231,25 +232,25 @@ void setup(void) {
   
   //Check connection
   if(WiFi.status() == WL_CONNECTED ){
-    Serial.printf("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", conf["st_ssid"].c_str(), WiFi.localIP().toString().c_str()); 
+    LOG_INF("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", conf["st_ssid"].c_str(), WiFi.localIP().toString().c_str()); 
   }else{
     //Fall back to Access point for editing config
-    Serial.println("Connect failed.");
+    LOG_ERR("Connect failed.");
     conf.setup(server, true);
     return;
   }
   
   if (MDNS.begin(conf["host_name"].c_str())) {
-    Serial.println("MDNS responder started");
+    LOG_INF("MDNS responder started\n");
   }
 
   //Get int/bool value
   bool debug = conf["debug"].toInt();
-  Serial.printf("Boolean value: %i\n", debug);  
+  LOG_INF("Boolean value: %i\n", debug);  
   
   //Get float value
   float float_value = atof(conf["float_val"].c_str());
-  Serial.printf("Float value: %1.5f\n", float_value);
+  LOG_INF("Float value: %1.5f\n", float_value);
   
   //Change a value
   //conf.put("led_pin","3");
@@ -270,7 +271,7 @@ void setup(void) {
   
   server.onNotFound(handleNotFound);
   server.begin();
-  Serial.println("HTTP server started");
+  LOG_INF("HTTP server started\n");
   
   //On the fly generate an ini info file on SPIFFS
   {
@@ -282,11 +283,11 @@ void setup(void) {
       info.put("var2", 1234, true);
       info.saveConfigFile();
     }else{
-      Serial.printf("Info file: var1:  %s, var2: %s\n", info["var1"].c_str(), info["var2"].c_str() );      
+      LOG_DBG("Info file: var1:  %s, var2: %s\n", info["var1"].c_str(), info["var2"].c_str() );      
     }
   }  
 }
-//App main loop 
+// App main loop 
 void loop(void) {
   server.handleClient();
   #if not defined(ESP32)
