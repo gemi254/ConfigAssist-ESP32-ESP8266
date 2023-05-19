@@ -8,15 +8,21 @@ A lightweight library allowing quick configuration of **esp32/esp8266** devices.
 
 ## Description
 
-**ConfigAssist** will help to automate definition of variables used in a typical **esp32/esp8266** application. It will automatically generate a web portal with html controls based on **json  definition** text, allowing quick editing from an html page. Application variables like **Wifi ssid**, **Wifi password**, **Host Name** can be edited there for use in your application. Every time a variable is changed in the web page, it will automatically updated by ConfigAssist using an **async** JavaScript get request. As the user leaves or closes the page at end the data are saved to the ini file.
+**ConfigAssist** will help to automate definition of variables used in a typical **esp32/esp8266** application. It will automatically generate a web portal with html controls based on **json  definition** text, allowing quick editing from an html page. 
+
+Application variables like **Wifi ssid**, **Wifi password**, **Host Name** can be edited there for use in your application. Every time a variable is changed in the web page, it will automatically updated by ConfigAssist using an **async** JavaScript get request. As the user leaves or closes the page at end the data are saved to the ini file.
 
 **ConfigAssist** can also perform a **Wifi Scan** on setup and attach a **drop down list** on the field **st_ssid** with nearby available wifi **access points**. The list will be sorted by **signal strength** with the strongest wifi signal to be placed first and will be refreshed every 15 seconds. Users can choose a valid nearby **ssid** from the list.
 
-**ConfigAssist** can also check and synchronize the internal **clock** of ESP device with the browser time if needed. So even if no internet connection (AP mode) and no **npt** server is available the device will have the correct time. If **TIMEZONE_KEY** string exists in variables it will be used to set the device time zone string. If not it will use browser offset.
+**ConfigAssist** can also check and synchronize the internal **clock** of ESP device with the browser time if needed. So even if no internet connection (AP mode) and no **npt** server is available the device will have the correct time. 
+
+If **TIMEZONE_KEY** string exists in variables it will be used to set the device time zone string. If not it will use browser offset.
 
 These features can be disabled by setting **USE_WIFISCAN** and **USE_TIMESYNC** to false.
 
-Variables **descriptions** and **default values** are based on a **text description** in json format that acts as a template defining the **type**, **label** and extra **info** of each variable. All config variables must be defined there describing the **variable type**, **default value** and the **label** that will be displayed to the user. It can also include and some **attributes** in case of special variables like **datalist** for list box, min, max, step for **input number** etc.
+Variables **descriptions** and **default values** are based on a **text description** in json format that acts as a template defining the **type**, **label** and extra **info** of each variable. 
+
+All config variables must be defined there describing the **variable type**, **default value** and the **label** that will be displayed to the user. It can also include and some **attributes** in case of special variables like **datalist** for list box, min, max, step for **input number** etc.
  ```
    "name": "st_ssid",
   "label": "Name for WLAN (Ssid to connect)",
