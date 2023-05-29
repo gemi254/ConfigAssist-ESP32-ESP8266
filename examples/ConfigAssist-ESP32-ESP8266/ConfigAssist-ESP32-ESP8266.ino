@@ -53,14 +53,14 @@ const char* appConfigDict_json PROGMEM = R"~(
       "name": "led_pin",
      "label": "Enter the pin that the led is connected",
    "default": "4",
-   "attribs": "min='2' max='16' step='1'"
+   "attribs": "min=\"2\" max=\"16\" step=\"1\" "
   },{
  "seperator": "Other settings"
   },{
       "name": "float_val",
      "label": "Enter a float val",
    "default": "3.14159",
-   "attribs": "min='2.0' max='5' step='.001'"
+   "attribs": "min=\"2.0\" max=\"5\" step=\".001\" "
    },{
       "name": "debug",
      "label": "Check to enable debug",
