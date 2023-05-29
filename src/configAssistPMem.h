@@ -17,9 +17,9 @@ const char* appDefConfigDict_json PROGMEM = R"~(
 //Template for message page
 PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
 <!DOCTYPE html>
-<html lang="en" class="">
+<html lang="en">
     <head>
-      <meta charset='utf-8'>
+      <meta charset="utf-8">
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
         <title>{title}</title>
@@ -40,64 +40,63 @@ PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
         </script>                  
     </head>
     <body>
-    <div style='text-align:center;'><h3>{msg}</h3></div>
+    <div style="text-align:center;"><h3>{msg}</h3></div>
     </div></body></html>
 )=====";
 
 // Template for header, begin of the config form
 PROGMEM const char CONFIGASSIST_HTML_START[] = 
 R"=====(<!DOCTYPE HTML>
-<html lang='de'>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Configuration for {host_name}</title>)=====";
 
 // Template for header, begin of the config form
-PROGMEM const char CONFIGASSIST_HTML_CSS[] = 
-R"=====(<style>
+PROGMEM const char CONFIGASSIST_HTML_CSS[] =R"=====(
+<style>
 :root {
   --bg-table-stripe: #f6f6f5;
   --b-table: #999a9b47;
   --caption: darkgray;  
 }
 body {
-	font-family: Arial, Helvetica, sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
 }
 .column {
-	float: center;
-	width: 100%;
-	padding: 0 10px;
-	box-sizing: border-box;
+  float: center;
+  width: 100%;
+  padding: 0 10px;
+  box-sizing: border-box;
   margin-top: 10px;
 }
 .row {
-	margin: 0 -5px;
+  margin: 0 -5px;
 }
-/* Clear floats after the columns */
 .row:after {
-	content: "";
-	display: table;
-	clear: both;
+  content: "";
+  display: table;
+  clear: both;
 }
 .column .card.closed{
-    height: 26px;
-    overflow: hidden;
+  height: 26px;
+  overflow: hidden;
 }
 .column .card.closed h3{
   color: darkslategray;
 }
 .card {
   border: 1px solid #cbcaca;
-	box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
-	padding: 10px;
-	text-align: center;
-	background-color: #ffffff;
-	margin-bottom: 8px;
-	border-radius: 5px;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  text-align: center;
+  background-color: #ffffff;
+  margin-bottom: 8px;
+  border-radius: 5px;
 }
 .card h3{
-	margin:2px;
+  margin:2px;
   color: darkgray;
   background-color: whitesmoke;
 }
@@ -107,40 +106,40 @@ body {
   background-color: cornsilk;
 }
 .card h2{
-	margin-top:2px;
-	margin-bottom:8px;
-	color: var(--caption);
+  margin-top:2px;
+  margin-bottom:8px;
+  color: var(--caption);
 }
 .container {
-	display: flex;
-	justify-content: center;
-	flex-direction: row;
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
 }
 table {
-	width: 100%;
+  width: 100%;
 }
 table th, table td {
-	padding: .325em;
-	border: 1px solid var(--b-table);
+  padding: .325em;
+  border: 1px solid var(--b-table);
 }
 tbody tr:nth-of-type(2n+1) {
-	background-color: var(--bg-table-stripe)
+  background-color: var(--bg-table-stripe)
 }
 .card-header{
   margin-bottom: 15px;
 }
 .card-header:hover {
-	background-color: #f7fafa;
+  background-color: #f7fafa;
 }
 .card-body {  
 }
 .card-key {
-	text-align: right;
+  text-align: right;
   font-weight: 800;
   width: 25%;
 }
 .card-val {
-	text-align: left;
+  text-align: left;
   width: 25%;
 }
 .card-val-ctrl{
@@ -149,33 +148,32 @@ tbody tr:nth-of-type(2n+1) {
   flex-wrap: nowrap;
   line-height: var(--elmDbl);
   margin-top: var(--elmHalf);
-
 }
 .card-lbl {
-	text-align: left;
-	font-style: italic;
+  text-align: left;
+  font-style: italic;
   font-size: .8em;
   overflow-wrap: anywhere;
 }
 button {
-	background-color: #fff;
-	border: 1px solid #d5d9d9;
-	border-radius: 4px;
-	box-shadow: rgb(213 217 217 / 50%) 0 2px 5px 0;
-	box-sizing: border-box;
-	font-weight: 900;
-	color: #0f1111;
-	cursor: pointer;
-	display: inline-block;
-	padding: 0 10px 0 11px;
-	margin: 2px;
-	line-height: 29px;
-	position: relative;
-	text-align: center;
-	vertical-align: middle;
+  background-color: #fff;
+  border: 1px solid #d5d9d9;
+  border-radius: 4px;
+  box-shadow: rgb(213 217 217 / 50%) 0 2px 5px 0;
+  box-sizing: border-box;
+  font-weight: 900;
+  color: #0f1111;
+  cursor: pointer;
+  display: inline-block;
+  padding: 0 10px 0 11px;
+  margin: 2px;
+  line-height: 29px;
+  position: relative;
+  text-align: center;
+  vertical-align: middle;
 }
 button:hover {
-	background-color: #f7fafa;
+  background-color: #f7fafa;
 }
 /* Responsive columns */
 @media screen and (max-width: 600px) {
@@ -185,7 +183,6 @@ button:hover {
     margin-bottom: 20px;
     margin-top: 2px;
   }
-
   table {
     border: 0;
   }
@@ -193,7 +190,6 @@ button:hover {
     display: block;
     margin-bottom: 0.125em;
   }
-
   table td {
     display: block;
     font-size: 0.8em;
@@ -369,7 +365,7 @@ select:focus{
   outline: auto;
 }
 .selectField {
-    height: var(--inputHeight);
+  height: var(--inputHeight);
 }
 </style>)=====";
 
@@ -451,8 +447,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
   }
   /*{SUB_SCRIPT}*/   
 })
-</script>
-)=====";
+</script>)=====";
 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
   async function sendTime() {
@@ -537,24 +532,24 @@ PROGMEM const char CONFIGASSIST_HTML_CHECK_BOX[] = R"=====(
 
 //Template for one input select box
 PROGMEM const char CONFIGASSIST_HTML_SELECT_BOX[] = R"=====(
-            <select id="{key}" name='{key}' style='width:100%'>
+            <select id="{key}" name="{key}" style="width:100%">
               {opt}
             </select>)=====";
 
 //Template for one input select option
 PROGMEM const char CONFIGASSIST_HTML_SELECT_OPTION[] = 
-R"=====(            <option value='{optVal}'{sel}>{optVal}</option>
+R"=====(            <option value="{optVal}"{sel}>{optVal}</option>
 )=====";
 
 //Template for one input select datalist option
 PROGMEM const char CONFIGASSIST_HTML_SELECT_DATALIST_OPTION[] = 
-R"=====(            <option value='{optVal}'></option>
+R"=====(            <option value="{optVal}"></option>
 )=====";
 
 //Template for one input select datalist
 PROGMEM const char CONFIGASSIST_HTML_DATA_LIST[] = 
 R"=====(<input type="text" id="{key}" name="{key}" list="{key}_list" value="{val}"/>
-          <datalist id='{key}_list'>
+          <datalist id="{key}_list">
               {opt}
           </datalist>)=====";
 
@@ -606,9 +601,9 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
      </div> <!-- card-body -->
      </div> <!-- card -->
      <div class="card">
-        <button type="button" onClick="window.location.href = '/'" title='Save configuration file to storage' name="_SAVE">HOME</button>
-        <button type='button' title='Reboot esp device' onClick='if(!confirm("Reboot esp?")) return false;' name='_RBT'>Reboot</button>
-        <button type='button' title='Reset values to defaults' onClick='if(!confirm("Reset values?")) return false;' name='_RST'>Defaults</button>
+        <button type="button" onClick="window.location.href = '/'" title="Save configuration file to storage" name="_SAVE">HOME</button>
+        <button type="button" title="Reboot esp device" onClick="if(!confirm('Reboot esp?')) return false;" name="_RBT">Reboot</button>
+        <button type="button" title="Reset values to defaults" onClick="if(!confirm('Reset values?')) return false;" name="_RST">Defaults</button>
      </div> <!-- card -->
     </div> <!-- column -->
   </br>
