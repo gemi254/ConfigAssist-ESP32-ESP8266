@@ -11,7 +11,7 @@ const char* appDefConfigDict_json PROGMEM = R"~(
   },{
       "name": "host_name",
      "label": "Enter a name for your host",
-   "default": "SetupAssist_{mac}"
+   "default": "configAssist_{mac}"
   }])~";
 
 //Template for message page
@@ -466,6 +466,42 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
   setTimeTimer = setTimeout(sendTime, 200);  
 )=====";
 
+PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TEST_AP_CONNECTION[] = R"=====(
+  async function testWifi() {
+    const $ = document.querySelector.bind(document);
+    const baseHost = document.location.origin;
+    const url = baseHost + "/cfg?_TEST_WIFI=1"
+    document.body.style.cursor  = 'wait';
+    try {
+      const response = await fetch(encodeURI(url));
+      if (response.ok){
+        var j = await response.json();
+        if(!$("#_TEST_WIFI_RES")){
+            $("#st_ssid-lbl").innerHTML += "<br><span id=\"_TEST_WIFI_RES\"></span>&nbsp;"
+            $("#st_ssid-lbl").innerHTML += "<a style=\"display: none\" id=\"_TEST_WIFI_RES_LINK\" href=\"\">" + "</a>"
+        }
+        if(j.status=="Success"){
+          $("#_TEST_WIFI_RES").innerHTML = "<font color='Green'><b>" + j.status + "</b></font>";
+          $("#_TEST_WIFI_RES").innerHTML +="&nbsp;Rssi: " + j.rssi
+          $("#_TEST_WIFI_RES").innerHTML += "&nbsp;IP: "
+          $("#_TEST_WIFI_RES_LINK").innerHTML = j.ip
+          $("#_TEST_WIFI_RES_LINK").href = "http://" + j.ip;
+          $("#_TEST_WIFI_RES_LINK").style.display = "";
+        }else{
+          $("#_TEST_WIFI_RES").innerHTML = "<font color='red'><b>" + j.status + "</b></font>";
+          $("#_TEST_WIFI_RES").innerHTML += "&nbsp;Code: " + j.code;
+          $("#_TEST_WIFI_RES_LINK").style.display = "none;";
+        }
+      }else{
+        alert("Fail: " + response.text());
+      }
+    } catch(e) {
+      console.log(e)
+    }
+    document.body.style.cursor  = 'default';
+    //if($('#msg')) $('#msg').innerHTML = JSON.stringify(j);
+  }
+)=====";
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN[] = R"=====(
 async function getWifiScan() {      
     const baseHost = document.location.origin;
