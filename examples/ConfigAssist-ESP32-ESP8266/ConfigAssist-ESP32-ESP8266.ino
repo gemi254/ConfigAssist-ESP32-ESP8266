@@ -42,7 +42,7 @@ const char* appConfigDict_json PROGMEM = R"~(
   },{
       "name": "host_name",
      "label": "Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac id",
-   "default": "SetupAssist_{mac}"
+   "default": "configAssist_{mac}"
   },{
  "seperator": "Application settings"
   },{
@@ -217,6 +217,8 @@ void setup(void) {
      
   //Connect to Wifi station with ssid from conf file
   uint32_t startAttemptTime = millis();
+  WiFi.setAutoReconnect(false);
+  WiFi.setAutoConnect(false);
   WiFi.mode(WIFI_STA);
   LOG_DBG("Wifi Station starting, connecting to: %s\n", conf["st_ssid"].c_str());
   WiFi.begin(conf["st_ssid"].c_str(), conf["st_pass"].c_str());
