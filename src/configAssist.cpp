@@ -24,7 +24,7 @@ WEB_SERVER *ConfigAssist::_server = NULL;
 String ConfigAssist::_jWifi="[{}]";
 
 ConfigAssist::ConfigAssist() {
-  _jsonLoaded = false; _iniValid=false; _confFile = DEF_CONF_FILE; 
+  _jsonLoaded = false; _iniValid=false; _confFile = DEF_CONF_FILE; _apEnabled=false;
 }
 
 ConfigAssist::ConfigAssist(String ini_file) {  
@@ -80,6 +80,7 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
     LOG_INF("Wifi AP SSID: %s started, use 'http://%s' to connect\n", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());      
     if (MDNS.begin(hostName.c_str()))  LOG_INF("AP MDNS responder Started\n");  
     server.begin();
+    _apEnabled = true;
   }
   if(USE_WIFISCAN)  startScanWifi();      
   server.on("/cfg",[this] { this->handleFormRequest(this->_server);  } );
@@ -425,7 +426,40 @@ void ConfigAssist::checkTime(uint32_t timeUtc, int timeOffs){
 
 // Respond a HTTP request for /scan results
 void ConfigAssist::handleWifiScanRequest(){
-  checkScanRes();  _server->sendContent(_jWifi); 
+  checkScanRes();   _server->sendContent(_jWifi); 
+}
+// Test Station connections
+String ConfigAssist::testWiFiSTConnection(){
+  String msg = "";
+  if(WiFi.status() != WL_CONNECTED){
+    //Connect to Wifi station with ssid from conf file
+    uint32_t startAttemptTime = millis();
+    if(WiFi.getMode()!=WIFI_AP_STA) WiFi.mode(WIFI_AP_STA);
+    LOG_DBG("Wifi Station testing : %s\n", get("st_ssid").c_str());
+    WiFi.begin(get("st_ssid").c_str(), get("st_pass").c_str());
+    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000)  {
+      Serial.print(".");
+      delay(500);
+      Serial.flush();
+    }  
+    Serial.println();    
+  }
+  msg = "{";
+  if(WiFi.status() != WL_CONNECTED){
+    msg += "\"status\": \"Failed\",";
+    msg += "\"code\": \"" + String(WiFi.status()) + "\",";
+    
+  }else{
+    msg += "\"status\": \"Success\",";
+    msg += "\"ip\": \"" + WiFi.localIP().toString()+ "\",";
+    msg += "\"rssi\":\"" + String(WiFi.RSSI()) + " db\",";
+    if(_apEnabled) WiFi.disconnect();
+  }
+  msg += "\"ssid\": \"" + WiFi.SSID() + "\"";
+  msg += "}";  
+  
+  LOG_DBG("Wifi Station testing: %s, %x\n", msg.c_str(), _server );
+  return msg;
 }
 
 // Respond a not found HTTP request
@@ -458,6 +492,15 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     //Reload and loose changes
     if (server->hasArg(F("_CANCEL"))) {
       server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/\">");
+      return;
+    }
+    //Test wifi?    
+    if (server->hasArg(F("_TEST_WIFI"))) {
+      LOG_DBG("Testing WIFI ST connection..\n");
+      String msg = testWiFiSTConnection();
+      server->send(200, "text/json", msg.c_str());
+      server->client().flush(); 
+      LOG_DBG("Testing WIFI ST connection..Done\n");
       return;
     }
 
@@ -542,6 +585,11 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   server->sendContent(CONFIGASSIST_HTML_CSS);
   server->sendContent(CONFIGASSIST_HTML_CSS_CTRLS);      
   String script(CONFIGASSIST_HTML_SCRIPT);
+  if(USE_TESTWIFI){
+    out = String("<script>") + CONFIGASSIST_HTML_SCRIPT_TEST_AP_CONNECTION + String("</script>");
+    server->sendContent(out);
+  } 
+
   String subScript = "";
   if(USE_TIMESYNC) subScript = CONFIGASSIST_HTML_SCRIPT_TIME_SYNC;  
   if(USE_WIFISCAN) subScript += CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN;
@@ -664,7 +712,10 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
       elm.replace("<input ", "<input type=\"password\" " +c.attribs);
     else if(isNumeric(c.value))
       elm.replace("<input ", "<input type=\"number\" " +c.attribs);
-    else 
+    else if(USE_TESTWIFI && c.name.indexOf("st_ssid")>=0){
+      out.replace("<td class=\"card-lbl\">", "<td class=\"card-lbl\" id=\"st_ssid-lbl\">");
+      c.label +="&nbsp;&nbsp;<a href=\"\" title=\"Test ST connection\" onClick=\"testWifi(); return false;\" id=\"_TEST_WIFI\">Test connection</a>";
+    }else 
       elm.replace("<input ", "<input " +c.attribs);
   }else if(c.type == TEXT_AREA){
     String file = String(CONFIGASSIST_HTML_TEXT_AREA_FNAME);        
@@ -895,7 +946,7 @@ void logPrint(const char *level, const char *format, ...){
   Serial.print(outBuf);
   
   if (ca_logToFile){
-    if(!ca_logFile) ca_logFile = STORAGE.open(LOG_FILENAME, FILE_APPEND);
+    if(!ca_logFile) ca_logFile = STORAGE.open(LOG_FILENAME, "a+");
     if(!ca_logFile){
       Serial.printf("Failed to open log file: %s\n", LOG_FILENAME);
       ca_logToFile = false;
