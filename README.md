@@ -12,7 +12,9 @@ A lightweight library allowing quick configuration of **esp32/esp8266** devices.
 
 Application variables like **Wifi ssid**, **Wifi password**, **Host Name** can be edited there for use in your application. Every time a variable is changed in the web page, it will automatically updated by ConfigAssist using an **async** JavaScript get request. As the user leaves or closes the page at end the data are saved to the ini file.
 
-**ConfigAssist** can also perform a **Wifi Scan** on setup and attach a **drop down list** at the field **st_ssid** with nearby available wifi **access points**. The wifi list will be sorted by **signal strength** with the strongest signals to be placed first and will be refreshed every 15 seconds. Users can choose a valid nearby **ssid** from the wifi list.
+**ConfigAssist** can also perform a **Wifi Scan** on setup and attach a **drop down list** at the field **st_ssid** with nearby available wifi **access points**. The wifi list will be sorted by **signal strength** with the strongest signals to be placed first and will be refreshed every 15 seconds. Users can choose a valid nearby **ssid** from the wifi list. 
+
+Station connections can be **validated** with ``Test connection`` link on the st_ssid field. On AP connection during setup **ConfigAssist** will try to test Station connection with **Wifi ssid**, **Wifi password** entered and on success the Station ip address wiil be displayed.
 
 **ConfigAssist** can also check and synchronize the internal **clock** of ESP device with the browser time if needed. So even if no internet connection (AP mode) and no **npt** server is available the device will get the correct time. If **TIMEZONE_KEY** string exists in variables it will be used to set the device time zone string. If not it will use browser offset.
 
