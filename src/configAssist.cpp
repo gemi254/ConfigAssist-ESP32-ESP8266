@@ -429,14 +429,16 @@ void ConfigAssist::handleWifiScanRequest(){
   checkScanRes();   _server->sendContent(_jWifi); 
 }
 // Test Station connections
-String ConfigAssist::testWiFiSTConnection(){
+String ConfigAssist::testWiFiSTConnection(String no){
   String msg = "";
-  if(WiFi.status() != WL_CONNECTED){
+  String ssid = get("st_ssid"+no);
+  String pass = get("st_pass"+no);
+  if(ssid != "" && WiFi.status() != WL_CONNECTED){
     //Connect to Wifi station with ssid from conf file
     uint32_t startAttemptTime = millis();
     if(WiFi.getMode()!=WIFI_AP_STA) WiFi.mode(WIFI_AP_STA);
-    LOG_DBG("Wifi Station testing : %s\n", get("st_ssid").c_str());
-    WiFi.begin(get("st_ssid").c_str(), get("st_pass").c_str());
+    LOG_DBG("Wifi Station testing :%s, %s\n", no, ssid.c_str());
+    WiFi.begin(ssid.c_str(), pass.c_str());
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000)  {
       Serial.print(".");
       delay(500);
@@ -446,19 +448,22 @@ String ConfigAssist::testWiFiSTConnection(){
   }
   msg = "{";
   if(WiFi.status() != WL_CONNECTED){
-    msg += "\"status\": \"Failed\",";
-    msg += "\"code\": \"" + String(WiFi.status()) + "\",";
-    
+    msg += "\"status\": \"Error\", ";
+    msg += "\"ssid\": \"" + ssid + "\", ";
+    msg += "\"code\": \"" + String(WiFi.status()) + "\"";
+  }else if(ssid != WiFi.SSID()){ //Connected and test other ssid
+    msg += "\"status\": \"Failed\", ";
+    msg += "\"ssid\": \"" + ssid + "\", ";
+    msg += "\"code\": \"" + String("Already in connection") + "\"";  
   }else{
-    msg += "\"status\": \"Success\",";
-    msg += "\"ip\": \"" + WiFi.localIP().toString()+ "\",";
-    msg += "\"rssi\":\"" + String(WiFi.RSSI()) + " db\",";
-    if(_apEnabled) WiFi.disconnect();
+    msg += "\"status\": \"Success\", ";
+    msg += "\"ip\": \"" + WiFi.localIP().toString()+ "\", ";
+    msg += "\"ssid\": \"" + WiFi.SSID() + "\", ";
+    msg += "\"rssi\": \"" + String(WiFi.RSSI()) + " db\"";
   }
-  msg += "\"ssid\": \"" + WiFi.SSID() + "\"";
-  msg += "}";  
   
-  LOG_DBG("Wifi Station testing: %s, %x\n", msg.c_str(), _server );
+  msg += "}"; 
+  LOG_DBG("Wifi Station testing: %s\n", msg.c_str() );
   return msg;
 }
 
@@ -497,10 +502,12 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     //Test wifi?    
     if (server->hasArg(F("_TEST_WIFI"))) {
       LOG_DBG("Testing WIFI ST connection..\n");
-      String msg = testWiFiSTConnection();
+      String no = server->arg(F("_TEST_WIFI"));
+      String msg = testWiFiSTConnection(no);
       server->send(200, "text/json", msg.c_str());
       server->client().flush(); 
       LOG_DBG("Testing WIFI ST connection..Done\n");
+      if(_apEnabled) WiFi.disconnect();
       return;
     }
 
@@ -585,14 +592,17 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   server->sendContent(CONFIGASSIST_HTML_CSS);
   server->sendContent(CONFIGASSIST_HTML_CSS_CTRLS);      
   String script(CONFIGASSIST_HTML_SCRIPT);
+  
   if(USE_TESTWIFI){
-    out = String("<script>") + CONFIGASSIST_HTML_SCRIPT_TEST_AP_CONNECTION + String("</script>");
+    out = String("<script>") + CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION + String("</script>");
     server->sendContent(out);
-  } 
+  }
 
   String subScript = "";
-  if(USE_TIMESYNC) subScript = CONFIGASSIST_HTML_SCRIPT_TIME_SYNC;  
+  if(USE_TIMESYNC) subScript += CONFIGASSIST_HTML_SCRIPT_TIME_SYNC;  
   if(USE_WIFISCAN) subScript += CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN;
+  //if(USE_TESTWIFI) subScript += CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION;
+
   script.replace("/*{SUB_SCRIPT}*/", subScript);
   server->sendContent(script);
   out = String(CONFIGASSIST_HTML_BODY);
@@ -713,8 +723,13 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     else if(isNumeric(c.value))
       elm.replace("<input ", "<input type=\"number\" " +c.attribs);
     else if(USE_TESTWIFI && c.name.indexOf("st_ssid")>=0){
-      out.replace("<td class=\"card-lbl\">", "<td class=\"card-lbl\" id=\"st_ssid-lbl\">");
-      c.label +="&nbsp;&nbsp;<a href=\"\" title=\"Test ST connection\" onClick=\"testWifi(); return false;\" id=\"_TEST_WIFI\">Test connection</a>";
+      String no = c.name;
+      no.replace("st_ssid","");
+      //if(no=="") no = "1";
+      out.replace("<td class=\"card-lbl\">", "<td class=\"card-lbl\" id=\"st_ssid" + no + "-lbl\">");
+      //out.replace("st_ssid-lbl","st_ssid-lbl"+no);
+      c.label +="&nbsp;&nbsp;<a href=\"\" title=\"Test ST connection\" onClick=\"testWifi(" + no + "); return false;\" id=\"_TEST_WIFI" + no + "\">Test connection</a>";
+      //c.label +="&nbsp;&nbsp;<a href=\"\" title=\"Test ST connection\" id=\"_TEST_WIFI" + no + "\">Test connection</a>";
     }else 
       elm.replace("<input ", "<input " +c.attribs);
   }else if(c.type == TEXT_AREA){
