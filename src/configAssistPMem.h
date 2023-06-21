@@ -371,9 +371,9 @@ select:focus{
 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT[] = R"=====(
 <script>
+const $ = document.querySelector.bind(document);
+const $$ = document.querySelectorAll.bind(document);
 document.addEventListener('DOMContentLoaded', function (event) {
-  const $ = document.querySelector.bind(document);
-  const $$ = document.querySelectorAll.bind(document);
   let scanTimer = null;
   let setTimeTimer = null;
   let refreshInterval = 15000;
@@ -466,38 +466,47 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
   setTimeTimer = setTimeout(sendTime, 200);  
 )=====";
 
-PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TEST_AP_CONNECTION[] = R"=====(
-  async function testWifi() {
-    const $ = document.querySelector.bind(document);
+PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION[] = R"=====(
+  async function testWifi(no="") {
     const baseHost = document.location.origin;
-    const url = baseHost + "/cfg?_TEST_WIFI=1"
+    const url = encodeURI( baseHost + "/cfg?_TEST_WIFI="+no )      
     document.body.style.cursor  = 'wait';
+    const ed = "st_ssid" + no;
+    const lbl = ed + "-lbl"
+    const res = ed + "_res"
+    const res_link = ed + "_res_link"
+    if($("#_TEST_WIFI"+no).innerHTML == "Testing..") return;
+    $("#_TEST_WIFI"+no).innerHTML = "Testing.."
+    if($("#"+res)) $("#"+res).innerHTML = ""
+    if($("#"+res_link)) $("#"+res_link).style.display = "none";
     try {
-      const response = await fetch(encodeURI(url));
+      const response = await fetch(url);
       if (response.ok){
-        var j = await response.json();
-        if(!$("#_TEST_WIFI_RES")){
-            $("#st_ssid-lbl").innerHTML += "<br><span id=\"_TEST_WIFI_RES\"></span>&nbsp;"
-            $("#st_ssid-lbl").innerHTML += "<a style=\"display: none\" id=\"_TEST_WIFI_RES_LINK\" href=\"\">" + "</a>"
+        var j = await response.json(); 
+        if(!$("#"+res)){
+            $("#"+lbl).innerHTML += "<br><span id=\"" + res + "\"></span>&nbsp;"
+            $("#"+lbl).innerHTML += "<a target=\"_blank\" style=\"display: none\" id=\"" + res_link + "\" href=\"\">" + "</a>"
         }
+      
         if(j.status=="Success"){
-          $("#_TEST_WIFI_RES").innerHTML = "<font color='Green'><b>" + j.status + "</b></font>";
-          $("#_TEST_WIFI_RES").innerHTML +="&nbsp;Rssi: " + j.rssi
-          $("#_TEST_WIFI_RES").innerHTML += "&nbsp;IP: "
-          $("#_TEST_WIFI_RES_LINK").innerHTML = j.ip
-          $("#_TEST_WIFI_RES_LINK").href = "http://" + j.ip;
-          $("#_TEST_WIFI_RES_LINK").style.display = "";
+          $("#"+res).innerHTML = "<font color='Green'><b>" + j.status + "</b></font>";
+          $("#"+res).innerHTML +="&nbsp;Rssi: " + j.rssi
+          $("#"+res).innerHTML += "&nbsp;IP: "
+          $("#"+res_link).innerHTML = j.ip
+          $("#"+res_link).href = "http://" + j.ip;
+          $("#"+res_link).style.display = "";
         }else{
-          $("#_TEST_WIFI_RES").innerHTML = "<font color='red'><b>" + j.status + "</b></font>";
-          $("#_TEST_WIFI_RES").innerHTML += "&nbsp;Code: " + j.code;
-          $("#_TEST_WIFI_RES_LINK").style.display = "none;";
-        }
+          $("#"+res).innerHTML = "<font color='red'><b>" + j.status + "</b></font>";
+          $("#"+res).innerHTML += "&nbsp;Code: " + j.code;
+          $("#"+res_link).style.display = "none;";
+        }        
       }else{
-        alert("Fail: " + response.text());
+        alert("Fail: " + response.text());        
       }
     } catch(e) {
-      console.log(e)
+      alert(e + "\n" + url)
     }
+    $("#_TEST_WIFI"+no).innerHTML = "Test connection"
     document.body.style.cursor  = 'default';
     //if($('#msg')) $('#msg').innerHTML = JSON.stringify(j);
   }
@@ -522,17 +531,22 @@ async function getWifiScan() {
         for(n in json){
           options  += '<option value="' + json[n].ssid + '"></option>\n'
         }
-
-        const ed = $('#st_ssid') || $('#st_ssid1')
-        const td = ed.parentElement
-        if(!ed.getAttribute('list')){
-          list = document.createElement('datalist')
-          list.id = 'st_wifi_list'
-          td.appendChild(list)
-          $('#st_wifi_list').innerHTML =  options
-          ed.setAttribute('list','st_wifi_list')
-        }else{
-          $('#st_wifi_list').innerHTML =  options
+        
+        eds = document.querySelectorAll("input[id*='st_ssid']")        
+        for (i = 0; i < eds.length; ++i) {
+          ed = eds[i]
+          id = ed.id.replace("st_ssid","")
+          const td = ed.parentElement
+        
+          if(!ed.getAttribute('list')){
+            list = document.createElement('datalist')
+            list.id = 'st_wifi_list'+id
+            td.appendChild(list)
+            $('#st_wifi_list'+id).innerHTML =  options
+            ed.setAttribute('list','st_wifi_list'+id)
+          }else{
+            $('#st_wifi_list'+id).innerHTML =  options
+          }
         }
       }
     } catch(e) {
