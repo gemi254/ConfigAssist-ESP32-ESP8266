@@ -117,7 +117,7 @@ class ConfigAssist{
     void checkTime(uint32_t timeUtc, int timeOffs);
     // Respond a HTTP request for /scan results
     void handleWifiScanRequest();
-    String testWiFiSTConnection();
+    String testWiFiSTConnection(String no);
     // Respond a not found HTTP request
     void handleNotFound();
     // Respond a HTTP request for the form use the CONF_FILE
