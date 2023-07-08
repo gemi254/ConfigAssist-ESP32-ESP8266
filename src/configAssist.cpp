@@ -57,6 +57,7 @@ void ConfigAssist::init(String ini_file, const char * jStr) {
   
   //On fail load defaults from dict
   if(!_iniValid){
+    LOG_WRN("File : %s is not Valid. Loading default values\n",_confFile.c_str());
     loadJsonDict(_jStr);
     _dirty = true;
   }      
@@ -330,8 +331,12 @@ bool ConfigAssist::loadConfigFile(String filename) {
   LOG_DBG("Loading config: %s\n",filename.c_str());
   if(filename=="") filename = _confFile;
   File file = STORAGE.open(filename,"r");
-  if (!file || !file.size()) {
-    LOG_ERR("Failed to load: %s, sz: %u\n", filename.c_str(), file.size());
+  if (!file){
+    LOG_ERR("File: %s not exists!\n", filename.c_str());
+    _iniValid = false;       
+    return false;  
+  }else if(!file.size()) {
+    LOG_ERR("Failed to load: %s, size: %u\n", filename.c_str(), file.size());
     //if (!file.size()) STORAGE.remove(CONFIG_FILE_PATH); 
     _iniValid = false;       
     return false;
@@ -528,7 +533,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       String val(server->arg(i));
       key = urlDecode(key);
       val = urlDecode(val);
-      if(key=="apName" || key =="_SAVE" || key=="_RST" || key=="_RBT" || key=="plain") continue;
+      if(key=="apName" || key =="_SAVE" || key=="_RST" || key=="_RBT" || key=="plain" || key=="_TS") continue;
       if(key.endsWith(FILENAME_IDENTIFIER)) continue;
       if(key=="clockUTC"){
           // Synchronize to browser clock if out of sync
@@ -555,10 +560,33 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     if (server->hasArg(F("_RBT"))) {
         saveConfigFile();
         String out(CONFIGASSIST_HTML_MESSAGE);
+        String timestamp = server->arg("_TS");
+        bool reboot = true;
+        if(timestamp != ""){
+          struct timeval tvLocal;
+          gettimeofday(&tvLocal, NULL);        
+          //Is time in sync?
+          if (tvLocal.tv_sec > 10000){            
+            long timeUtc = timestamp.toInt();
+            long diff = tvLocal.tv_sec - timeUtc;
+            if( diff > 5L ) reboot = false;
+            LOG_DBG("Check device reboot: %i, timeDif: %lu\n", reboot, diff );
+          }else{
+            LOG_DBG("Check device reboot: Time is not synchronized.\n");
+          }          
+        }
+        if(!reboot){
+          out.replace("{reboot}", "false");
+          out.replace("{msg}", "Already restarted, Redirecting to home");
+          out.replace("{refresh}", "3000");
+        }else{
+          out.replace("{reboot}", "true");          
+          out.replace("{msg}", "Configuration saved.<br>Device will be restarted in a few seconds");
+          out.replace("{refresh}", "10000");
+        }
         out.replace("{title}", "Reboot device");
         out.replace("{url}", "/cfg");
         out.replace("{refresh}", "10000");
-        out.replace("{msg}", "Configuration saved.<br>Device will restart in a few seconds");      
         server->send(200, "text/html", out);
         server->client().flush(); 
         return;
