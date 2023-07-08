@@ -220,6 +220,10 @@ void setup(void) {
   LOG_INF("Starting..\n");
   debugMemory("setup");
 
+  //Uncomment to remove ini file for other examples
+  //and re-built it fron dictionary
+  //conf.deleteConfig();
+
   #if defined(ESP32)
     if(!STORAGE.begin(true)) Serial.println("ESP32 Storage failed!");
   #else
@@ -232,9 +236,7 @@ void setup(void) {
   bool bConn = connectToNetwork();
   digitalWrite(conf["led_pin"].toInt(), 1);
 
-  if(bConn){
-    LOG_INF("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", conf["st_ssid1"].c_str(), WiFi.localIP().toString().c_str());
-  }else{
+  if(!bConn){
     LOG_ERR("Connect failed.");
     conf.setup(server, true);
     return;
