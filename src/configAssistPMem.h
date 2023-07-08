@@ -28,13 +28,16 @@ PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
             setTimeout(function() {
                       location.href = '{url}';
                   }, {refresh});
-            const baseHost = document.location.origin;
-            const url = baseHost + "/cfg?_RBT_CONFIRM=1";
-            try{
-              console.log('Restarting')
-              const response = fetch(encodeURI(url));
-            } catch (e) {
-              console.log(e)
+            
+            if({reboot}){      
+              const baseHost = document.location.origin;
+              const url = baseHost + "/cfg?_RBT_CONFIRM=1";
+              try{
+                console.log('Restarting')
+                const response = fetch(encodeURI(url));
+              } catch (e) {
+                console.log(e)
+              }
             }
         });
         </script>                  
@@ -436,8 +439,11 @@ document.addEventListener('DOMContentLoaded', function (event) {
     if(value == null ) return;      
     const baseHost = document.location.origin;
     const url = baseHost + "/cfg?" + key + "=" + value
-    if(key=="_RST" || key=="_RBT"){
+    if(key=="_RST"){
       document.location = url;
+    }else if (key=="_RBT"){
+      let nowUTC = Math.floor(new Date().getTime() / 1000);
+      document.location = url+"&_TS="+ nowUTC;
     }
     const response = await fetch(encodeURI(url));
     if (!response.ok){
