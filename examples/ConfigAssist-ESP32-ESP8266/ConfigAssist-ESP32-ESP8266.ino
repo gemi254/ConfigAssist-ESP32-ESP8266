@@ -202,7 +202,7 @@ void setup(void) {
   //If ini file is valid json will not be used
   conf.initJsonDict(appConfigDict_json);  
   
-  //Uncomment to remove ini file and re-built it fron dictionary
+  //Uncomment to remove old ini file and re-built it fron dictionary
   //conf.deleteConfig();
 
   //Failed to load config or ssid empty
