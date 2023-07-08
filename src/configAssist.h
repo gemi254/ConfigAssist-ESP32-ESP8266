@@ -1,7 +1,7 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
 
-#define CLASS_VERSION "2.6.3"        // Class version
+#define CLASS_VERSION "2.6.4"        // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -22,8 +22,8 @@
 #ifndef LOG_LEVEL 
 //#define LOG_LEVEL '0' //Nothing
 //#define LOG_LEVEL '1' //Errors 
-#define LOG_LEVEL '2' //Errors & Warnings
-//#define LOG_LEVEL '3' //Errors & Warnings & Info
+//#define LOG_LEVEL '2' //Errors & Warnings
+#define LOG_LEVEL '3' //Errors & Warnings & Info
 //#define LOG_LEVEL '4' //Errors & Warnings & Info & Debug
 #endif 
 
