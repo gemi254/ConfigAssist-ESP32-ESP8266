@@ -225,6 +225,9 @@ Then include the **configAssist,h** in your application and compile..
 + In order to compile you must install **ArduinoJson** library.
 + if your variables exceed **MAX_PARAMS** increase this value in class header.
 
+Compiling included examples require to remove old **ini** file by calling `conf.deleteConfig();`
+See ConfigAssist-ESP32-ESP8266.ino line:206
+
 ###### If you get compilation errors on arduino-esp32 you need to update your arduino-esp32 library in the IDE using Boards Manager
 
 ## Other examples
