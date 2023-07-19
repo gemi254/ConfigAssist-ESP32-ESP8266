@@ -43,12 +43,12 @@ void setup() {
   Serial.print("Starting..\n");
 
   #if defined(ESP32)  
-    if(!STORAGE.begin(true)) Serial.println("ESP32 Storage failed!"); 
+    if(!STORAGE.begin(true)) Serial.println("ESP32 storage init failed!"); 
   #else
-    if(!STORAGE.begin()) Serial.println("ESP8266 Storage failed!"); 
+    if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!"); 
   #endif
-  
-  //STORAGE.remove(LOG_FILENAME); //Uncomment to remove the log file
+  //Uncomment to reset the log file
+  //STORAGE.remove(LOG_FILENAME); 
 
   //Display the log file
   serialPrintLog();
