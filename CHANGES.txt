@@ -1,3 +1,7 @@
+2.6.5 (2023-07-19)
+  * Added set static ip to ConfigAssist-Test-Wifi.ino
+  * Add a not found key to ini file if defined in json.
+
 2.6.4 (2023-07-08)
   * Reboot confirmation using timestamp    
 
