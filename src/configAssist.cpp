@@ -293,13 +293,19 @@ int ConfigAssist::loadJsonDict(String jStr, bool update) {
       if (c.type) { //Valid
         if(update){
           int keyPos = getKeyPos(c.name);
+          //Add a Json key if not exists in ini file
+          if (keyPos < 0) {
+            LOG_WRN("Key: %s not found in ini file.\n", c.name.c_str());
+            put(c.name, c.value,true);
+            keyPos = getKeyPos(c.name);
+          }
           if (keyPos >= 0) {
             //Update all other fields but not value,key        
             _configs[keyPos].readNo = i;
             _configs[keyPos].label = c.label;
             _configs[keyPos].type = c.type;
             _configs[keyPos].attribs = c.attribs;
-            LOG_DBG("Json upd key[%i]=%s, label: %s, type:%i, read: %i\n", keyPos, c.name.c_str(), c.label.c_str(),c.type, i);
+            LOG_DBG("Json upd key[%i]=%s, type:%i, read: %i\n", keyPos, c.name.c_str(), c.type, i);
           }else{
             LOG_ERR("Undefined json Key: %s\n", c.name.c_str());
           }
@@ -350,8 +356,9 @@ bool ConfigAssist::loadConfigFile(String filename) {
     } 
     sort();
   }
+  
   file.close();
-  LOG_INF("Loaded config: %s\n",filename.c_str());
+  LOG_INF("Loaded config: %s, keyCnt: %i\n",filename.c_str(), _configs.size());
   _iniValid = true;
   return true;
 }
@@ -359,7 +366,7 @@ bool ConfigAssist::loadConfigFile(String filename) {
 // Delete configuration file
 bool ConfigAssist::deleteConfig(String filename){
   if(filename=="") filename = _confFile;
-  LOG_INF("Remove config: %s\n",filename.c_str());
+  LOG_INF("Removing config: %s\n",filename.c_str());
   return STORAGE.remove(filename);
 }
 
@@ -807,7 +814,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
       out = outSep + out;
     LOG_DBG("SEP key[%i]: %s = %s\n", sepKeyPos, sKey.c_str(), sVal.c_str());
   }  
-  LOG_DBG("HTML key[%i]: %s = %s, type: %i, lbl: %s, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.label.c_str(), c.attribs.c_str() );
+  LOG_DBG("HTML key[%i]: %s = %s, type: %i, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.attribs.c_str() );
   return true;
 }
 
