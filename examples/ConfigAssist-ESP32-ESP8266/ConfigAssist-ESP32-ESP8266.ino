@@ -24,7 +24,7 @@
 
 //Define application name
 #define APP_NAME "ConfigAssistDemo"
-
+#define INI_FILE "/ConfigAssistDemo.ini"
 // Default application config dictionary
 // Modify the file with the params for you application
 // Then you can use then then by val = config[name];
@@ -192,15 +192,15 @@ void setup(void) {
   debugMemory("setup");
   //Start local storage
   #if defined(ESP32)  
-    if(!STORAGE.begin(true)) Serial.println("ESP32 Storage failed!"); 
+    if(!STORAGE.begin(true)) Serial.println("ESP32 storage init failed!"); 
   #else
-    if(!STORAGE.begin()) Serial.println("ESP8266 Storage failed!"); 
+    if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!"); 
   #endif
   ListDir("/");
   
   //Initialize ConfigAssist json dictionary pointer
   //If ini file is valid json will not be used
-  conf.initJsonDict(appConfigDict_json);  
+  conf.init(INI_FILE, appConfigDict_json);  
   
   //Uncomment to remove old ini file and re-built it fron dictionary
   //conf.deleteConfig();
