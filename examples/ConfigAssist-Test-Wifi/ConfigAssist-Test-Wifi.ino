@@ -27,6 +27,7 @@
 #define MAX_SSID_ARR_NO 2
 
 #define APP_NAME "ConfigAssistTestWifi"
+#define INI_FILE "/ConfigAssistTestWifi.ini"
 
 const char* appConfigDict_json PROGMEM = R"~(
 [{
@@ -40,6 +41,10 @@ const char* appConfigDict_json PROGMEM = R"~(
      "label": "Password for WLAN1",
    "default": ""
   },{
+    "name": "st_ip1",
+    "label": "Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)",
+  "default": ""
+  },{
     "name": "st_ssid2",
      "label": "Name for WLAN2",
    "default": ""
@@ -47,6 +52,10 @@ const char* appConfigDict_json PROGMEM = R"~(
       "name": "st_pass2",
      "label": "Password for WLAN2",
    "default": ""
+  },{
+    "name": "st_ip2",
+    "label": "Static ip setup (ip mask gateway) (192.168.4.2 255.255.255.0 192.168.1.1)",
+  "default": ""
   },{
       "name": "host_name",
      "label": "Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac id",
@@ -69,21 +78,21 @@ const char* appConfigDict_json PROGMEM = R"~(
      "label": "Enter a float val",
    "default": "3.14159",
    "attribs": "min=\"2.0\" max=\"5\" step=\".001\" "
-   },{
+  },{
       "name": "debug",
      "label": "Check to enable debug",
    "checked": "False"
-   },{
+  },{
       "name": "sensor_type",
      "label": "Enter the sensor type",
    "options": "'BMP280', 'DHT12', 'DHT21', 'DHT22'",
    "default": "DHT22"
-   },{
+  },{
       "name": "refresh_rate",
      "label": "Enter the sensor update refresh rate",
      "range": "10, 50, 1",
    "default": "30"
-   },{
+  },{
       "name": "time_zone",
      "label": "Needs to be a valid time zone string",
    "default": "EET-2EEST,M3.5.0/3,M10.5.0/4",    
@@ -130,6 +139,9 @@ ConfigAssist conf;
 String hostName;
 unsigned long pingMillis = millis();
 
+extern byte ca_logLevel; 
+#define DEF_LOG_LEVEL '4'
+
 void debugMemory(const char* caller) {
   #if defined(ESP32)
     LOG_DBG("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
@@ -171,19 +183,56 @@ void handleNotFound() {
   server.send(404, "text/plain", message);
   digitalWrite(conf["led_pin"].toInt(), 0);
 }
+// Set static ip if defined
+bool setStaticIP(String st_ip){
+  if(st_ip.length() <= 0) return false;
 
+  IPAddress ip, mask, gw;
+
+  int ndx = st_ip.indexOf(' ');
+  String s = st_ip.substring(0, ndx);
+  s.trim();
+  if(!ip.fromString(s)){
+    LOG_ERR("Error parsing static ip: %s\n",s.c_str());
+    return false;
+  }
+
+  st_ip = st_ip.substring(ndx + 1, st_ip.length() );
+  ndx = st_ip.indexOf(' ');
+  s = st_ip.substring(0, ndx);
+  s.trim();
+  if(!mask.fromString(s)){
+    LOG_ERR("Error parsing static ip mask: %s\n",s.c_str());
+    return false;
+  }
+
+  st_ip = st_ip.substring(ndx + 1, st_ip.length() );
+  s = st_ip;
+  s.trim();
+  if(!gw.fromString(s)){
+    LOG_ERR("Error parsing static ip gw: %s\n",s.c_str());
+    return false;
+  }
+  LOG_INF("Wifi ST setting static ip: %s, mask: %s  gw: %s \n", ip.toString().c_str(), mask.toString().c_str(), gw.toString().c_str());
+  WiFi.config(ip, gw, mask);
+  return true;  
+}
 
 bool connectToNetwork(){
   WiFi.mode(WIFI_AP_STA);
   WiFi.setHostname(conf["host_name"].c_str());
   String st_ssid ="";
-  String st_pass="";
+  String st_pass = "";
+  String st_ip = "";
   for (int i = 1; i < MAX_SSID_ARR_NO + 1; i++){
     st_ssid = conf["st_ssid" + String(i)];
     if(st_ssid=="") continue;
     st_pass = conf["st_pass" + String(i)];
-
-
+    
+    //Set static ip if defined
+    st_ip = conf["st_ip" + String(i)];
+    setStaticIP(st_ip);  
+    
     LOG_INF("Wifi ST connecting to: %s, %s \n",st_ssid.c_str(), st_pass.c_str());
 
     WiFi.begin(st_ssid.c_str(), st_pass.c_str());
@@ -214,23 +263,24 @@ bool connectToNetwork(){
 
 void setup(void) {
 
+  ca_logLevel = DEF_LOG_LEVEL;
+
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
   LOG_INF("Starting..\n");
   debugMemory("setup");
 
-  //Uncomment to remove ini file for other examples
-  //and re-built it fron dictionary
-  //conf.deleteConfig();
-
   #if defined(ESP32)
-    if(!STORAGE.begin(true)) Serial.println("ESP32 Storage failed!");
+    if(!STORAGE.begin(true)) Serial.println("ESP32 storage init failed!");
   #else
-    if(!STORAGE.begin()) Serial.println("ESP8266 Storage failed!");
+    if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!");
   #endif
 
-  conf.initJsonDict(appConfigDict_json);
+  //Uncomment to remove ini file for other examples and re-built it fron json
+  //conf.deleteConfig();
+  
+  conf.init(INI_FILE, appConfigDict_json);
   
   //Connect to any available network
   bool bConn = connectToNetwork();
