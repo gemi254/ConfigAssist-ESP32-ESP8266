@@ -1,7 +1,7 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
 
-#define CLASS_VERSION "2.6.4"        // Class version
+#define CLASS_VERSION "2.6.5"        // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
