@@ -18,35 +18,55 @@ const char* appDefConfigDict_json PROGMEM = R"~(
 PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-      <meta charset="utf-8">
-        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-        <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
-        <title>{title}</title>
-        <script>
-        document.addEventListener('DOMContentLoaded', function (event) {
-            setTimeout(function() {
-                      location.href = '{url}';
-                  }, {refresh});
-            
-            if({reboot}){      
-              const baseHost = document.location.origin;
-              const url = baseHost + "/cfg?_RBT_CONFIRM=1";
-              try{
-                console.log('Restarting')
-                const response = fetch(encodeURI(url));
-              } catch (e) {
-                console.log(e)
-              }
-            }
-        });
-        </script>                  
-    </head>
-    <body>
-    <div style="text-align:center;"><h3>{msg}</h3></div>
-    </div></body></html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+  <title>{title}</title>
+  <script>
+  document.addEventListener('DOMContentLoaded', function (event) {
+      setTimeout(function() {
+                location.href = '{url}';
+            }, {refresh});
+      
+      if({reboot}){      
+        const baseHost = document.location.origin;
+        const url = baseHost + "/cfg?_RBT_CONFIRM=1";
+        try{
+          console.log('Restarting')
+          const response = fetch(encodeURI(url));
+        } catch (e) {
+          console.log(e)
+        }
+      }
+  });
+  </script>                  
+</head>
+<body>
+<div style="text-align:center;"><h3>{msg}</h3></div>
+</body></html>
 )=====";
-
+//Template for uploading a file
+PROGMEM const char CONFIGASSIST_HTML_UPLOAD[] = R"=====(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+  <title>Upload to spiffs</title>                        
+</head>
+<body>
+<div style="text-align:center;"><h3>Select a config file to upload to the device</h3></div>
+<div style="text-align:center;">
+  <form action='/fupl' method='post' enctype='multipart/form-data'>
+  <input class='buttons' style='width:40%' type='file' name='fupload' id='fupload' value=''><br>
+  <br><button class='buttons' style='width:10%' type='submit'>Upload File</button><br><br>
+  <a href='/cfg'>[Back]</a><br><br>
+</div>
+</body>
+</html>
+)=====";
 // Template for header, begin of the config form
 PROGMEM const char CONFIGASSIST_HTML_START[] = 
 R"=====(<!DOCTYPE HTML>
@@ -444,6 +464,8 @@ document.addEventListener('DOMContentLoaded', function (event) {
     }else if (key=="_RBT"){
       let nowUTC = Math.floor(new Date().getTime() / 1000);
       document.location = url+"&_TS="+ nowUTC;
+    }else if (key=="_DWN"){
+      return;
     }
     const response = await fetch(encodeURI(url));
     if (!response.ok){
@@ -659,6 +681,8 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
      <div class="card">
         <button type="button" onClick="window.location.href = '/'" title="Save configuration file to storage" name="_SAVE">HOME</button>
         <button type="button" title="Reboot esp device" onClick="if(!confirm('Reboot esp?')) return false;" name="_RBT">Reboot</button>
+        <button type="button" title="Backup configuration" onClick="window.location.href = '/cfg?_DWN=1'" name="_DWN">Backup</button>
+        <button type="button" title="Restore configuration" onClick="window.location.href = '/upl'" name="_UPL">Restore</button>
         <button type="button" title="Reset values to defaults" onClick="if(!confirm('Reset values?')) return false;" name="_RST">Defaults</button>
      </div> <!-- card -->
     </div> <!-- column -->
