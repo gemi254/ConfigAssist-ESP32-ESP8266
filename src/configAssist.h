@@ -1,7 +1,7 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
 
-#define CLASS_VERSION "2.6.5"        // Class version
+#define CLASS_VERSION "2.6.6"        // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -23,7 +23,7 @@
 //#define LOG_LEVEL '0' //Nothing
 //#define LOG_LEVEL '1' //Errors 
 //#define LOG_LEVEL '2' //Errors & Warnings
-#define LOG_LEVEL '3' //Errors & Warnings & Info
+  #define LOG_LEVEL '3' //Errors & Warnings & Info
 //#define LOG_LEVEL '4' //Errors & Warnings & Info & Debug
 #endif 
 
@@ -117,7 +117,13 @@ class ConfigAssist{
     void checkTime(uint32_t timeUtc, int timeOffs);
     // Respond a HTTP request for /scan results
     void handleWifiScanRequest();
-    String testWiFiSTConnection(String no);
+    // Send html upload page to client
+    void sendHtmlUploadPage();
+    // Upload a file to SPIFFS
+    void handleFileUpload();
+    String testWiFiSTConnection(String no);    
+    // Download a file in browser window
+    void handleDownloadFile(String fileName);
     // Respond a not found HTTP request
     void handleNotFound();
     // Respond a HTTP request for the form use the CONF_FILE
