@@ -20,6 +20,8 @@ Application variables like **Wifi ssid**, **Wifi password**, **Host Name** can b
 
 These features can be disabled to save memory by setting **USE_WIFISCAN**, **USE_TESTWIFI**, and **USE_TIMESYNC** to false.
 
+Device's configuration can be downloaded with the **Backup** button and can be restored later with the **Restore** button.
+
 Variables **descriptions** and **default values** are based on a **text description** in json format that acts as a template defining the **type**, **label** and extra **info** of each variable. 
 
 All config variables must be defined there describing the **variable type**, **default value** and the **label** that will be displayed to the user. It can also include and some **attributes** in case of special variables like **datalist** for list box, min, max, step for **input number** etc.
