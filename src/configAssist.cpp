@@ -86,6 +86,9 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
   if(USE_WIFISCAN)  startScanWifi();      
   server.on("/cfg",[this] { this->handleFormRequest(this->_server);  } );
   server.on("/scan", [this] { this->handleWifiScanRequest(); } );
+  server.on("/upl", [this] { this->sendHtmlUploadPage(); } );
+  server.on("/fupl", HTTP_POST,[this](){  },  [this](){this->handleFileUpload(); });
+
   server.onNotFound([this] { this->handleNotFound(); } );
   LOG_DBG("ConfigAssist setup done. %x\n", this);      
 }
@@ -435,11 +438,11 @@ void ConfigAssist::checkTime(uint32_t timeUtc, int timeOffs){
     
   }      
 }
-
 // Respond a HTTP request for /scan results
 void ConfigAssist::handleWifiScanRequest(){
   checkScanRes();   _server->sendContent(_jWifi); 
 }
+
 // Test Station connections
 String ConfigAssist::testWiFiSTConnection(String no){
   String msg = "";
@@ -479,17 +482,107 @@ String ConfigAssist::testWiFiSTConnection(String no){
   return msg;
 }
 
+// Download a file in browser window
+void ConfigAssist::handleDownloadFile(String fileName){
+  File f = STORAGE.open(fileName.c_str(),"r");
+  if (!f) {
+    f.close();
+    const char* resp_str = "File does not exist or cannot be opened";
+    LOG_ERR("%s: %s", resp_str, fileName.c_str());
+    _server->send(200, "text/html", resp_str);
+    _server->client().flush(); 
+    return;  
+  }
+  uint32_t config_len = f.size();
+  // download file as attachment, required file name in inFileName
+  LOG_INF("Download file: %s, size: %lu B\n", fileName.c_str(), f.size());
+  _server->sendHeader("Content-Type", "text/text");
+  _server->setContentLength(config_len);
+  int n = fileName.lastIndexOf( '/' );
+  //String downloadName = getHostName() + "_" + fileName.substring( n + 1 );
+  String downloadName = fileName.substring( n + 1 );
+  _server->sendHeader("Content-Disposition", "attachment; filename=" + downloadName);
+  _server->sendHeader("Content-Length", String(f.size()));
+  _server->sendHeader("Connection", "close");
+  size_t sz = _server->streamFile(f, "application/octet-stream");
+  if (sz != f.size()) {
+    LOG_ERR("File: %s, Sent %lu, expected: %lu!\n", fileName.c_str(), sz, f.size()); 
+  } 
+  f.close();
+}
 // Respond a not found HTTP request
 void ConfigAssist::handleNotFound(){
   _server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/cfg\">");
 }
+// Send html upload page to client
+void ConfigAssist::sendHtmlUploadPage(){
+  String out(CONFIGASSIST_HTML_UPLOAD);
+  _server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  //out.replace("{host_name}", getHostName());
+  _server->sendContent(out);
+}
 
+// Respond a HTTP request for upload a file
+void ConfigAssist::handleFileUpload(){
+  static File UploadFile;
+  static String filename;
+  HTTPUpload& uploadfile = _server->upload(); 
+  if(uploadfile.status == UPLOAD_FILE_START){
+    filename = uploadfile.filename;
+    if(!filename.startsWith("/")) filename = "/"+filename;
+    LOG_INF("Upload File Name: %s\n", filename.c_str());
+    //Remove the previous version
+    STORAGE.remove(filename);                         
+    UploadFile = STORAGE.open(filename, "w+");  
+    filename = String();
+  }else if (uploadfile.status == UPLOAD_FILE_WRITE){
+    //Write the received bytes to the file
+    if(UploadFile) UploadFile.write(uploadfile.buf, uploadfile.currentSize); 
+  }else if (uploadfile.status == UPLOAD_FILE_END){
+    if(UploadFile){ // If the file was successfully created    
+      UploadFile.close();   // Close the file again
+      String msg = "Upload Success, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize;
+      LOG_INF("%s\n", msg.c_str());
+      String out(CONFIGASSIST_HTML_MESSAGE);
+      out.replace("{title}", "Restore config");
+      out.replace("{reboot}", "true");
+      out.replace("{msg}", msg.c_str());
+      out.replace("{refresh}", "9000");
+      out.replace("{url}", "/cfg");
+      this->_server->send(200,"text/html",out);
+    }else{
+      String msg = "Upload Failed!, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + ", status: " + uploadfile.status;
+      LOG_ERR("%s\n", msg.c_str());
+      String out(CONFIGASSIST_HTML_MESSAGE);
+      out.replace("{title}", "Restore config");
+      out.replace("{reboot}", "false");
+      out.replace("{msg}", msg.c_str());
+      out.replace("{refresh}", "9000");
+      out.replace("{url}", "/cfg");
+      this->_server->send(200,"text/html",out);      
+    }
+  }
+}
 // Respond a HTTP request for the form use the CONF_FILE
 // to save. Save, Reboot ESP, Reset to defaults, cancel edits
 void ConfigAssist::handleFormRequest(WEB_SERVER * server){
   if(server == NULL ) server = _server;
   //Save config form
   if (server->args() > 0) {
+    //Download a file 
+    if (server->hasArg(F("_DWN"))) {
+      if(server->hasArg(F("_F"))){
+        LOG_INF("Download file:%s\n",server->arg(F("_F")).c_str());      
+        handleDownloadFile(server->arg(F("_F")));
+      }else{ //Download default config
+        LOG_INF("Download def:%s\n",_confFile.c_str());      
+        handleDownloadFile(_confFile);
+      }
+      return;
+    }
+    if (server->hasArg(F("_UPL"))) {
+      return;
+    }
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);        
     //Discard edits and load json defaults;
     if (server->hasArg(F("_RST"))) {
@@ -603,12 +696,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         if(saveConfigFile()) reply = "Config saved.";
         else reply = "ERROR: Failed to save config.";
         delay(100);
-    }
-    if(reply.startsWith("ERROR:"))
-      server->send(500, "text/html", reply);            
-    else
-      server->send(200, "text/html", reply);
-    return;
+    }      
   }
   //Generate html page and send it to client
   sendHtmlEditPage(server);
