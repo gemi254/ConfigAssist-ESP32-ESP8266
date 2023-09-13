@@ -138,9 +138,9 @@ void ListDir(const char * dirname) {
   File file = root.openNextFile();
   while (file) {
     #if defined(ESP32)
-      LOG_DBG("File: %s, size: %u B\n", file.path(), file.size());
+      LOG_INF("File: %s, size: %u B\n", file.path(), file.size());
     #else
-      LOG_DBG("File: %s, size: %u B\n", file.fullName(), file.size());
+      LOG_INF("File: %s, size: %u B\n", file.fullName(), file.size());
     #endif
     file = root.openNextFile();
   }
