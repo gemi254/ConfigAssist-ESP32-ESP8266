@@ -5,7 +5,7 @@
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
-#define FILENAME_IDENTIFIER "_#"     // Keys ending is a hidden filename and not to be saved
+#define FILENAME_IDENTIFIER "_#"     // Keys ending is a text box hidden filename and not to be saved
 #define DONT_ALLOW_SPACES false      // Allow spaces in var names ?
 #define PASSWD_KEY   "_pass"         // The key part that defines a password field
 #define HOSTNAME_KEY "host_name"     // The key that defines host name
