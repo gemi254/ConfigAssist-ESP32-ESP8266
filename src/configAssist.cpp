@@ -524,32 +524,45 @@ void ConfigAssist::sendHtmlUploadPage(){
 
 // Respond a HTTP request for upload a file
 void ConfigAssist::handleFileUpload(){
-  static File UploadFile;
+  static File tmpFile;
   static String filename;
   HTTPUpload& uploadfile = _server->upload(); 
   if(uploadfile.status == UPLOAD_FILE_START){
     filename = uploadfile.filename;
+    if(filename.length()==0) return;
     if(!filename.startsWith("/")) filename = "/"+filename;
-    LOG_INF("Upload File Name: %s\n", filename.c_str());
-    //Remove the previous version
-    STORAGE.remove(filename);                         
-    UploadFile = STORAGE.open(filename, "w+");  
+    filename = filename + ".tmp";
+    LOG_INF("Upload temp name: %s\n", filename.c_str());
+    //Remove the previous tmp version
+    if(STORAGE.exists(filename)) STORAGE.remove(filename);                         
+    tmpFile = STORAGE.open(filename, "w+");  
     filename = String();
   }else if (uploadfile.status == UPLOAD_FILE_WRITE){
     //Write the received bytes to the file
-    if(UploadFile) UploadFile.write(uploadfile.buf, uploadfile.currentSize); 
+    if(tmpFile) tmpFile.write(uploadfile.buf, uploadfile.currentSize); 
   }else if (uploadfile.status == UPLOAD_FILE_END){
-    if(UploadFile){ // If the file was successfully created    
-      UploadFile.close();   // Close the file again
-      String msg = "Upload Success, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize;
+    if(tmpFile){ // If the file was successfully created    
+      tmpFile.close();  
+      if(STORAGE.exists(uploadfile.filename)) STORAGE.remove(uploadfile.filename);
+      //Uploaded a temp file, rename it on success
+      filename = uploadfile.filename + ".tmp";
+      if(!filename.startsWith("/")) filename = "/" + filename;
+      String filename1 = uploadfile.filename;
+      if(!filename1.startsWith("/")) filename1 = "/" + filename1;
+      LOG_DBG("Rename temp name: %s to: %s\n", filename.c_str(), filename1.c_str() );
+      STORAGE.rename(filename, filename1);
+      String msg = "Upload Success, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B";
       LOG_INF("%s\n", msg.c_str());
       String out(CONFIGASSIST_HTML_MESSAGE);
       out.replace("{title}", "Restore config");
       out.replace("{reboot}", "true");
+      msg += "<br>Device now will reboot..";
       out.replace("{msg}", msg.c_str());
       out.replace("{refresh}", "9000");
       out.replace("{url}", "/cfg");
       this->_server->send(200,"text/html",out);
+      this->_server->client().flush();
+      delay(500);
     }else{
       String msg = "Upload Failed!, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + ", status: " + uploadfile.status;
       LOG_ERR("%s\n", msg.c_str());
@@ -634,6 +647,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       key = urlDecode(key);
       val = urlDecode(val);
       if(key=="apName" || key =="_SAVE" || key=="_RST" || key=="_RBT" || key=="plain" || key=="_TS") continue;
+      //Ignore text box filenames
       if(key.endsWith(FILENAME_IDENTIFIER)) continue;
       if(key=="clockUTC"){
           // Synchronize to browser clock if out of sync
@@ -643,9 +657,9 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
           }
           checkTime(val.toInt(), offs.toInt());
           server->send(200, "text/html", "OK");
-          return;
+          continue;
       }
-      //Check if if text box with file name
+      //Check if it is a text box with file name
       String fileNameKey = server->argName(i) + FILENAME_IDENTIFIER;
       if(server->hasArg(fileNameKey)){
           String fileName = server->arg(fileNameKey);
@@ -1066,7 +1080,7 @@ void ConfigAssist::startScanWifi(){
 // LogPrint function
 #define MAX_FMT 128
 static char fmtBuf[MAX_FMT];
-static char outBuf[256];
+static char outBuf[512];
 static va_list arglist;
 bool ca_logToFile = LOG_TO_FILE;
 char ca_logLevel = LOG_LEVEL;
