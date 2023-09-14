@@ -525,32 +525,27 @@ void ConfigAssist::sendHtmlUploadPage(){
 // Respond a HTTP request for upload a file
 void ConfigAssist::handleFileUpload(){
   static File tmpFile;
-  static String filename;
+  static String filename,tmpFilename;
   HTTPUpload& uploadfile = _server->upload(); 
   if(uploadfile.status == UPLOAD_FILE_START){
     filename = uploadfile.filename;
     if(filename.length()==0) return;
     if(!filename.startsWith("/")) filename = "/"+filename;
-    filename = filename + ".tmp";
-    LOG_INF("Upload temp name: %s\n", filename.c_str());
+    tmpFilename = filename + ".tmp";
+    LOG_DBG("Upload temp name: %s\n", tmpFilename.c_str());
     //Remove the previous tmp version
-    if(STORAGE.exists(filename)) STORAGE.remove(filename);                         
-    tmpFile = STORAGE.open(filename, "w+");  
-    filename = String();
+    if(STORAGE.exists(tmpFilename)) STORAGE.remove(tmpFilename);                         
+    tmpFile = STORAGE.open(tmpFilename, "w+");    
   }else if (uploadfile.status == UPLOAD_FILE_WRITE){
     //Write the received bytes to the file
     if(tmpFile) tmpFile.write(uploadfile.buf, uploadfile.currentSize); 
   }else if (uploadfile.status == UPLOAD_FILE_END){
     if(tmpFile){ // If the file was successfully created    
       tmpFile.close();  
-      if(STORAGE.exists(uploadfile.filename)) STORAGE.remove(uploadfile.filename);
+      if(STORAGE.exists(filename)) STORAGE.remove(filename);
       //Uploaded a temp file, rename it on success
-      filename = uploadfile.filename + ".tmp";
-      if(!filename.startsWith("/")) filename = "/" + filename;
-      String filename1 = uploadfile.filename;
-      if(!filename1.startsWith("/")) filename1 = "/" + filename1;
-      LOG_DBG("Rename temp name: %s to: %s\n", filename.c_str(), filename1.c_str() );
-      STORAGE.rename(filename, filename1);
+      LOG_DBG("Rename temp name: %s to: %s\n", tmpFilename.c_str(), filename.c_str() );
+      STORAGE.rename(tmpFilename, filename);
       String msg = "Upload Success, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B";
       LOG_INF("%s\n", msg.c_str());
       String out(CONFIGASSIST_HTML_MESSAGE);
@@ -561,7 +556,6 @@ void ConfigAssist::handleFileUpload(){
       out.replace("{refresh}", "9000");
       out.replace("{url}", "/cfg");
       this->_server->send(200,"text/html",out);
-      this->_server->client().flush();
       delay(500);
     }else{
       String msg = "Upload Failed!, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + ", status: " + uploadfile.status;
@@ -647,13 +641,14 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       key = urlDecode(key);
       val = urlDecode(val);
       if(key=="apName" || key =="_SAVE" || key=="_RST" || key=="_RBT" || key=="plain" || key=="_TS") continue;
-      //Ignore text box filenames
+      //Ignore text box save filenames
       if(key.endsWith(FILENAME_IDENTIFIER)) continue;
+      if(key=="clockOffs" && server->hasArg("clockUTC")) continue;
       if(key=="clockUTC"){
           // Synchronize to browser clock if out of sync
           String offs("0");
-          if(server->hasArg("offs")){
-            offs = String(server->arg("offs"));
+          if(server->hasArg("clockOffs")){
+            offs = String(server->arg("clockOffs"));
           }
           checkTime(val.toInt(), offs.toInt());
           server->send(200, "text/html", "OK");
@@ -729,7 +724,7 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   server->sendContent(CONFIGASSIST_HTML_CSS);
   server->sendContent(CONFIGASSIST_HTML_CSS_CTRLS);      
   String script(CONFIGASSIST_HTML_SCRIPT);
-  
+  script.replace("{FILENAME_IDENTIFIER}",FILENAME_IDENTIFIER);
   if(USE_TESTWIFI){
     out = String("<script>") + CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION + String("</script>");
     server->sendContent(out);
@@ -878,7 +873,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     //Replace loaded text
     if(loadText(c.value, txt)){ 
       elm.replace("{val}", txt); 
-    }else{ //Text not yet saved, load default
+    }else{ //Text not yet saved, load default text
       elm.replace("{val}", c.attribs); 
     }
     elm = file + "\n" + elm;
