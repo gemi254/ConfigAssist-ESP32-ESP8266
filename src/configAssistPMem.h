@@ -443,10 +443,12 @@ document.addEventListener('DOMContentLoaded', function (event) {
     const value = e.value.trim();
     const et = event.target.type;
     // input fields of given class 
-    if (e.nodeName == 'INPUT' || e.nodeName == 'SELECT' || e.nodeName == 'TEXTAREA') {  
+    if (e.nodeName == 'INPUT' || e.nodeName == 'SELECT') {  
       if (e.type === 'checkbox') updateKey(e.id, e.checked ? 1 : 0);
       else updateKey(e.id, value);
-    }  
+    }else if(e.nodeName == 'TEXTAREA'){
+      updateKey(e.id, value, true);
+    }
   });
 
   // Save config before unload
@@ -455,10 +457,10 @@ document.addEventListener('DOMContentLoaded', function (event) {
     console.log("Unload.. saved");
   });
 
-  async function updateKey(key, value) {      
+  async function updateKey(key, value, isTxtArea = false) {      
     if(value == null ) return;      
     const baseHost = document.location.origin;
-    const url = baseHost + "/cfg?" + key + "=" + value
+    var url = baseHost + "/cfg?" + key + "=" + value
     if(key=="_RST"){
       document.location = url;
     }else if (key=="_RBT"){
@@ -466,6 +468,10 @@ document.addEventListener('DOMContentLoaded', function (event) {
       document.location = url+"&_TS="+ nowUTC;
     }else if (key=="_DWN"){
       return;
+    }
+    if(isTxtArea){
+        const fileKey = key + "{FILENAME_IDENTIFIER}";
+        url += "&"+fileKey+"=" + $('#'+fileKey).value;
     }
     const response = await fetch(encodeURI(url));
     if (!response.ok){
@@ -483,7 +489,7 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
     let nowUTC = Math.floor(now.getTime() / 1000);
     let offs = now.getTimezoneOffset()/60;
     const baseHost = document.location.origin;
-    const url = baseHost + "/cfg?clockUTC" + "=" + nowUTC + "&offs=" + offs
+    const url = baseHost + "/cfg?clockUTC" + "=" + nowUTC + "&clockOffs=" + offs
     const response = await fetch(encodeURI(url));
     if (!response.ok){
       const html = await response.text();
