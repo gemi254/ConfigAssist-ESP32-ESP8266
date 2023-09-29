@@ -17,8 +17,13 @@
 #endif
 #include <FS.h>
 
-#include "configAssistPMem.h" //Memory static valiables (html pages)
 #include "configAssist.h"
+#if defined(ESP32)
+  #ifdef USE_OTA_UPLOAD
+      #include "Update.h"
+  #endif  
+#endif
+#include "configAssistPMem.h" //Memory static valiables (html pages)
 
 WEB_SERVER *ConfigAssist::_server = NULL;
 String ConfigAssist::_jWifi="[{}]";
@@ -88,7 +93,9 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
   server.on("/scan", [this] { this->handleWifiScanRequest(); } );
   server.on("/upl", [this] { this->sendHtmlUploadPage(); } );
   server.on("/fupl", HTTP_POST,[this](){  },  [this](){this->handleFileUpload(); });
-
+#ifdef USE_OTA_UPLOAD  
+  server.on("/ota", [this] { this->sendHtmlOtaUploadPage(); } );
+#endif
   server.onNotFound([this] { this->handleNotFound(); } );
   LOG_DBG("ConfigAssist setup done. %x\n", this);      
 }
@@ -516,57 +523,111 @@ void ConfigAssist::handleNotFound(){
 }
 // Send html upload page to client
 void ConfigAssist::sendHtmlUploadPage(){
-  String out(CONFIGASSIST_HTML_UPLOAD);
+  String out(CONFIGASSIST_HTML_START);
+  out.replace("{title}", "Upload to spiffs");
+  out += CONFIGASSIST_HTML_UPLOAD;
   _server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   //out.replace("{host_name}", getHostName());
   _server->sendContent(out);
 }
-
+#ifdef USE_OTA_UPLOAD
+// Send html OTA upload page to client
+void ConfigAssist::sendHtmlOtaUploadPage(){
+  String out(CONFIGASSIST_HTML_START);
+  out.replace("{title}", "Upload a new firmware");
+  out += CONFIGASSIST_HTML_OTAUPLOAD;
+  _server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  _server->sendContent(out);
+}
+#endif
 // Respond a HTTP request for upload a file
 void ConfigAssist::handleFileUpload(){
   static File tmpFile;
   static String filename,tmpFilename;
   HTTPUpload& uploadfile = _server->upload(); 
+  bool isOta = _server->hasArg("ota");  
   if(uploadfile.status == UPLOAD_FILE_START){
-    filename = uploadfile.filename;
-    if(filename.length()==0) return;
-    if(!filename.startsWith("/")) filename = "/"+filename;
-    tmpFilename = filename + ".tmp";
-    LOG_DBG("Upload temp name: %s\n", tmpFilename.c_str());
-    //Remove the previous tmp version
-    if(STORAGE.exists(tmpFilename)) STORAGE.remove(tmpFilename);                         
-    tmpFile = STORAGE.open(tmpFilename, "w+");    
-  }else if (uploadfile.status == UPLOAD_FILE_WRITE){
-    //Write the received bytes to the file
-    if(tmpFile) tmpFile.write(uploadfile.buf, uploadfile.currentSize); 
-  }else if (uploadfile.status == UPLOAD_FILE_END){
-    if(tmpFile){ // If the file was successfully created    
-      tmpFile.close();  
-      if(STORAGE.exists(filename)) STORAGE.remove(filename);
-      //Uploaded a temp file, rename it on success
-      LOG_DBG("Rename temp name: %s to: %s\n", tmpFilename.c_str(), filename.c_str() );
-      STORAGE.rename(tmpFilename, filename);
-      String msg = "Upload Success, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B";
-      LOG_INF("%s\n", msg.c_str());
-      String out(CONFIGASSIST_HTML_MESSAGE);
-      out.replace("{title}", "Restore config");
-      out.replace("{reboot}", "true");
-      msg += "<br>Device now will reboot..";
-      out.replace("{msg}", msg.c_str());
-      out.replace("{refresh}", "9000");
-      out.replace("{url}", "/cfg");
-      this->_server->send(200,"text/html",out);
-      delay(500);
+    if(isOta){
+      uint32_t otaSize = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+      LOG_INF("Firmware update initiated: %s\r\n", uploadfile.filename.c_str());
+      if (!Update.begin(otaSize)) { //start with max available size
+				LOG_ERR("OTA Error: %x\n", Update.getError());
+        Update.printError(Serial);
+			}
     }else{
-      String msg = "Upload Failed!, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + ", status: " + uploadfile.status;
-      LOG_ERR("%s\n", msg.c_str());
-      String out(CONFIGASSIST_HTML_MESSAGE);
-      out.replace("{title}", "Restore config");
-      out.replace("{reboot}", "false");
+      filename = uploadfile.filename;
+      if(filename.length()==0) return;
+      if(!filename.startsWith("/")) filename = "/"+filename;
+      tmpFilename = filename + ".tmp";
+      LOG_DBG("Upload temp name: %s\n", tmpFilename.c_str());
+      //Remove the previous tmp version
+      if(STORAGE.exists(tmpFilename)) STORAGE.remove(tmpFilename);                         
+      tmpFile = STORAGE.open(tmpFilename, "w+");    
+    }
+  }else if (uploadfile.status == UPLOAD_FILE_WRITE){
+    if(isOta){ // flashing firmware to ESP
+			if (Update.write(uploadfile.buf, uploadfile.currentSize) != uploadfile.currentSize) {
+				LOG_ERR("OTA Error: %x\n", Update.getError());
+        Update.printError(Serial);        
+			}
+			// Store the next milestone to output
+			uint16_t chunk_size  = 51200;
+			static uint32_t next = 51200;
+
+			// Check if we need to output a milestone (100k 200k 300k)
+			if (uploadfile.totalSize >= next) {
+				Serial.printf("%dk ", next / 1024);
+				next += chunk_size;
+			}
+    }else{
+      //Write the received bytes to the file
+      if(tmpFile) tmpFile.write(uploadfile.buf, uploadfile.currentSize);
+    }
+  }else if (uploadfile.status == UPLOAD_FILE_END){
+    String msg = "";
+    String out(CONFIGASSIST_HTML_START);
+    out += CONFIGASSIST_HTML_MESSAGE;
+    out.replace("{url}", "/cfg");
+    out.replace("{refresh}", "9000");
+
+    if(isOta){ // flashing firmware to ESP
+      if (Update.end(true)) { //true to set the size to the current progress
+        msg = "Firmware update successful file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B";
+        LOG_INF("\n%s\n", msg.c_str());
+        out.replace("{reboot}", "true");
+        msg += "<br>Device now will reboot..";
+			} else {
+				msg = "Firmware update ERROR, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B" + ", error:" + Update.getError();
+        LOG_ERR("\n%s\n", msg.c_str());
+        Update.printError(Serial);
+        out.replace("{reboot}", "false");
+			}
+      out.replace("{title}", "Firmware upgrade");
       out.replace("{msg}", msg.c_str());
-      out.replace("{refresh}", "9000");
-      out.replace("{url}", "/cfg");
-      this->_server->send(200,"text/html",out);      
+      this->_server->send(200,"text/html",out);
+    }else{ 
+      if(tmpFile){ // If the file was successfully created    
+        tmpFile.close();  
+        if(STORAGE.exists(filename)) STORAGE.remove(filename);
+        //Uploaded a temp file, rename it on success
+        LOG_DBG("Rename temp name: %s to: %s\n", tmpFilename.c_str(), filename.c_str() );
+        STORAGE.rename(tmpFilename, filename);
+        msg = "Upload Success, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B";
+        LOG_INF("%s\n", msg.c_str());
+        out.replace("{title}", "Restore config");
+        out.replace("{reboot}", "true");
+        msg += "<br>Device now will reboot..";
+        out.replace("{msg}", msg.c_str());
+        this->_server->send(200,"text/html",out);
+        delay(500);
+      }else{
+        msg = "Upload Failed!, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + ", status: " + uploadfile.status;
+        LOG_ERR("%s\n", msg.c_str());
+        out.replace("{title}", "Restore config");
+        out.replace("{reboot}", "false");
+        out.replace("{msg}", msg.c_str());
+        this->_server->send(200,"text/html",out);      
+      }
     }
   }
 }
@@ -668,7 +729,8 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     //Reboot esp
     if (server->hasArg(F("_RBT"))) {
         saveConfigFile();
-        String out(CONFIGASSIST_HTML_MESSAGE);
+        String out(CONFIGASSIST_HTML_START);
+        out += CONFIGASSIST_HTML_MESSAGE;
         String timestamp = server->arg("_TS");
         bool reboot = true;
         if(timestamp != ""){
@@ -719,7 +781,7 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   //Send config form data
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   String out(CONFIGASSIST_HTML_START);
-  out.replace("{host_name}", getHostName());
+  out.replace("{title}", "Configuration for " + getHostName());
   server->sendContent(out);
   server->sendContent(CONFIGASSIST_HTML_CSS);
   server->sendContent(CONFIGASSIST_HTML_CSS_CTRLS);      
@@ -773,7 +835,7 @@ String ConfigAssist::getTimeSyncScript(){
 }
 // Get html custom message page
 String ConfigAssist::getMessageHtml(){
-  return String(CONFIGASSIST_HTML_MESSAGE);
+  return String(CONFIGASSIST_HTML_START) + String(CONFIGASSIST_HTML_MESSAGE);
 }
 // Is string numeric
 bool ConfigAssist::isNumeric(String s){ //1.0, -.232, .233, -32.32
