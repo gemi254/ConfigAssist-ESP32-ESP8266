@@ -1,5 +1,5 @@
 // Minimal application config dictionary
-const char* appDefConfigDict_json PROGMEM = R"~(
+const char* appDefConfigDict_json PROGMEM = R"=====(
 [{
       "name": "st_ssid",
      "label": "Enter the name WLAN to connect",
@@ -12,17 +12,22 @@ const char* appDefConfigDict_json PROGMEM = R"~(
       "name": "host_name",
      "label": "Enter a name for your host",
    "default": "configAssist_{mac}"
-  }])~";
+  }])=====";
 
 //Template for message page
-PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
-<!DOCTYPE html>
+PROGMEM const char CONFIGASSIST_HTML_START[] = R"=====(
+<!DOCTYPE HTML>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
-  <title>{title}</title>
+  <title>{title}</title>                        
+</head>
+)=====";
+
+//Template for message page
+PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
   <script>
   document.addEventListener('DOMContentLoaded', function (event) {
       setTimeout(function() {
@@ -46,35 +51,94 @@ PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
 <div style="text-align:center;"><h3>{msg}</h3></div>
 </body></html>
 )=====";
+
 //Template for uploading a file
 PROGMEM const char CONFIGASSIST_HTML_UPLOAD[] = R"=====(
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
-  <title>Upload to spiffs</title>                        
-</head>
 <body>
 <div style="text-align:center;"><h3>Select a config file to upload to the device</h3></div>
 <div style="text-align:center;">
   <form action='/fupl' method='post' enctype='multipart/form-data'>
   <input class='buttons' style='width:40%' type='file' name='fupload' id='fupload' value=''><br>
   <br><button class='buttons' style='width:10%' type='submit'>Upload File</button><br><br>
-  <a href='/cfg'>[Back]</a><br><br>
+  [&nbsp;<a href='/cfg'>Back</a>&nbsp;]<br><br>
 </div>
 </body>
 </html>
 )=====";
-// Template for header, begin of the config form
-PROGMEM const char CONFIGASSIST_HTML_START[] = 
-R"=====(<!DOCTYPE HTML>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Configuration for {host_name}</title>)=====";
+#ifdef USE_OTA_UPLOAD
+//Template for uploading a ota file
+const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
+<script>
+  const port = !window.location.port ? "80" : window.location.port;    
+  const otaServer = 'http://' + document.location.hostname + ':' + port;
+  const $ = document.querySelector.bind(document);
+  
+  async function uploadFile() {
+    // submit file for uploading
+    let file = $("#fupload").files[0];
+    let formdata = new FormData();
+    formdata.append("fupload", file);
+    let ajax = new XMLHttpRequest();
+    ajax.upload.addEventListener("progress", progressHandler, false);
+    ajax.addEventListener("load", completeHandler, false);
+    ajax.addEventListener("error", errorHandler, false);
+    ajax.addEventListener("abort", abortHandler, false);
+    ajax.open("POST", otaServer + '/fupl?ota=1');
+    ajax.send(formdata);
+  }
+
+  function progressHandler(event) {
+    $("#bytes_uploaded").innerHTML = "Uploaded " + event.loaded + " of " + event.total + " bytes";
+    let percent = (event.loaded / event.total) * 100;
+    $("#progressBar").value = Math.round(percent);
+    $("#upl_status").innerHTML = Math.round(percent) + "% transferred";
+    if (event.loaded  == event.total) $("#upl_status").innerHTML = 'Uploaded, wait for completion result';
+  }
+
+  function completeHandler(event) {
+    $("#upl_status").innerHTML = event.target.responseText;
+    const url = document.location.origin + "/cfg?_RBT_CONFIRM=1";
+    setTimeout(()=> {
+      try{
+        console.log('Restarting')
+        const response = fetch(encodeURI(url));
+      } catch (e) {
+        console.log(e)
+      }
+    }
+    ,500);
+    
+    setTimeout(()=> {
+      location.href =  document.location.origin + "/cfg";
+    }
+    ,8000);
+    
+  }
+
+  function errorHandler(event) {
+    $("#upl_status").innerHTML = "Upload Failed";
+  }
+
+  function abortHandler(event) {
+    $("#upl_status").innerHTML = "Upload Aborted";
+  }
+</script>
+<body>
+  <div style="text-align:center;"><h3>Select a firmware to upload to the device</h3></div>
+  <div style="text-align:center;">
+    <form id="upload_form" enctype="multipart/form-data" method="post">
+      <progress id="progressBar" value="0" max="100" style="width:300px; height:25px;"></progress>
+      <br></br>
+      <input type="file" name='fupload' id='fupload' onchange="uploadFile()"><br>
+      <h3 id="upl_status"></h3>
+      <p id="bytes_uploaded"></p>
+      [&nbsp;<a href='/cfg'>Back</a>&nbsp;]<br><br>
+    </form>
+  </div>  
+</body>
+</html>
+)=====";
+#endif
 
 // Template for header, begin of the config form
 PROGMEM const char CONFIGASSIST_HTML_CSS[] =R"=====(
@@ -690,6 +754,7 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
         <button type="button" title="Backup configuration" onClick="window.location.href = '/cfg?_DWN=1'" name="_DWN">Backup</button>
         <button type="button" title="Restore configuration" onClick="window.location.href = '/upl'" name="_UPL">Restore</button>
         <button type="button" title="Reset values to defaults" onClick="if(!confirm('Reset values?')) return false;" name="_RST">Defaults</button>
+        <button type="button" title="Firmware upgrade" onClick="window.location.href = '/ota'" name="_UPG">Upgrade</button>
      </div> <!-- card -->
     </div> <!-- column -->
   </br>
@@ -700,3 +765,4 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
 </body>
 </html>
 )=====";
+
