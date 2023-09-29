@@ -1,7 +1,7 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
 
-#define CLASS_VERSION "2.6.6"        // Class version
+#define CLASS_VERSION "2.6.7"        // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -14,6 +14,8 @@
 #define USE_WIFISCAN true            // Set to false to disable wifi scan
 #define USE_TIMESYNC true            // Set to false to disable sync esp with browser if out of sync
 #define USE_TESTWIFI true
+
+#define USE_OTA_UPLOAD               //Comment to disable ota and reduce memory
 
 #define LOG_TO_FILE false            // Enable logging to file.
 #define LOG_FILENAME "/log"          // Log file name
@@ -107,7 +109,7 @@ class ConfigAssist{
     int loadJsonDict(String jStr, bool update=false);     
     // Load config pairs from an ini file
     bool loadConfigFile(String filename="");
-    // Delete configuration file
+    // Delete configuration files
     bool deleteConfig(String filename="");
     // Save configs vectors in an ini file
     bool saveConfigFile(String filename="");
@@ -119,6 +121,10 @@ class ConfigAssist{
     void handleWifiScanRequest();
     // Send html upload page to client
     void sendHtmlUploadPage();
+#ifdef USE_OTA_UPLOAD
+    // Send html ota upload page to client
+    void sendHtmlOtaUploadPage();
+#endif
     // Upload a file to SPIFFS
     void handleFileUpload();
     String testWiFiSTConnection(String no);    
