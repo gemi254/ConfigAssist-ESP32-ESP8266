@@ -20,7 +20,9 @@ Application variables like **Wifi ssid**, **Wifi password**, **Host Name** can b
 
 These features can be disabled to save memory by setting **USE_WIFISCAN**, **USE_TESTWIFI**, and **USE_TIMESYNC** to false.
 
-Device's configuration can be downloaded with the **Backup** button and can be restored later with the **Restore** button.
+Device's configuration ``(*.ini files)`` can be downloaded with the **Backup** button and can be restored later with the **Restore** button.
+
+**ConfigAssist** can add web based **OTA** updates to your ESP32/ESP8266 projects. With the button **Upgrade** you can upload a firmware file (*.bin) and perform a **firmware upgrade** to the esp device.
 
 Variables **descriptions** and **default values** are based on a **text description** in json format that acts as a template defining the **type**, **label** and extra **info** of each variable. 
 
