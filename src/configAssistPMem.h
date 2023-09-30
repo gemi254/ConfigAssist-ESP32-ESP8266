@@ -530,7 +530,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     }else if (key=="_RBT"){
       let nowUTC = Math.floor(new Date().getTime() / 1000);
       document.location = url+"&_TS="+ nowUTC;
-    }else if (key=="_DWN"){
+    }else if (key=="_DWN" || key=="_UPG){
       return;
     }
     if(isTxtArea){
