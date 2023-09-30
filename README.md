@@ -2,6 +2,17 @@
 
 A lightweight library allowing quick configuration of **esp32/esp8266** devices. **Define** application variables using a json dictionary and **edit** them with a **responsive** configuration portal. Variables are updated instantly using **async get requests** and saved automatically on a ini file in local storage.
 
+## Features
+* Automate **variables** definition in a typical ``ESP32/ESP8266`` project using a json definition description.
+* Configuration **portal** with various **html controls** for editing these variables from a ``web browser``.
+* Automatically generate an **ini** file in internal storage and auto save.
+* On the fly **update** values in ini file using **ajax** requests.
+* **Backup & Restore** device configurations.
+* **Wi-Fi scan** support for auto fill nearby Wi-Fi station connections.
+* **Validate** Wi-Fi station connections when connecting from AP.
+* Auto **synchronize** ESP32/ESP8266 internal **clock** with browser clock.
+* Support on the fly **firmware upgrades** (OTA).
+
 <p align="center">
   <img src="docs/config.png">
 </p>
