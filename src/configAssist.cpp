@@ -648,7 +648,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       }
       return;
     }
-    if (server->hasArg(F("_UPL"))) {
+    if (server->hasArg(F("_UPL")) || server->hasArg(F("_UPG"))) {
       return;
     }
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);        
@@ -701,7 +701,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       String val(server->arg(i));
       key = urlDecode(key);
       val = urlDecode(val);
-      if(key=="apName" || key =="_SAVE" || key=="_RST" || key=="_RBT" || key=="plain" || key=="_TS") continue;
+      if(key=="apName" || key =="_SAVE" || key=="_RST" || key=="_RBT" || key=="_UPG" || key=="plain" || key=="_TS") continue;
       //Ignore text box save filenames
       if(key.endsWith(FILENAME_IDENTIFIER)) continue;
       if(key=="clockOffs" && server->hasArg("clockUTC")) continue;
