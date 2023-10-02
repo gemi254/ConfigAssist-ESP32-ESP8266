@@ -754,7 +754,7 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
         <button type="button" title="Backup configuration" onClick="window.location.href = '/cfg?_DWN=1'" name="_DWN">Backup</button>
         <button type="button" title="Restore configuration" onClick="window.location.href = '/upl'" name="_UPL">Restore</button>
         <button type="button" title="Reset values to defaults" onClick="if(!confirm('Reset values?')) return false;" name="_RST">Defaults</button>
-        <button type="button" title="Firmware upgrade" onClick="window.location.href = '/ota'" name="_UPG">Upgrade</button>
+        <!--extraButtons-->
      </div> <!-- card -->
     </div> <!-- column -->
   </br>
@@ -766,3 +766,7 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
 </html>
 )=====";
 
+// OTA Upload button
+PROGMEM const char HTML_UPGRADE_BUTTON[] = R"~(
+  <button type="button" title="Firmware upgrade" onClick="window.location.href = '/ota'" name="_UPG">Upgrade</button>
+)~";
