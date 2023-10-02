@@ -547,6 +547,7 @@ void ConfigAssist::handleFileUpload(){
   HTTPUpload& uploadfile = _server->upload(); 
   bool isOta = _server->hasArg("ota");  
   if(uploadfile.status == UPLOAD_FILE_START){
+#ifdef USE_OTA_UPLOAD
     if(isOta){
       uint32_t otaSize = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
       LOG_INF("Firmware update initiated: %s\r\n", uploadfile.filename.c_str());
@@ -554,17 +555,19 @@ void ConfigAssist::handleFileUpload(){
 				LOG_ERR("OTA Error: %x\n", Update.getError());
         Update.printError(Serial);
 			}
-    }else{
-      filename = uploadfile.filename;
-      if(filename.length()==0) return;
-      if(!filename.startsWith("/")) filename = "/"+filename;
-      tmpFilename = filename + ".tmp";
-      LOG_DBG("Upload temp name: %s\n", tmpFilename.c_str());
-      //Remove the previous tmp version
-      if(STORAGE.exists(tmpFilename)) STORAGE.remove(tmpFilename);                         
-      tmpFile = STORAGE.open(tmpFilename, "w+");    
+      return;
     }
+#endif 
+    filename = uploadfile.filename;
+    if(filename.length()==0) return;
+    if(!filename.startsWith("/")) filename = "/"+filename;
+    tmpFilename = filename + ".tmp";
+    LOG_INF("Upload started, name: %s\n", tmpFilename.c_str());
+    //Remove the previous tmp version
+    if(STORAGE.exists(tmpFilename)) STORAGE.remove(tmpFilename);                         
+    tmpFile = STORAGE.open(tmpFilename, "w+");    
   }else if (uploadfile.status == UPLOAD_FILE_WRITE){
+#ifdef USE_OTA_UPLOAD
     if(isOta){ // flashing firmware to ESP
 			if (Update.write(uploadfile.buf, uploadfile.currentSize) != uploadfile.currentSize) {
 				LOG_ERR("OTA Error: %x\n", Update.getError());
@@ -579,17 +582,18 @@ void ConfigAssist::handleFileUpload(){
 				Serial.printf("%dk ", next / 1024);
 				next += chunk_size;
 			}
-    }else{
-      //Write the received bytes to the file
-      if(tmpFile) tmpFile.write(uploadfile.buf, uploadfile.currentSize);
+      return;
     }
+#endif
+    //Write the received bytes to the file
+    if(tmpFile) tmpFile.write(uploadfile.buf, uploadfile.currentSize);
   }else if (uploadfile.status == UPLOAD_FILE_END){
     String msg = "";
     String out(CONFIGASSIST_HTML_START);
     out += CONFIGASSIST_HTML_MESSAGE;
     out.replace("{url}", "/cfg");
     out.replace("{refresh}", "9000");
-
+#ifdef USE_OTA_UPLOAD
     if(isOta){ // flashing firmware to ESP
       if (Update.end(true)) { //true to set the size to the current progress
         msg = "Firmware update successful file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B";
@@ -605,29 +609,30 @@ void ConfigAssist::handleFileUpload(){
       out.replace("{title}", "Firmware upgrade");
       out.replace("{msg}", msg.c_str());
       this->_server->send(200,"text/html",out);
-    }else{ 
-      if(tmpFile){ // If the file was successfully created    
-        tmpFile.close();  
-        if(STORAGE.exists(filename)) STORAGE.remove(filename);
-        //Uploaded a temp file, rename it on success
-        LOG_DBG("Rename temp name: %s to: %s\n", tmpFilename.c_str(), filename.c_str() );
-        STORAGE.rename(tmpFilename, filename);
-        msg = "Upload Success, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B";
-        LOG_INF("%s\n", msg.c_str());
-        out.replace("{title}", "Restore config");
-        out.replace("{reboot}", "true");
-        msg += "<br>Device now will reboot..";
-        out.replace("{msg}", msg.c_str());
-        this->_server->send(200,"text/html",out);
-        delay(500);
-      }else{
-        msg = "Upload Failed!, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + ", status: " + uploadfile.status;
-        LOG_ERR("%s\n", msg.c_str());
-        out.replace("{title}", "Restore config");
-        out.replace("{reboot}", "false");
-        out.replace("{msg}", msg.c_str());
-        this->_server->send(200,"text/html",out);      
-      }
+      return;
+    }
+#endif
+    if(tmpFile){ // If the file was successfully created    
+      tmpFile.close();  
+      if(STORAGE.exists(filename)) STORAGE.remove(filename);
+      //Uploaded a temp file, rename it on success
+      LOG_DBG("Rename temp name: %s to: %s\n", tmpFilename.c_str(), filename.c_str() );
+      STORAGE.rename(tmpFilename, filename);
+      msg = "Upload success, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B";
+      LOG_INF("%s\n", msg.c_str());
+      out.replace("{title}", "Restore config");
+      out.replace("{reboot}", "true");
+      msg += "<br>Device now will reboot..";
+      out.replace("{msg}", msg.c_str());
+      this->_server->send(200,"text/html",out);
+      delay(500);
+    }else{
+      msg = "Upload Failed!, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + ", status: " + uploadfile.status;
+      LOG_ERR("%s\n", msg.c_str());
+      out.replace("{title}", "Restore config");
+      out.replace("{reboot}", "false");
+      out.replace("{msg}", msg.c_str());
+      this->_server->send(200,"text/html",out);      
     }
   }
 }
@@ -809,6 +814,10 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   }
   sort();
   out = String(CONFIGASSIST_HTML_END);
+  
+  #ifdef USE_OTA_UPLOAD   
+  out.replace("<!--extraButtons-->", HTML_UPGRADE_BUTTON);
+  #endif
   out.replace("{appVer}", CLASS_VERSION);
   server->sendContent(out);
   //LOG_DBG("Generate form end\n");
