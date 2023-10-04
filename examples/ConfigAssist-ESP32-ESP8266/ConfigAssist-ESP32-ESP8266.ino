@@ -125,9 +125,9 @@ unsigned long pingMillis = millis();  // Ping
 // *********** Helper funcions ************
 void debugMemory(const char* caller) {      
   #if defined(ESP32)
-    LOG_DBG("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
+    LOG_INF("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
   #else
-    LOG_DBG("%s > Free: heap %u\n", caller, ESP.getFreeHeap());
+    LOG_INF("%s > Free: heap %u\n", caller, ESP.getFreeHeap());
   #endif   
 }
 // List storage file system
@@ -159,7 +159,9 @@ void handleRoot() {
   #else 
     out.replace("{name}", "ESP8266!");
   #endif
+  #ifdef USE_TIMESYNC 
   out += "<script>" + conf.getTimeSyncScript() + "</script>";
+  #endif
   server.send(200, "text/html", out);
   digitalWrite(conf["led_pin"].toInt(), 1);  
 }
