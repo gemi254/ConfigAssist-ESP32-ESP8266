@@ -1,7 +1,6 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
-
-#define CLASS_VERSION "2.6.7"        // Class version
+#define CA_CLASS_VERSION "2.6.7"        // Class version
 #define MAX_PARAMS 50                // Maximum parameters to handle
 #define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
 #define INI_FILE_DELIM '~'           // Ini file pairs seperator
@@ -11,23 +10,23 @@
 #define HOSTNAME_KEY "host_name"     // The key that defines host name
 #define TIMEZONE_KEY "time_zone"     // The key that defines time zone for setting time
 
-#define USE_WIFISCAN true            // Set to false to disable wifi scan
-#define USE_TIMESYNC true            // Set to false to disable sync esp with browser if out of sync
-#define USE_TESTWIFI true
-
-#define USE_OTA_UPLOAD               //Comment to disable ota and reduce memory
+#define USE_WIFISCAN                 // Comment to disable wifi scan
+#define USE_TIMESYNC                 // Comment to disable sync esp with browser if out of sync
+#define USE_TESTWIFI                 // Comment to disable test wifi st connection
+#define USE_OTAUPLOAD                // Comment to disable ota and reduce memory
 
 #define LOG_TO_FILE false            // Enable logging to file.
 #define LOG_FILENAME "/log"          // Log file name
 
-// Define default log level
-#ifndef LOG_LEVEL 
+#ifdef LOG_LEVEL
+#undef LOG_LEVEL
+#endif
+// Define default mudule log level
 //#define LOG_LEVEL '0' //Nothing
 //#define LOG_LEVEL '1' //Errors 
 //#define LOG_LEVEL '2' //Errors & Warnings
   #define LOG_LEVEL '3' //Errors & Warnings & Info
 //#define LOG_LEVEL '4' //Errors & Warnings & Info & Debug
-#endif 
 
 // Define Platform libs
 #if defined(ESP32)
@@ -121,7 +120,7 @@ class ConfigAssist{
     void handleWifiScanRequest();
     // Send html upload page to client
     void sendHtmlUploadPage();
-#ifdef USE_OTA_UPLOAD
+#ifdef USE_OTAUPLOAD
     // Send html ota upload page to client
     void sendHtmlOtaUploadPage();
 #endif
@@ -142,7 +141,9 @@ class ConfigAssist{
     // Get page css
     String getCSS();
     // Get browser time synchronization java script
+#ifdef USE_TIMESYNC 
     String getTimeSyncScript();
+#endif    
     // Get html custom message page
     String getMessageHtml();
     
@@ -168,11 +169,13 @@ class ConfigAssist{
     // Extract a config tokens from keyValPair and load it into configs vector
     void loadVectItem(String keyValPair);    
     // Build json on Wifi scan complete     
+#ifdef USE_WIFISCAN
     static void scanComplete(int networksFound);
     // Send wifi scan results to client
     static void checkScanRes();
     // Start async wifi scan
     static void startScanWifi();
+#endif    
   private: 
     enum input_types { TEXT_BOX=1, TEXT_AREA=2, CHECK_BOX=3, OPTION_BOX=4, RANGE_BOX=5, COMBO_BOX=6};
     std::vector<confPairs> _configs;
@@ -193,11 +196,14 @@ class ConfigAssist{
   #define DBG_FORMAT(format, type) "[%s %s %u] " format "",type, __FILE__, __LINE__ 
 #endif
 
-void logPrint(const char *level, const char *format, ...);
+//void logPrint(const char *level, const char *format, ...);
+void setLogPrintLevel(char level);
+void setLogPrintToFile(bool enable);
+void logPrint(const char mod_level, const char level, const char *format, ...);
 
-#define LOG_ERR(format, ...) logPrint("1", DBG_FORMAT(format,"ERR"), ##__VA_ARGS__)
-#define LOG_WRN(format, ...) logPrint("2", DBG_FORMAT(format,"WRN"), ##__VA_ARGS__)
-#define LOG_INF(format, ...) logPrint("3", DBG_FORMAT(format,"INF"), ##__VA_ARGS__)  
-#define LOG_DBG(format, ...) logPrint("4", DBG_FORMAT(format,"DBG"), ##__VA_ARGS__)
+#define LOG_ERR(format, ...) logPrint(LOG_LEVEL, '1', DBG_FORMAT(format,"ERR"), ##__VA_ARGS__)
+#define LOG_WRN(format, ...) logPrint(LOG_LEVEL, '2', DBG_FORMAT(format,"WRN"), ##__VA_ARGS__)
+#define LOG_INF(format, ...) logPrint(LOG_LEVEL, '3', DBG_FORMAT(format,"INF"), ##__VA_ARGS__)  
+#define LOG_DBG(format, ...) logPrint(LOG_LEVEL, '4', DBG_FORMAT(format,"DBG"), ##__VA_ARGS__)
 
 #endif // _CONFIG_ASSIST_H
