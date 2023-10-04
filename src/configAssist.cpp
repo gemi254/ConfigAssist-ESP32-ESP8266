@@ -18,12 +18,13 @@
 #include <FS.h>
 
 #include "configAssist.h"
+#include "configAssistPMem.h" //Memory static valiables (html pages)
+
 #if defined(ESP32)
-  #ifdef USE_OTA_UPLOAD
+  #ifdef USE_OTAUPLOAD
       #include "Update.h"
   #endif  
 #endif
-#include "configAssistPMem.h" //Memory static valiables (html pages)
 
 WEB_SERVER *ConfigAssist::_server = NULL;
 String ConfigAssist::_jWifi="[{}]";
@@ -88,12 +89,16 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
     server.begin();
     _apEnabled = true;
   }
-  if(USE_WIFISCAN)  startScanWifi();      
+#ifdef USE_WIFISCAN 
+    startScanWifi();      
+#endif
   server.on("/cfg",[this] { this->handleFormRequest(this->_server);  } );
+#ifdef USE_WIFISCAN
   server.on("/scan", [this] { this->handleWifiScanRequest(); } );
+#endif  
   server.on("/upl", [this] { this->sendHtmlUploadPage(); } );
   server.on("/fupl", HTTP_POST,[this](){  },  [this](){this->handleFileUpload(); });
-#ifdef USE_OTA_UPLOAD  
+#ifdef USE_OTAUPLOAD  
   server.on("/ota", [this] { this->sendHtmlOtaUploadPage(); } );
 #endif
   server.onNotFound([this] { this->handleNotFound(); } );
@@ -445,11 +450,12 @@ void ConfigAssist::checkTime(uint32_t timeUtc, int timeOffs){
     
   }      
 }
+#ifdef USE_WIFISCAN
 // Respond a HTTP request for /scan results
 void ConfigAssist::handleWifiScanRequest(){
   checkScanRes();   _server->sendContent(_jWifi); 
 }
-
+#endif
 // Test Station connections
 String ConfigAssist::testWiFiSTConnection(String no){
   String msg = "";
@@ -530,7 +536,7 @@ void ConfigAssist::sendHtmlUploadPage(){
   //out.replace("{host_name}", getHostName());
   _server->sendContent(out);
 }
-#ifdef USE_OTA_UPLOAD
+#ifdef USE_OTAUPLOAD
 // Send html OTA upload page to client
 void ConfigAssist::sendHtmlOtaUploadPage(){
   String out(CONFIGASSIST_HTML_START);
@@ -539,7 +545,7 @@ void ConfigAssist::sendHtmlOtaUploadPage(){
   _server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   _server->sendContent(out);
 }
-#endif
+#endif //USE_OTAUPLOAD
 // Respond a HTTP request for upload a file
 void ConfigAssist::handleFileUpload(){
   static File tmpFile;
@@ -547,7 +553,7 @@ void ConfigAssist::handleFileUpload(){
   HTTPUpload& uploadfile = _server->upload(); 
   bool isOta = _server->hasArg("ota");  
   if(uploadfile.status == UPLOAD_FILE_START){
-#ifdef USE_OTA_UPLOAD
+#ifdef USE_OTAUPLOAD
     if(isOta){
       uint32_t otaSize = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
       LOG_INF("Firmware update initiated: %s\r\n", uploadfile.filename.c_str());
@@ -557,7 +563,7 @@ void ConfigAssist::handleFileUpload(){
 			}
       return;
     }
-#endif 
+#endif //USE_OTAUPLOAD
     filename = uploadfile.filename;
     if(filename.length()==0) return;
     if(!filename.startsWith("/")) filename = "/"+filename;
@@ -567,7 +573,7 @@ void ConfigAssist::handleFileUpload(){
     if(STORAGE.exists(tmpFilename)) STORAGE.remove(tmpFilename);                         
     tmpFile = STORAGE.open(tmpFilename, "w+");    
   }else if (uploadfile.status == UPLOAD_FILE_WRITE){
-#ifdef USE_OTA_UPLOAD
+#ifdef USE_OTAUPLOAD
     if(isOta){ // flashing firmware to ESP
 			if (Update.write(uploadfile.buf, uploadfile.currentSize) != uploadfile.currentSize) {
 				LOG_ERR("OTA Error: %x\n", Update.getError());
@@ -584,7 +590,7 @@ void ConfigAssist::handleFileUpload(){
 			}
       return;
     }
-#endif
+#endif //USE_OTAUPLOAD
     //Write the received bytes to the file
     if(tmpFile) tmpFile.write(uploadfile.buf, uploadfile.currentSize);
   }else if (uploadfile.status == UPLOAD_FILE_END){
@@ -593,7 +599,7 @@ void ConfigAssist::handleFileUpload(){
     out += CONFIGASSIST_HTML_MESSAGE;
     out.replace("{url}", "/cfg");
     out.replace("{refresh}", "9000");
-#ifdef USE_OTA_UPLOAD
+#ifdef USE_OTAUPLOAD
     if(isOta){ // flashing firmware to ESP
       if (Update.end(true)) { //true to set the size to the current progress
         msg = "Firmware update successful file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B";
@@ -611,7 +617,7 @@ void ConfigAssist::handleFileUpload(){
       this->_server->send(200,"text/html",out);
       return;
     }
-#endif
+#endif //USE_OTAUPLOAD
     if(tmpFile){ // If the file was successfully created    
       tmpFile.close();  
       if(STORAGE.exists(filename)) STORAGE.remove(filename);
@@ -792,14 +798,19 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   server->sendContent(CONFIGASSIST_HTML_CSS_CTRLS);      
   String script(CONFIGASSIST_HTML_SCRIPT);
   script.replace("{FILENAME_IDENTIFIER}",FILENAME_IDENTIFIER);
-  if(USE_TESTWIFI){
+  
+#ifdef USE_TESTWIFI 
     out = String("<script>") + CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION + String("</script>");
     server->sendContent(out);
-  }
+#endif
 
   String subScript = "";
-  if(USE_TIMESYNC) subScript += CONFIGASSIST_HTML_SCRIPT_TIME_SYNC;  
-  if(USE_WIFISCAN) subScript += CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN;
+#ifdef USE_TIMESYNC 
+  subScript += CONFIGASSIST_HTML_SCRIPT_TIME_SYNC;  
+#endif
+#ifdef USE_WIFISCAN 
+  subScript += CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN;
+#endif  
   //if(USE_TESTWIFI) subScript += CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION;
 
   script.replace("/*{SUB_SCRIPT}*/", subScript);
@@ -815,10 +826,10 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   sort();
   out = String(CONFIGASSIST_HTML_END);
   
-  #ifdef USE_OTA_UPLOAD   
+  #ifdef USE_OTAUPLOAD   
   out.replace("<!--extraButtons-->", HTML_UPGRADE_BUTTON);
   #endif
-  out.replace("{appVer}", CLASS_VERSION);
+  out.replace("{appVer}", CA_CLASS_VERSION);
   server->sendContent(out);
   //LOG_DBG("Generate form end\n");
 }
@@ -838,10 +849,12 @@ String ConfigAssist::getEditHtml(){
 String ConfigAssist::getCSS(){
   return String(CONFIGASSIST_HTML_CSS);
 }
+#ifdef USE_TIMESYNC 
 // Get browser time synchronization java script
 String ConfigAssist::getTimeSyncScript(){
   return String(CONFIGASSIST_HTML_SCRIPT_TIME_SYNC);
 }
+#endif //USE_TIMESYNC 
 // Get html custom message page
 String ConfigAssist::getMessageHtml(){
   return String(CONFIGASSIST_HTML_START) + String(CONFIGASSIST_HTML_MESSAGE);
@@ -925,7 +938,8 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
       elm.replace("<input ", "<input type=\"password\" " +c.attribs);
     else if(isNumeric(c.value))
       elm.replace("<input ", "<input type=\"number\" " +c.attribs);
-    else if(USE_TESTWIFI && c.name.indexOf("st_ssid")>=0){
+#ifdef USE_TESTWIFI 
+    else if( c.name.indexOf("st_ssid")>=0){
       String no = c.name;
       no.replace("st_ssid","");
       //if(no=="") no = "1";
@@ -933,7 +947,9 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
       //out.replace("st_ssid-lbl","st_ssid-lbl"+no);
       c.label +="&nbsp;&nbsp;<a href=\"\" title=\"Test ST connection\" onClick=\"testWifi(" + no + "); return false;\" id=\"_TEST_WIFI" + no + "\">Test connection</a>";
       //c.label +="&nbsp;&nbsp;<a href=\"\" title=\"Test ST connection\" id=\"_TEST_WIFI" + no + "\">Test connection</a>";
-    }else 
+    }
+#endif //USE_TESTWIFI 
+    else 
       elm.replace("<input ", "<input " +c.attribs);
   }else if(c.type == TEXT_AREA){
     String file = String(CONFIGASSIST_HTML_TEXT_AREA_FNAME);        
@@ -1101,7 +1117,7 @@ void ConfigAssist::loadVectItem(String keyValPair) {
   if (_configs.size() > MAX_PARAMS) 
     LOG_WRN("Config file entries: %u exceed max: %u\n", _configs.size(), MAX_PARAMS);
 }
-    
+#ifdef USE_WIFISCAN     
 // Build json on Wifi scan complete     
 void ConfigAssist::scanComplete(int networksFound) {
   LOG_INF("%d network(s) found\n", networksFound);      
@@ -1142,23 +1158,34 @@ void ConfigAssist::startScanWifi(){
     LOG_DBG("Scan complete status: %i\n", n);
   }
 }  
+#endif //USE_WIFISCAN
 
 // LogPrint function
-#define MAX_FMT 128
-static char fmtBuf[MAX_FMT];
+#define MAX_LOG_FMT 128
+static char fmtBuf[MAX_LOG_FMT];
 static char outBuf[512];
 static va_list arglist;
 bool ca_logToFile = LOG_TO_FILE;
 char ca_logLevel = LOG_LEVEL;
 File ca_logFile;
 
+void setLogPrintLevel(char level) { ca_logLevel = level; }
+void setLogPrintToFile(bool enable) { 
+  ca_logToFile = (enable ? '1' : '0'); 
+  if(!enable) ca_logFile.close(); 
+}
 //Logging with level to serial or file
-void logPrint(const char *level, const char *format, ...){
-  if(level[0] > ca_logLevel) return;
-  strncpy(fmtBuf, format, MAX_FMT);
-  fmtBuf[MAX_FMT - 1] = 0;
+void logPrint(const char mod_level, const char level, const char *format, ...){
+  
+  if(mod_level > '0')
+    if(level > mod_level) return;
+  else
+    if(level > ca_logLevel) return;
+  if(level > ca_logLevel) return;
+  strncpy(fmtBuf, format, MAX_LOG_FMT);
+  fmtBuf[MAX_LOG_FMT - 1] = 0;
   va_start(arglist, format); 
-  vsnprintf(outBuf, MAX_FMT, fmtBuf, arglist);
+  vsnprintf(outBuf, MAX_LOG_FMT, fmtBuf, arglist);
   va_end(arglist);
   //size_t msgLen = strlen(outBuf);
   Serial.print(outBuf);
