@@ -65,7 +65,7 @@ PROGMEM const char CONFIGASSIST_HTML_UPLOAD[] = R"=====(
 </body>
 </html>
 )=====";
-#ifdef USE_OTA_UPLOAD
+#ifdef USE_OTAUPLOAD
 //Template for uploading a ota file
 const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
 <script>
@@ -546,7 +546,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
   /*{SUB_SCRIPT}*/   
 })
 </script>)=====";
-
+#ifdef USE_TIMESYNC 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
   async function sendTime() {
     let now = new Date();
@@ -563,7 +563,8 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
   
   setTimeTimer = setTimeout(sendTime, 200);  
 )=====";
-
+#endif
+#ifdef USE_TESTWIFI 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION[] = R"=====(
   async function testWifi(no="") {
     const baseHost = document.location.origin;
@@ -609,6 +610,8 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION[] = R"=====(
     //if($('#msg')) $('#msg').innerHTML = JSON.stringify(j);
   }
 )=====";
+#endif
+#ifdef USE_WIFISCAN 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN[] = R"=====(
 async function getWifiScan() {      
     const baseHost = document.location.origin;
@@ -656,7 +659,7 @@ async function getWifiScan() {
   
   scanTimer = setTimeout(getWifiScan, 2000); 
 )=====";
-
+#endif
 //Template for one input text box
 PROGMEM const char CONFIGASSIST_HTML_TEXT_BOX[] = 
 R"=====(<input id="{key}" name="{key}" length="64" value="{val}">)=====";
