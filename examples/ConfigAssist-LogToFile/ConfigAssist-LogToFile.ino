@@ -25,18 +25,9 @@ void serialPrintLog(){
   Serial.print("\nDisplay log..Done\n");
 }
 
-//Access configAssist module parameters
-extern bool ca_logToFile;
-extern byte ca_logLevel;
-extern File ca_logFile; 
-
 void setup() {
-  //Enable configAssist logging to file
-  ca_logToFile = true;
-  
-  //Set configAssist default log level
-  ca_logLevel = DEF_LOG_LEVEL;
-
+  //Set configAssist default log level  
+  setLogPrintLevel(DEF_LOG_LEVEL);
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
@@ -52,9 +43,11 @@ void setup() {
 
   //Display the log file
   serialPrintLog();
+
+  //Enable configAssist logging to file  
+  setLogPrintToFile(true);
   
   LOG_INF("* * * * Starting  * * * * * \n");
-
   LOG_ERR("This is an ERROR message \n");
   LOG_WRN("This is a WARNING message \n");
   LOG_INF("This is an INFO message \n");
@@ -75,7 +68,7 @@ void setup() {
   info.saveConfigFile();
   LOG_DBG("End of setup()..\n");
   //Close the log file  
-  ca_logFile.close(); 
+  setLogPrintToFile(false);
 }
 
 void loop() {
