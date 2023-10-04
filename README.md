@@ -29,7 +29,7 @@ Application variables like **Wifi ssid**, **Wifi password**, **Host Name** can b
 
 **ConfigAssist** can also check and synchronize the internal **clock** of ESP device with the browser time if needed. So even if no internet connection (AP mode) and no **npt** server is available the device will get the correct time. If **TIMEZONE_KEY** string exists in variables it will be used to set the device time zone string. If not it will use browser offset.
 
-These features can be disabled to save memory by setting **USE_WIFISCAN**, **USE_TESTWIFI**, and **USE_TIMESYNC** to false.
+These features can be disabled to save memory by commenting the lines **USE_WIFISCAN**, **USE_TESTWIFI**, **USE_TIMESYNC**, and **USE_OTAUPLOAD** int ``configAssist.h``.
 
 Device's configuration ``(*.ini files)`` can be downloaded with the **Backup** button and can be restored later with the **Restore** button.
 
