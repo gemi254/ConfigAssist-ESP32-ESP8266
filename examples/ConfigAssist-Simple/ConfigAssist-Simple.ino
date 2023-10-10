@@ -5,7 +5,7 @@
   #include <LittleFS.h>
   #include <ESP8266WebServer.h>  
 #endif
-
+#define LOGGER_LOG_LEVEL 5 // Errors & Warnings & Info & Debug & Verbose
 #include <configAssist.h>  // Config assist class
 
 void setup() {
@@ -14,13 +14,13 @@ void setup() {
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
-  LOG_INF("Starting..\n");
 
   #if defined(ESP32)  
     if(!STORAGE.begin(true)) Serial.println("ESP32 storage init failed!"); 
   #else
     if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!"); 
   #endif
+  LOG_I("Starting..\n");
   
   // Create a config class with an ini filename for storage 
   ConfigAssist info("/info.ini");
@@ -35,7 +35,7 @@ void setup() {
     //Save keys & values into ini file
     info.saveConfigFile();
   }else{ //Ini file is valid, display the values
-    LOG_INF("Info file: var1:  %s, var2: %s\n", info["var1"].c_str(), info["var2"].c_str() );      
+    LOG_I("Info file: var1:  %s, var2: %s\n", info["var1"].c_str(), info["var2"].c_str() );      
   }
 }
 
