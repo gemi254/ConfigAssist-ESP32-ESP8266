@@ -15,6 +15,7 @@
 #endif
 #include <FS.h>
 
+#define LOGGER_LOG_LEVEL 4
 #include <configAssist.h>
 
 #if defined(ESP32)
@@ -139,14 +140,11 @@ ConfigAssist conf;
 String hostName;
 unsigned long pingMillis = millis();
 
-extern byte ca_logLevel; 
-#define DEF_LOG_LEVEL '4'
-
 void debugMemory(const char* caller) {
   #if defined(ESP32)
-    LOG_DBG("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
+    LOG_D("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
   #else
-    LOG_DBG("%s > Free: heap %u\n", caller, ESP.getFreeHeap());
+    LOG_D("%s > Free: heap %u\n", caller, ESP.getFreeHeap());
   #endif
 }
 
@@ -193,7 +191,7 @@ bool setStaticIP(String st_ip){
   String s = st_ip.substring(0, ndx);
   s.trim();
   if(!ip.fromString(s)){
-    LOG_ERR("Error parsing static ip: %s\n",s.c_str());
+    LOG_E("Error parsing static ip: %s\n",s.c_str());
     return false;
   }
 
@@ -202,7 +200,7 @@ bool setStaticIP(String st_ip){
   s = st_ip.substring(0, ndx);
   s.trim();
   if(!mask.fromString(s)){
-    LOG_ERR("Error parsing static ip mask: %s\n",s.c_str());
+    LOG_E("Error parsing static ip mask: %s\n",s.c_str());
     return false;
   }
 
@@ -210,10 +208,10 @@ bool setStaticIP(String st_ip){
   s = st_ip;
   s.trim();
   if(!gw.fromString(s)){
-    LOG_ERR("Error parsing static ip gw: %s\n",s.c_str());
+    LOG_E("Error parsing static ip gw: %s\n",s.c_str());
     return false;
   }
-  LOG_INF("Wifi ST setting static ip: %s, mask: %s  gw: %s \n", ip.toString().c_str(), mask.toString().c_str(), gw.toString().c_str());
+  LOG_I("Wifi ST setting static ip: %s, mask: %s  gw: %s \n", ip.toString().c_str(), mask.toString().c_str(), gw.toString().c_str());
   WiFi.config(ip, gw, mask);
   return true;  
 }
@@ -233,7 +231,7 @@ bool connectToNetwork(){
     st_ip = conf["st_ip" + String(i)];
     setStaticIP(st_ip);  
     
-    LOG_INF("Wifi ST connecting to: %s, %s \n",st_ssid.c_str(), st_pass.c_str());
+    LOG_I("Wifi ST connecting to: %s, %s \n",st_ssid.c_str(), st_pass.c_str());
 
     WiFi.begin(st_ssid.c_str(), st_pass.c_str());
     int col = 0;
@@ -252,23 +250,21 @@ bool connectToNetwork(){
   }
 
   if (WiFi.status() != WL_CONNECTED){
-    LOG_ERR("Wifi connect fail\n");
+    LOG_E("Wifi connect fail\n");
     WiFi.disconnect();
     return false;
   }else{
-    LOG_INF("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", st_ssid.c_str(), WiFi.localIP().toString().c_str());
+    LOG_I("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", st_ssid.c_str(), WiFi.localIP().toString().c_str());
   }
   return true;
 }
 
 void setup(void) {
 
-  ca_logLevel = DEF_LOG_LEVEL;
-
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
-  LOG_INF("Starting..\n");
+  LOG_I("Starting..\n");
   debugMemory("setup");
 
   #if defined(ESP32)
@@ -287,13 +283,13 @@ void setup(void) {
   digitalWrite(conf["led_pin"].toInt(), 1);
 
   if(!bConn){
-    LOG_ERR("Connect failed.");
+    LOG_E("Connect failed.");
     conf.setup(server, true);
     return;
   }
 
   if (MDNS.begin(conf["host_name"].c_str())) {
-    LOG_INF("MDNS responder started\n");
+    LOG_I("MDNS responder started\n");
   }
 
   server.on("/", handleRoot);
@@ -305,7 +301,7 @@ void setup(void) {
 
   server.onNotFound(handleNotFound);
   server.begin();
-  LOG_INF("HTTP server started\n");
+  LOG_I("HTTP server started\n");
 
 }
 
