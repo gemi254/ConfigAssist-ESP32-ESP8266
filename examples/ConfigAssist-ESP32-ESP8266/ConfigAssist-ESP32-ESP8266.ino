@@ -14,6 +14,7 @@
 #endif
 #include <FS.h>
 
+#define LOGGER_LOG_LEVEL 5
 #include <configAssist.h>  // Config assist class
 
 #if defined(ESP32)
@@ -125,22 +126,22 @@ unsigned long pingMillis = millis();  // Ping
 // *********** Helper funcions ************
 void debugMemory(const char* caller) {      
   #if defined(ESP32)
-    LOG_INF("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
+    LOG_I("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
   #else
-    LOG_INF("%s > Free: heap %u\n", caller, ESP.getFreeHeap());
+    LOG_I("%s > Free: heap %u\n", caller, ESP.getFreeHeap());
   #endif   
 }
 // List storage file system
 void ListDir(const char * dirname) {
-  LOG_INF("Listing directory: %s\n", dirname);
+  LOG_I("Listing directory: %s\n", dirname);
   // ist details of files on file system
   File root = STORAGE.open(dirname,"r");
   File file = root.openNextFile();
   while (file) {
     #if defined(ESP32)
-      LOG_INF("File: %s, size: %u B\n", file.path(), file.size());
+      LOG_I("File: %s, size: %u B\n", file.path(), file.size());
     #else
-      LOG_INF("File: %s, size: %u B\n", file.fullName(), file.size());
+      LOG_I("File: %s, size: %u B\n", file.fullName(), file.size());
     #endif
     file = root.openNextFile();
   }
@@ -159,7 +160,7 @@ void handleRoot() {
   #else 
     out.replace("{name}", "ESP8266!");
   #endif
-  #ifdef USE_TIMESYNC 
+  #ifdef CA_USE_TIMESYNC 
   out += "<script>" + conf.getTimeSyncScript() + "</script>";
   #endif
   server.send(200, "text/html", out);
@@ -190,8 +191,7 @@ void setup(void) {
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
-  LOG_INF("Starting..\n");
-  debugMemory("setup");
+  
   //Start local storage
   #if defined(ESP32)  
     if(!STORAGE.begin(true)) Serial.println("ESP32 storage init failed!"); 
@@ -199,7 +199,9 @@ void setup(void) {
     if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!"); 
   #endif
   ListDir("/");
-  
+    
+  LOG_I("Starting..\n");
+  debugMemory("setup");
   //Initialize ConfigAssist json dictionary pointer
   //If ini file is valid json will not be used
   conf.init(INI_FILE, appConfigDict_json);  
@@ -222,7 +224,7 @@ void setup(void) {
   WiFi.setAutoReconnect(false);
   WiFi.setAutoConnect(false);
   WiFi.mode(WIFI_STA);
-  LOG_DBG("Wifi Station starting, connecting to: %s\n", conf["st_ssid"].c_str());
+  LOG_D("Wifi Station starting, connecting to: %s\n", conf["st_ssid"].c_str());
   WiFi.begin(conf["st_ssid"].c_str(), conf["st_pass"].c_str());
   while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000)  {
     digitalWrite(conf["led_pin"].toInt(), 0);
@@ -236,25 +238,25 @@ void setup(void) {
   
   //Check connection
   if(WiFi.status() == WL_CONNECTED ){
-    LOG_INF("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", conf["st_ssid"].c_str(), WiFi.localIP().toString().c_str()); 
+    LOG_I("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", conf["st_ssid"].c_str(), WiFi.localIP().toString().c_str()); 
   }else{
     //Fall back to Access point for editing config
-    LOG_ERR("Connect failed.");
+    LOG_E("Connect failed.");
     conf.setup(server, true);
     return;
   }
   
   if (MDNS.begin(conf["host_name"].c_str())) {
-    LOG_INF("MDNS responder started\n");
+    LOG_I("MDNS responder started\n");
   }
 
   //Get int/bool value
   bool debug = conf["debug"].toInt();
-  LOG_INF("Boolean value: %i\n", debug);  
+  LOG_I("Boolean value: %i\n", debug);  
   
   //Get float value
   float float_value = atof(conf["float_val"].c_str());
-  LOG_INF("Float value: %1.5f\n", float_value);
+  LOG_I("Float value: %1.5f\n", float_value);
   
   //Change a value
   //conf.put("led_pin","3");
@@ -275,7 +277,7 @@ void setup(void) {
   
   server.onNotFound(handleNotFound);
   server.begin();
-  LOG_INF("HTTP server started\n");
+  LOG_I("HTTP server started\n");
   
   //On the fly generate an ini info file on SPIFFS
   {
@@ -287,7 +289,7 @@ void setup(void) {
       info.put("var2", 1234, true);
       info.saveConfigFile();
     }else{
-      LOG_DBG("Info file: var1:  %s, var2: %s\n", info["var1"].c_str(), info["var2"].c_str() );      
+      LOG_D("Info file: var1:  %s, var2: %s\n", info["var1"].c_str(), info["var2"].c_str() );      
     }
   }  
 }
