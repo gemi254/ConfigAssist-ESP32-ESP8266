@@ -65,7 +65,7 @@ PROGMEM const char CONFIGASSIST_HTML_UPLOAD[] = R"=====(
 </body>
 </html>
 )=====";
-#ifdef USE_OTAUPLOAD
+#ifdef CA_USE_OTAUPLOAD
 //Template for uploading a ota file
 const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
 <script>
@@ -473,7 +473,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     rangeVal.innerHTML = '<span>'+range.value+'</span>';
     rangeVal.style.left = 'calc('+position+'px)';
   }
-
+  
   //Update all ranges
   $$('input[type=range]').forEach(el => {updateRange(el);});  
 
@@ -494,6 +494,19 @@ document.addEventListener('DOMContentLoaded', function (event) {
     });
   });
 
+  // Add password view handlers
+  $$('input[type=password]').forEach(el => {    
+    el.addEventListener('keyup', function (event) {    
+       var no = getKeyNo(event.target.name);
+       const passV = $('#_PASS_VIEW' + no + "_GRP");
+       if(passV)
+          passV.style.display = "block";
+    });
+    el.addEventListener('focus', function (event) {    
+       this.select();
+    });
+  });
+
   // Add dblClick handlers
   $$('input').forEach(el => {    
     el.addEventListener('dblclick', function (event) {    
@@ -506,7 +519,22 @@ document.addEventListener('DOMContentLoaded', function (event) {
     const e = event.target;
     const value = e.value.trim();
     const et = event.target.type;
-    // input fields of given class 
+    
+    if( e.name.includes("_PASS_VIEW") ){
+      var no = getKeyNo(e.name);
+      const p = e.parentElement.parentElement.parentElement.children[1].children[0]
+      if(e.checked) p.type = "text";
+      else p.type = "password";
+      return;
+    }
+    
+    if( e.name.includes("{CA_PASSWD_KEY}") ){
+       const no = getKeyNo(e.name);
+       const passV = $('#_PASS_VIEW' + no + "_GRP");
+       if(passV)
+          passV.style.display = "block";
+    }
+
     if (e.nodeName == 'INPUT' || e.nodeName == 'SELECT') {  
       if (e.type === 'checkbox') updateKey(e.id, e.checked ? 1 : 0);
       else updateKey(e.id, value);
@@ -520,22 +548,29 @@ document.addEventListener('DOMContentLoaded', function (event) {
     updateKey("_SAVE", 1);
     console.log("Unload.. saved");
   });
-
+  function getKeyNo(key){
+    n = key[key.length - 1];
+    no = "";
+    if(parseInt(n)) no += n;
+    return no;
+  }
   async function updateKey(key, value, isTxtArea = false) {      
     if(value == null ) return;      
     const baseHost = document.location.origin;
     var url = baseHost + "/cfg?" + key + "=" + value
+    
     if(key=="_RST"){
       document.location = url;
     }else if (key=="_RBT"){
       let nowUTC = Math.floor(new Date().getTime() / 1000);
       document.location = url+"&_TS="+ nowUTC;
-    }else if (key=="_DWN" || key=="_UPG"){
+    }else if (key=="_DWN" || key=="_UPG" || key.includes('_PASS_VIEW')){
       return;
     }
+    
     if(isTxtArea){
-        const fileKey = key + "{FILENAME_IDENTIFIER}";
-        url += "&"+fileKey+"=" + $('#'+fileKey).value;
+      const fileKey = key + "{CA_FILENAME_IDENTIFIER}";
+      url += "&"+fileKey+"=" + $('#'+fileKey).value;
     }
     const response = await fetch(encodeURI(url));
     if (!response.ok){
@@ -546,7 +581,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
   /*{SUB_SCRIPT}*/   
 })
 </script>)=====";
-#ifdef USE_TIMESYNC 
+#ifdef CA_USE_TIMESYNC 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
   async function sendTime() {
     let now = new Date();
@@ -561,10 +596,10 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
     }
   }
   
-  setTimeTimer = setTimeout(sendTime, 200);  
+  setTimeTimer = setTimeout(sendTime, 500);  
 )=====";
 #endif
-#ifdef USE_TESTWIFI 
+#ifdef CA_USE_TESTWIFI 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION[] = R"=====(
   async function testWifi(no="") {
     const baseHost = document.location.origin;
@@ -611,7 +646,7 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION[] = R"=====(
   }
 )=====";
 #endif
-#ifdef USE_WIFISCAN 
+#ifdef CA_USE_WIFISCAN 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN[] = R"=====(
 async function getWifiScan() {      
     const baseHost = document.location.origin;
@@ -660,6 +695,13 @@ async function getWifiScan() {
   scanTimer = setTimeout(getWifiScan, 2000); 
 )=====";
 #endif
+
+PROGMEM const char CONFIGASSIST_HTML_CHECK_VIEW_PASS[] = 
+R"=====(<span id="{key}_GRP" style="display: none;">
+<input type="checkbox" style="height:auto; min-width:auto;" id="{key}" name="{key}" {chk}/>
+<label for="{key}">{label}</label></span>
+)=====";
+
 //Template for one input text box
 PROGMEM const char CONFIGASSIST_HTML_TEXT_BOX[] = 
 R"=====(<input id="{key}" name="{key}" length="64" value="{val}">)=====";
@@ -672,7 +714,7 @@ R"=====(<textarea id="{key}" name="{key}" rows="auto" cols="auto">{val}</textare
 PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA_FNAME[] = 
 R"=====(<input type="hidden" id="{key}" name="{key}" value="{val}">)=====";
 
-//Template for one input check box  <label for="{key}">{key}</label>
+//Template for one input check box 
 PROGMEM const char CONFIGASSIST_HTML_CHECK_BOX[] = R"=====(
             <div class="card-val-ctrl">              
               <div class="switch">
