@@ -27,9 +27,9 @@ Application variables like **Wifi ssid**, **Wifi password**, **Host Name** can b
 
 **Station** Wifi **connections** can be **validated** during setup with ``Test connection`` link available on each **st_ssid** field. The device will be switched to **WIFI_AP_STA** and **ConfigAssist** will try to test the Station connection with **Wifi ssid**, **Wifi password** entered without disconnecting from the Access Point. If the connection is successful the Station ip address and signal strength will be displayed.
 
-**ConfigAssist** can also check and synchronize the internal **clock** of ESP device with the browser time if needed. So even if no internet connection (AP mode) and no **npt** server is available the device will get the correct time. If **TIMEZONE_KEY** string exists in variables it will be used to set the device time zone string. If not it will use browser offset.
+**ConfigAssist** can also check and synchronize the internal **clock** of ESP device with the browser time if needed. So even if no internet connection (AP mode) and no **npt** server is available the device will get the correct time. If **CA_TIMEZONE_KEY** string exists in variables it will be used to set the device time zone string. If not it will use browser offset.
 
-These features can be disabled to save memory by commenting the lines **USE_WIFISCAN**, **USE_TESTWIFI**, **USE_TIMESYNC**, and **USE_OTAUPLOAD** int ``configAssist.h``.
+These features can be disabled to save memory by commenting the lines **CA_USE_WIFISCAN**, **CA_USE_TESTWIFI**, **CA_USE_TIMESYNC**, and **CA_USE_OTAUPLOAD** in ``configAssist.h``.
 
 Device's configuration ``(*.ini files)`` can be downloaded with the **Backup** button and can be restored later with the **Restore** button.
 
@@ -71,7 +71,7 @@ In your application sketch file you must define a json dictionary that includes 
 
 
 + If you use keywords `name, default` an **edit box** will be generated to edit the variable. You can add `attribs` keywords to specify min, max, step for a numeric field.
-+ If you keyword name contains ``_pass`` a **password field** will be used. See **PASSWD_KEY** definition. 
++ If you keyword name contains ``_pass`` a **password field** will be used. See **CA_PASSWD_KEY** definition. 
 + If you use keyword `checked` instead of `default` a Boolean value will be used that will be edited by a **check box**
 + You can combine keywords `default` with `options` in order to use a select list that will be edited by a **drop list**. 
   - The `options` field must contain a comma separated list of values and can be enclosed by single quotes.
@@ -215,30 +215,30 @@ info.saveConfigFile();
 ```
 ## Logging to a file
 **ConfigAssist** can redirect serial print functions to a file in a spiffs and a **Debug log** can be generated.
-In you application you use **LOG_ERR**, **LOG_WRN**, **LOG_INF**, **LOG_DBG** macros instead of **Serial.prinf**
+In you application you use **LOG_E**, **LOG_W**, **LOG_I**, **LOG_D** macros instead of **Serial.prinf**
 to print your messages. **ConfigAssist** can record these messages with **timestamps** to a file.
 
 if you want to enable serial print to a log file..
-+ define **ConfigAssist**  external variables
++ define **ConfigAssist**  log mode
   ```
-  extern bool ca_logToFile;
-  extern byte ca_logLevel;  
+  #define LOGGER_LOG_LEVEL 5 // Errors & Warnings & Info & Debug & Verbose
   ```
 + Then enable record to file in your **setup** function use..
   ```
   //Enable configAssist logging to file
-  ca_logToFile = true;    
-  //Set configAssist default log level
-  ca_logLevel = DEF_LOG_LEVEL;
+  #define LOGGER_LOG_MODE  2 // Log to file
+
+  //Define the log filename
+  #define LOGGER_LOG_FILENAME "/log1"
   ```
   
 ## Compile
 Donwload library files and place them on ./libraries directory under ArduinoProjects
-Then include the **configAssist,h** in your application and compile..
+Then include the **configAssist.h** in your application and compile..
 
 + compile for arduino-esp3 or arduino-esp8266.
 + In order to compile you must install **ArduinoJson** library.
-+ if your variables exceed **MAX_PARAMS** increase this value in class header.
++ if your variables exceed **CA_MAX_PARAMS** increase this value in class header.
 
 Compiling included examples require to remove old **ini** file by calling `conf.deleteConfig();`
 See ConfigAssist-ESP32-ESP8266.ino line:206
