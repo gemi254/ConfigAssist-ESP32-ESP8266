@@ -1,32 +1,20 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
-#define CA_CLASS_VERSION "2.6.7"        // Class version
-#define MAX_PARAMS 50                // Maximum parameters to handle
-#define DEF_CONF_FILE "/config.ini"  // Default Ini file to save configuration
-#define INI_FILE_DELIM '~'           // Ini file pairs seperator
-#define FILENAME_IDENTIFIER "_F"     // Keys ending with this is a text box with the filename of a text area
-#define DONT_ALLOW_SPACES false      // Allow spaces in var names ?
-#define PASSWD_KEY   "_pass"         // The key part that defines a password field
-#define HOSTNAME_KEY "host_name"     // The key that defines host name
-#define TIMEZONE_KEY "time_zone"     // The key that defines time zone for setting time
+#define CA_CLASS_VERSION "2.6.9a"        // Class version
+#define CA_MAX_PARAMS 50                 // Maximum parameters to handle
+#define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
+#define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
+#define CA_FILENAME_IDENTIFIER "_F"      // Keys ending with this is a text box with the filename of a text area
+#define CA_DONT_ALLOW_SPACES false       // Allow spaces in var names ?
+#define CA_SSID_KEY     "_ssid"          // The key part that defines a ssid field
+#define CA_PASSWD_KEY   "_pass"          // The key part that defines a password field
+#define CA_HOSTNAME_KEY "host_name"      // The key that defines host name
+#define CA_TIMEZONE_KEY "time_zone"      // The key that defines time zone for setting time
 
-#define USE_WIFISCAN                 // Comment to disable wifi scan
-#define USE_TIMESYNC                 // Comment to disable sync esp with browser if out of sync
-#define USE_TESTWIFI                 // Comment to disable test wifi st connection
-#define USE_OTAUPLOAD                // Comment to disable ota and reduce memory
-
-#define LOG_TO_FILE false            // Enable logging to file.
-#define LOG_FILENAME "/log"          // Log file name
-
-#ifdef LOG_LEVEL
-#undef LOG_LEVEL
-#endif
-// Define default mudule log level
-//#define LOG_LEVEL '0' //Nothing
-//#define LOG_LEVEL '1' //Errors 
-//#define LOG_LEVEL '2' //Errors & Warnings
-  #define LOG_LEVEL '3' //Errors & Warnings & Info
-//#define LOG_LEVEL '4' //Errors & Warnings & Info & Debug
+#define CA_USE_WIFISCAN                 // Comment to disable wifi scan
+#define CA_USE_TESTWIFI                 // Comment to disable test wifi st connection
+#define CA_USE_TIMESYNC                 // Comment to disable sync esp with browser if out of sync
+#define CA_USE_OTAUPLOAD                // Comment to disable ota and reduce memory
 
 // Define Platform libs
 #if defined(ESP32)
@@ -36,6 +24,8 @@
   #define WEB_SERVER ESP8266WebServer
   #define STORAGE LittleFS // one of: SPIFFS LittleFS SD_MMC 
 #endif
+
+#include "espLogger.h"
 
 #define IS_BOOL_TRUE(x) (x=="On" || x=="on" || x=="True" || x=="true" || x=="1")
 
@@ -81,11 +71,11 @@ class ConfigAssist{
     // Implement operator [] i.e. val = config['key']    
     String operator [] (String k);
     // Return the value of a given key, Empty on not found
-    String get(String variable);    
-    // Update the value of thisKey = value (int)
-    bool put(String thisKey, int value, bool force=false);
-    // Update the value of thisKey = value (string)
-    bool put(String thisKey, String value, bool force=false);    
+    String get(String key);    
+    // Update the value of key = val (int)
+    bool put(String key, int val, bool force = false);
+    // Update the value of key = val (string)
+    bool put(String key, String val, bool force = false);    
     // Add vectors by key (name in confPairs)
     void add(String key, String val);
     // Add vectors pairs
@@ -98,7 +88,7 @@ class ConfigAssist{
     void sortSeperators();
     // Sort vectors by readNo in confPairs
     void sortReadOrder();    
-    // Return next key and value from configs on each call in key order
+    // Return next key and val from configs on each call in key order
     bool getNextKeyVal(confPairs &c);
     // Get the configuration in json format
     String getJsonConfig();
@@ -120,7 +110,7 @@ class ConfigAssist{
     void handleWifiScanRequest();
     // Send html upload page to client
     void sendHtmlUploadPage();
-#ifdef USE_OTAUPLOAD
+#ifdef CA_USE_OTAUPLOAD
     // Send html ota upload page to client
     void sendHtmlOtaUploadPage();
 #endif
@@ -141,7 +131,7 @@ class ConfigAssist{
     // Get page css
     String getCSS();
     // Get browser time synchronization java script
-#ifdef USE_TIMESYNC 
+#ifdef CA_USE_TIMESYNC 
     String getTimeSyncScript();
 #endif    
     // Get html custom message page
@@ -163,13 +153,13 @@ class ConfigAssist{
     // Render options list
     String getOptionsListHtml(String defVal, String attribs, bool isDataList=false);
     // Get location of given key to retrieve other elements
-    int getKeyPos(String thisKey);
+    int getKeyPos(String key);
     // Get seperation location of given key
-    int getSepKeyPos(String thisKey);
+    int getSepKeyPos(String key);
     // Extract a config tokens from keyValPair and load it into configs vector
     void loadVectItem(String keyValPair);    
     // Build json on Wifi scan complete     
-#ifdef USE_WIFISCAN
+#ifdef CA_USE_WIFISCAN
     static void scanComplete(int networksFound);
     // Send wifi scan results to client
     static void checkScanRes();
@@ -189,21 +179,5 @@ class ConfigAssist{
     static String _jWifi;
     bool _apEnabled;
 };
-
-#ifdef ESP32
-  #define DBG_FORMAT(format, type) "[%s %s @ %s:%u] " format "", esp_log_system_timestamp(), type, pathToFileName(__FILE__), __LINE__
-#else
-  #define DBG_FORMAT(format, type) "[%s %s %u] " format "",type, __FILE__, __LINE__ 
-#endif
-
-//void logPrint(const char *level, const char *format, ...);
-void setLogPrintLevel(char level);
-void setLogPrintToFile(bool enable);
-void logPrint(const char mod_level, const char level, const char *format, ...);
-
-#define LOG_ERR(format, ...) logPrint(LOG_LEVEL, '1', DBG_FORMAT(format,"ERR"), ##__VA_ARGS__)
-#define LOG_WRN(format, ...) logPrint(LOG_LEVEL, '2', DBG_FORMAT(format,"WRN"), ##__VA_ARGS__)
-#define LOG_INF(format, ...) logPrint(LOG_LEVEL, '3', DBG_FORMAT(format,"INF"), ##__VA_ARGS__)  
-#define LOG_DBG(format, ...) logPrint(LOG_LEVEL, '4', DBG_FORMAT(format,"DBG"), ##__VA_ARGS__)
 
 #endif // _CONFIG_ASSIST_H
