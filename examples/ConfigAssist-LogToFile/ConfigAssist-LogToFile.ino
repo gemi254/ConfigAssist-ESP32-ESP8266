@@ -6,15 +6,17 @@
   #include <ESP8266WebServer.h>  
 #endif
 
+//Set default 
+#define LOGGER_LOG_MODE  2 // Log to file
+#define LOGGER_LOG_LEVEL 5 // Errors & Warnings & Info & Debug & Verbose
+#define LOGGER_LOG_FILENAME "/log1"
 #include <configAssist.h>  // Config assist class
 
-//Set default configAssist logLevel on run time.
-#define DEF_LOG_LEVEL '4' //Errors & Warnings & Info & Debug
 
 // Print the log generated to serial port
 void serialPrintLog(){
-  Serial.print("Display log..\n");  
-  File f = STORAGE.open(LOG_FILENAME); 
+  Serial.printf("Display log: %s\n", LOGGER_LOG_FILENAME);  
+  File f = STORAGE.open(LOGGER_LOG_FILENAME); 
   // read from the file until there's nothing else in it:
   while (f.available()) 
   {
@@ -24,10 +26,9 @@ void serialPrintLog(){
   f.close();
   Serial.print("\nDisplay log..Done\n");
 }
-
+//extern File log_file;
 void setup() {
   //Set configAssist default log level  
-  setLogPrintLevel(DEF_LOG_LEVEL);
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
@@ -39,19 +40,18 @@ void setup() {
     if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!"); 
   #endif
   //Uncomment to reset the log file
-  //STORAGE.remove(LOG_FILENAME); 
+  //STORAGE.remove(LOGGER_LOG_FILENAME); 
 
   //Display the log file
   serialPrintLog();
-
-  //Enable configAssist logging to file  
-  setLogPrintToFile(true);
   
-  LOG_INF("* * * * Starting  * * * * * \n");
-  LOG_ERR("This is an ERROR message \n");
-  LOG_WRN("This is a WARNING message \n");
-  LOG_INF("This is an INFO message \n");
-  LOG_DBG("This is a DEBUG message \n");
+  LOG_I("* * * * Starting  * * * * * \n");
+
+  LOG_E("This is an ERROR message \n");
+  LOG_W("This is a WARNING message \n");
+  LOG_I("This is an INFO message \n");
+  LOG_D("This is a DEBUG message \n");
+  LOG_V("This is a VERBOSE message \n");
 
   // Create a config class with an ini filename for storage 
   ConfigAssist info("/info.ini");
@@ -62,13 +62,12 @@ void setup() {
     info.put("bootCnt", 0, true);    
   }else{ //Ini is valid, increase counter and display the value
     info.put("bootCnt", info["bootCnt"].toInt() + 1, true);
-    LOG_INF("Info file: bootCnt:  %i\n", info["bootCnt"].toInt());
+    LOG_I("Info file: bootCnt:  %i\n", info["bootCnt"].toInt());
   }
   //Save keys & values into ini file
   info.saveConfigFile();
-  LOG_DBG("End of setup()..\n");
-  //Close the log file  
-  setLogPrintToFile(false);
+  LOG_D("End of setup()..\n");  
+  LOGGER_CLOSE_LOG()
 }
 
 void loop() {
