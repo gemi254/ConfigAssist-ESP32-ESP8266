@@ -218,12 +218,12 @@ info.saveConfigFile();
 In you application you use **LOG_E**, **LOG_W**, **LOG_I**, **LOG_D** macros instead of **Serial.prinf**
 to print your messages. **ConfigAssist** can record these messages with **timestamps** to a file.
 
-if you want to enable serial print to a log file..
 + define **ConfigAssist**  log mode
+Define the log level (Error = 1 .. Verbose = 5)
   ```
   #define LOGGER_LOG_LEVEL 5 // Errors & Warnings & Info & Debug & Verbose
   ```
-+ Then enable record to file in your **setup** function use..
+if you want to enable serial print to a log file use..
   ```
   //Enable configAssist logging to file
   #define LOGGER_LOG_MODE  2 // Log to file
