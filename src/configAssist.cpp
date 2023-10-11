@@ -100,7 +100,7 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
   server.on("/ota", [this] { this->sendHtmlOtaUploadPage(); } );
 #endif
   server.onNotFound([this] { this->handleNotFound(); } );
-  LOG_D("ConfigAssist setup done. %x\n", this);      
+  LOG_D("ConfigAssist setup done.\n");      
 }
 
 // Implement operator [] i.e. val = config['key']    
@@ -428,8 +428,8 @@ void ConfigAssist::checkTime(uint32_t timeUtc, int timeOffs){
   gettimeofday(&tvLocal, NULL);
   
   long diff = (long)timeUtc - tvLocal.tv_sec;
-  LOG_D("Remote utc: %lu, local: %lu\n", timeUtc, tvLocal.tv_sec);
-  LOG_D("Time diff: %u\n",diff);      
+  LOG_D("Remote utc: %d, local: %llu\n", timeUtc, tvLocal.tv_sec);
+  LOG_D("Time diff: %ld\n",diff);
   if( abs(diff) > 5L ){ //5 Secs
     LOG_D("LocalTime: %s\n", getLocalTime().c_str());          
     struct timeval tvRemote;
@@ -464,7 +464,7 @@ String ConfigAssist::testWiFiSTConnection(String no){
     //Connect to Wifi station with ssid from conf file
     uint32_t startAttemptTime = millis();
     if(WiFi.getMode()!=WIFI_AP_STA) WiFi.mode(WIFI_AP_STA);
-    LOG_D("Wifi Station testing :%s, %s\n", no, ssid.c_str());
+    LOG_D("Wifi Station testing :%s, %s\n", no.c_str(), ssid.c_str());
     WiFi.begin(ssid.c_str(), pass.c_str());
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000)  {
       Serial.print(".");
@@ -507,7 +507,7 @@ void ConfigAssist::handleDownloadFile(String fileName){
   }
   uint32_t config_len = f.size();
   // download file as attachment, required file name in inFileName
-  LOG_I("Download file: %s, size: %lu B\n", fileName.c_str(), f.size());
+  LOG_I("Download file: %s, size: %zu B\n", fileName.c_str(), f.size());
   _server->sendHeader("Content-Type", "text/text");
   _server->setContentLength(config_len);
   int n = fileName.lastIndexOf( '/' );
@@ -518,7 +518,7 @@ void ConfigAssist::handleDownloadFile(String fileName){
   _server->sendHeader("Connection", "close");
   size_t sz = _server->streamFile(f, "application/octet-stream");
   if (sz != f.size()) {
-    LOG_E("File: %s, Sent %lu, expected: %lu!\n", fileName.c_str(), sz, f.size()); 
+    LOG_E("File: %s, Sent %zu, expected: %zu!\n", fileName.c_str(), sz, f.size()); 
   } 
   f.close();
 }
@@ -949,7 +949,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
       
       //Don't show passwords
       String ast = "";
-      for(int k=0; k < c.value.length(); ++k){
+      for(unsigned int k=0; k < c.value.length(); ++k){
         ast+='*';
       }
       c.value = ast;
