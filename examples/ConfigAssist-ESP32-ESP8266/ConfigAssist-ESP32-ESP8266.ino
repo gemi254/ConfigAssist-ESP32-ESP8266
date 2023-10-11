@@ -209,6 +209,9 @@ void setup(void) {
   //Uncomment to remove old ini file and re-built it fron dictionary
   //conf.deleteConfig();
 
+  //Register handlers for web server    
+  server.on("/", handleRoot);    
+
   //Failed to load config or ssid empty
   if(!conf.valid() || conf["st_ssid"]=="" ){ 
     //Start Access point server and edit config
@@ -263,9 +266,6 @@ void setup(void) {
   
   //Also change an int/bool value
   //conf.put("led_pin", 4);
-  
-  //Register handlers for web server    
-  server.on("/", handleRoot);
   
   //Add handlers to web server 
   conf.setup(server);
