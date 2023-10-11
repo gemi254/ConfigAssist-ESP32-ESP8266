@@ -794,7 +794,7 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
      </div> <!-- card-body -->
      </div> <!-- card -->
      <div class="card">
-        <button type="button" onClick="window.location.href = '/'" title="Save configuration file to storage" name="_SAVE">HOME</button>
+        <button type="button" title="Go to home" onClick="window.location.href = '/'" name="_SAVE">Home</button>
         <button type="button" title="Reboot esp device" onClick="if(!confirm('Reboot esp?')) return false;" name="_RBT">Reboot</button>
         <button type="button" title="Backup configuration" onClick="window.location.href = '/cfg?_DWN=1'" name="_DWN">Backup</button>
         <button type="button" title="Restore configuration" onClick="window.location.href = '/upl'" name="_UPL">Restore</button>
