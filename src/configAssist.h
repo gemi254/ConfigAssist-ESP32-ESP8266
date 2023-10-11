@@ -1,6 +1,6 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
-#define CA_CLASS_VERSION "2.6.9a"        // Class version
+#define CA_CLASS_VERSION "2.6.9b"        // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
