@@ -6,12 +6,12 @@
   #include <ESP8266WebServer.h>  
 #endif
 
-//Set default 
-#define LOGGER_LOG_MODE  2 // Log to file
-#define LOGGER_LOG_LEVEL 5 // Errors & Warnings & Info & Debug & Verbose
+//Set logger defaults
+#define LOGGER_LOG_MODE  2          // Log to file
+#define LOGGER_LOG_LEVEL 5          // Errors & Warnings & Info & Debug & Verbose
 #define LOGGER_LOG_FILENAME "/log1"
-#include <configAssist.h>  // Config assist class
 
+#include <configAssist.h>           // Config assist class
 
 // Print the log generated to serial port
 void serialPrintLog(){
@@ -26,9 +26,9 @@ void serialPrintLog(){
   f.close();
   Serial.print("\nDisplay log..Done\n");
 }
-//extern File log_file;
+
+// Setup function
 void setup() {
-  //Set configAssist default log level  
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
@@ -39,9 +39,9 @@ void setup() {
   #else
     if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!"); 
   #endif
-  //Uncomment to reset the log file
-  //STORAGE.remove(LOGGER_LOG_FILENAME); 
-
+  
+  //STORAGE.remove(LOGGER_LOG_FILENAME);  //Uncomment to reset the log file
+  
   //Display the log file
   serialPrintLog();
   
