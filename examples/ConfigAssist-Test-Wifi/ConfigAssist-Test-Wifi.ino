@@ -15,7 +15,7 @@
 #endif
 #include <FS.h>
 
-#define LOGGER_LOG_LEVEL 4
+#define LOGGER_LOG_LEVEL 5
 #include <configAssist.h>
 
 #if defined(ESP32)
@@ -160,7 +160,9 @@ void handleRoot() {
   #else
     out.replace("{name}", "ESP8266!");
   #endif
+#ifdef CA_USE_TESTWIFI
   out += "<script>" + conf.getTimeSyncScript() + "</script>";
+#endif  
   server.send(200, "text/html", out);
   digitalWrite(conf["led_pin"].toInt(), 1);
 }
@@ -282,6 +284,9 @@ void setup(void) {
   bool bConn = connectToNetwork();
   digitalWrite(conf["led_pin"].toInt(), 1);
 
+  server.on("/", handleRoot);
+
+
   if(!bConn){
     LOG_E("Connect failed.");
     conf.setup(server, true);
@@ -292,7 +297,6 @@ void setup(void) {
     LOG_I("MDNS responder started\n");
   }
 
-  server.on("/", handleRoot);
   conf.setup(server);
   server.on("/inline", []() {
     server.send(200, "text/plain", "this works as well");
