@@ -231,7 +231,12 @@ if you want to enable serial print to a log file use..
   //Define the log filename
   #define LOGGER_LOG_FILENAME "/log1"
   ```
-  
+ You can also use your own log_printf function by setting log mode to 3
+   ```
+ #define LOGGER_LOG_MODE  3        // External log_printf function
+  ```
+
+ Check ConfigAssist-LotExternal.ino in ``examples/`` folder.
 ## Compile
 Donwload library files and place them on ./libraries directory under ArduinoProjects
 Then include the **configAssist.h** in your application and compile..
@@ -241,7 +246,7 @@ Then include the **configAssist.h** in your application and compile..
 + if your variables exceed **CA_MAX_PARAMS** increase this value in class header.
 
 Compiling included examples require to remove old **ini** file by calling `conf.deleteConfig();`
-See ConfigAssist-ESP32-ESP8266.ino line:206
+See **ConfigAssist-ESP32-ESP8266.ino** line:206
 
 ###### If you get compilation errors on arduino-esp32 you need to update your arduino-esp32 library in the IDE using Boards Manager
 
