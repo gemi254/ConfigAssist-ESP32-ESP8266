@@ -1,6 +1,6 @@
 // Minimal application config dictionary
-const char* appDefConfigDict_json PROGMEM = R"=====(
-[{
+const char* CA_DEFAULT_DICT_JSON PROGMEM = R"=====(
+[ {
       "name": "st_ssid",
      "label": "Enter the name WLAN to connect",
    "default": ""
@@ -12,7 +12,8 @@ const char* appDefConfigDict_json PROGMEM = R"=====(
       "name": "host_name",
      "label": "Enter a name for your host",
    "default": "configAssist_{mac}"
-  }])=====";
+  }
+  ])=====";
 
 //Template for message page
 PROGMEM const char CONFIGASSIST_HTML_START[] = R"=====(
@@ -22,6 +23,7 @@ PROGMEM const char CONFIGASSIST_HTML_START[] = R"=====(
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+  <link rel="shortcut icon" href="#" />
   <title>{title}</title>                        
 </head>
 )=====";
@@ -543,11 +545,17 @@ document.addEventListener('DOMContentLoaded', function (event) {
     }
   });
 
+  function sleep(delay) {
+    var start = new Date().getTime();
+    while (new Date().getTime() < start + delay);
+  }
   // Save config before unload
   window.addEventListener('beforeunload', function (event) {
-    updateKey("_SAVE", 1);
+    updateKey("_SAVE", 1);    
     console.log("Unload.. saved");
+    sleep(500);
   });
+
   function getKeyNo(key){
     n = key[key.length - 1];
     no = "";
@@ -798,7 +806,7 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
         <button type="button" title="Reboot esp device" onClick="if(!confirm('Reboot esp?')) return false;" name="_RBT">Reboot</button>
         <button type="button" title="Backup configuration" onClick="window.location.href = '/cfg?_DWN=1'" name="_DWN">Backup</button>
         <button type="button" title="Restore configuration" onClick="window.location.href = '/upl'" name="_UPL">Restore</button>
-        <button type="button" title="Reset values to defaults" onClick="if(!confirm('Reset values?')) return false;" name="_RST">Defaults</button>
+        <button type="button" title="Reset values to defaults" onClick="if(!confirm('Reset to default values?')) return false;" name="_RST">Defaults</button>
         <!--extraButtons-->
      </div> <!-- card -->
     </div> <!-- column -->
