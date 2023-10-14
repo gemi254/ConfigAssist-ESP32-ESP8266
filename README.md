@@ -148,11 +148,12 @@ X2=900, Y2=3.24"
 + include the **configAssist**  class
   - `#include <configAssist.h>  //ConfigAssist class`
 
+
 + Define your static instance with **defaults**
-  - `ConfigAssist conf;         
+  - `ConfigAssist conf;`        
 
 + if you want to use a different external **ini file name**  
-- `ConfigAssist conf(INI_FILE);  
+  - `ConfigAssist conf(INI_FILE);`
 
 + if you want to use a different external **ini file name** and **json description**
   - `ConfigAssist conf(INI_FILE, appConfigDict_json);  // ConfigAssist with custom name & dictionry`
