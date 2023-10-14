@@ -16,7 +16,7 @@
   #include "TZ.h"
 #endif
 #include <FS.h>
-#define LOGGER_LOG_LEVEL 3    //Set log level for this module
+#define LOGGER_LOG_LEVEL 3   //Set log level for this module
 #include "configAssist.h"
 #include "configAssistPMem.h" //Memory static valiables (html pages)
 
@@ -26,60 +26,81 @@
   #endif  
 #endif
 
+// Class static members
 WEB_SERVER *ConfigAssist::_server = NULL;
 String ConfigAssist::_jWifi="[{}]";
 
+
+// Standard defaults constructor
 ConfigAssist::ConfigAssist() {
-  _jsonLoaded = false; _iniValid=false; _confFile = CA_DEF_CONF_FILE; _apEnabled=false;
+  _init = false;
+  _jsonLoaded = false; _iniLoaded=false;  
+  _dirty = false; _apEnabled=false;
+  _confFile = String(CA_DEF_CONF_FILE);
+  _jStr = CA_DEFAULT_DICT_JSON;
 }
 
-ConfigAssist::ConfigAssist(String ini_file) {  
-      _jStr = NULL;  _jsonLoaded = false; _iniValid = false; _dirty = false; 
-      if (ini_file != "") _confFile = ini_file;
-      else _confFile = CA_DEF_CONF_FILE; 
-      init( _confFile );
-    }
-    
+// Standard constructor with ini file
+ConfigAssist::ConfigAssist(String ini_file) {
+  _init = false;
+  _jsonLoaded = false; _iniLoaded=false;  
+  _dirty = false; _apEnabled=false;
+  
+  if (ini_file != "") _confFile = ini_file;
+  else _confFile = CA_DEF_CONF_FILE; 
+
+  _jStr = CA_DEFAULT_DICT_JSON;
+}
+// Standard constructor with ini file and json description
+ConfigAssist::ConfigAssist(String ini_file, const char * jStr){
+  _init = false;
+  _jsonLoaded = false; _iniLoaded=false;  
+  _dirty = false; _apEnabled=false;
+  
+  if (ini_file != "") _confFile = ini_file;
+  else _confFile = CA_DEF_CONF_FILE; 
+  
+  if(jStr!=NULL) _jStr = jStr;
+  else _jStr = CA_DEFAULT_DICT_JSON;
+}
+
+// delete 
 ConfigAssist::~ConfigAssist() {}
 
-// Initialize with an ini filename
-void ConfigAssist::init(String ini_file) { 
-  _jStr = NULL;
-  if(ini_file!="") _confFile = ini_file;
+// Set ini file at run time
+void ConfigAssist::setIniFile(String ini_file){
+  if (ini_file != "") _confFile = ini_file;
+}
+// Set json at run time.. Must called before _init || _jsonLoaded
+void ConfigAssist::setJsonDict(const char * jStr){
+  if(_init || _jsonLoaded){
+    LOG_E("Configuration already loaded.\n");
+    return;
+  }
+  if(jStr!=NULL) _jStr = jStr;
+}
+
+// Initialize with defaults
+void ConfigAssist::init() {
   loadConfigFile(_confFile);
-  //On fail load defaults from dict  = CA_DEF_CONF_FILE
-  if(!_iniValid){
+
+  if(!_iniLoaded){
     _dirty = true;
-  }      
+  }  
+  _init = true;
+  LOG_V("ConfigAssist::init done %i\n",_iniLoaded);
+}
+// Is configuration valid
+bool ConfigAssist::valid(){ 
+  if(!_init) init();
+  return _iniLoaded;
 }
 
-// Editable Ini file, with json dict
-void ConfigAssist::init(String ini_file, const char * jStr) { 
-  if(jStr) _jStr = jStr;
-  else _jStr = appDefConfigDict_json;
-
-  if(ini_file!="") _confFile = ini_file;
-  loadConfigFile(_confFile); 
-  
-  //On fail load defaults from dict
-  if(!_iniValid){
-    LOG_W("File : %s is not Valid. Loading default values\n",_confFile.c_str());
-    loadJsonDict(_jStr);
-    _dirty = true;
-  }      
-}
-
-// Dictionary only, default ini file
-void ConfigAssist::initJsonDict(const char * jStr) { 
-  init(_confFile,  jStr);
-}
-bool ConfigAssist::valid(){ return _iniValid;}
 bool ConfigAssist::exists(String variable){ return getKeyPos(variable) >= 0; }            
     
 // Start an AP with a web server and render config values loaded from json dictionary
 void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
   String hostName = getHostName();      
-  LOG_I("ConfigAssist setup webserver\n");
   _server = &server;
   if(apEnable){
     WiFi.mode(WIFI_AP_STA);
@@ -100,7 +121,7 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
   server.on("/ota", [this] { this->sendHtmlOtaUploadPage(); } );
 #endif
   server.onNotFound([this] { this->handleNotFound(); } );
-  LOG_D("ConfigAssist setup done.\n");      
+  LOG_D("ConfigAssist setup AP & handlers done.\n");      
 }
 
 // Implement operator [] i.e. val = config['key']    
@@ -116,7 +137,7 @@ String ConfigAssist::getMacID(){
 // Get a temponary hostname
 String ConfigAssist::getHostName(){
   String hostName = get(CA_HOSTNAME_KEY);
-  if(hostName=="") hostName = "ESP_ASSIST_" + getMacID();
+  if(hostName=="") hostName = "configAssist_" + getMacID();
   else hostName.replace("{mac}", getMacID());
   return hostName;
 }
@@ -136,7 +157,7 @@ bool ConfigAssist::put(String key, int val, bool force) {
 } 
     
 // Update the value of key = value (string)
-bool ConfigAssist::put(String key, String val, bool force) {      
+bool ConfigAssist::put(String key, String val, bool force) {
   int keyPos = getKeyPos(key);      
   if (keyPos >= 0) {
     //Save 0,1 on booleans
@@ -305,6 +326,7 @@ int ConfigAssist::loadJsonDict(String jStr, bool update) {
       }  
 
       if (c.type) { //Valid
+        if(c.name==CA_HOSTNAME_KEY) c.value.replace("{mac}", getMacID());
         if(update){
           int keyPos = getKeyPos(c.name);
           //Add a Json key if not exists in ini file
@@ -324,7 +346,7 @@ int ConfigAssist::loadJsonDict(String jStr, bool update) {
             LOG_E("Undefined json Key: %s\n", c.name.c_str());
           }
         }else{
-          LOG_D("Json add: %s, val %s, read: %i\n", c.name.c_str(), c.value.c_str(), i);                         
+          LOG_D("Json add: %s, val %s, read: %i\n", c.name.c_str(), c.value.c_str(), i);
           add(c);
         }
         i++;
@@ -350,15 +372,15 @@ int ConfigAssist::loadJsonDict(String jStr, bool update) {
 bool ConfigAssist::loadConfigFile(String filename) {
   LOG_D("Loading config: %s\n",filename.c_str());
   if(filename=="") filename = _confFile;
-  File file = STORAGE.open(filename,"r");
+  File file = STORAGE.open(filename, "r");
   if (!file){
     LOG_E("File: %s not exists!\n", filename.c_str());
-    _iniValid = false;       
+    _iniLoaded = false;       
     return false;  
   }else if(!file.size()) {
     LOG_E("Failed to load: %s, size: %u\n", filename.c_str(), file.size());
     //if (!file.size()) STORAGE.remove(CONFIG_FILE_PATH); 
-    _iniValid = false;       
+    _iniLoaded = false;       
     return false;
   }else{
     _configs.reserve(CA_MAX_PARAMS);
@@ -373,7 +395,7 @@ bool ConfigAssist::loadConfigFile(String filename) {
   
   file.close();
   LOG_I("Loaded config: %s, keyCnt: %i\n",filename.c_str(), _configs.size());
-  _iniValid = true;
+  _iniLoaded = true;
   return true;
 }
 
@@ -645,6 +667,8 @@ void ConfigAssist::handleFileUpload(){
 // to save. Save, Reboot ESP, Reset to defaults, cancel edits
 void ConfigAssist::handleFormRequest(WEB_SERVER * server){
   if(server == NULL ) server = _server;
+  String reply = "";
+
   //Save config form
   if (server->args() > 0) {
     //Download a file 
@@ -667,10 +691,9 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       deleteConfig();
       _configs.clear();
       loadJsonDict(_jStr);
-      //saveConfigFile(CONF_FILE);
-      LOG_I("_iniValid: %i\n", _iniValid);
-      if(!_iniValid){
-        server->send(200, "text/html", "Failed to load config.");
+      saveConfigFile();
+      if(_dirty){
+        server->send(200, "text/html", "Failed to save config.");
       }else{
         server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/cfg\">");
       }
@@ -705,7 +728,6 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     }
     
     //Update configs from form post vals
-    String reply = "";
     for(uint8_t i=0; i<server->args(); ++i ){
       String key(server->argName(i));
       String val(server->arg(i));
@@ -723,6 +745,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
           }
           checkTime(val.toInt(), offs.toInt());
           server->send(200, "text/html", "OK");
+          server->client().flush(); 
           continue;
       }
       //Check if it is a text box with file name
@@ -734,6 +757,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       }
       LOG_D("Form upd: %s = %s\n", key.c_str(), val.c_str());
       if(!put(key, val)) reply = "ERROR: " + key;
+      else reply = "OK";
     }
     
     //Reboot esp
@@ -776,18 +800,21 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     if (server->hasArg(F("_SAVE"))) {
         if(saveConfigFile()) reply = "Config saved.";
         else reply = "ERROR: Failed to save config.";
-        delay(100);
+        server->send(200, "text/html", reply); 
+        server->client().flush();
+        return;
     }      
   }
   //Generate html page and send it to client
-  sendHtmlEditPage(server);
+  if(server->args() < 1) sendHtmlEditPage(server);
+  else server->send(200, "text/html", reply); 
 }
     
 // Send edit html to client
 void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
-  LOG_D("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniValid, _jsonLoaded, _dirty);      
   //Load dictionary if no pressent
   if(!_jsonLoaded) loadJsonDict(_jStr, true);
+  LOG_D("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniLoaded, _jsonLoaded, _dirty);      
   //Send config form data
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   String out(CONFIGASSIST_HTML_START);
@@ -831,7 +858,6 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   #endif
   out.replace("{appVer}", CA_CLASS_VERSION);
   server->sendContent(out);
-  //LOG_D("Generate form end\n");
 }
     
 //Get edit page html table (no form)
@@ -878,7 +904,22 @@ bool ConfigAssist::isNumeric(String s){ //1.0, -.232, .233, -32.32
   }
   return true;
 }
-    
+
+// name ends with key + number?
+bool ConfigAssist::endsWith(String name, String key, String &no) {
+  std::string search(name.c_str()); 
+  std::string reg = String(key + "(.*[0-9])?$").c_str();
+  std::smatch match; 
+
+  if(regex_search(search, match, std::regex(reg))) {
+    auto m = match[1];
+    no = m.str().c_str();
+    return true;
+  }
+  no="";
+  return false;
+}
+
 // Decode given string, replace encoded characters
 String ConfigAssist::urlDecode(String inVal) {
   std::string decodeVal(inVal.c_str()); 
@@ -928,16 +969,15 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
   confPairs c;
   out="";
   if(!getNextKeyVal(c)) return false;
+  LOG_V("getEditHtmlChunk %i, %s\n", c.readNo, c.name.c_str());
   //Values added manually not editable
   if(c.readNo<0) return true;
   out = String(CONFIGASSIST_HTML_LINE);
   String elm;
+  String no;
   if(c.type == TEXT_BOX){
     elm = String(CONFIGASSIST_HTML_TEXT_BOX);
-    if(c.name.indexOf(CA_PASSWD_KEY)>=0){
-      char n = c.name[c.name.length() - 1];
-      String no = "";
-      if(isDigit(n)) no += n;      
+    if(endsWith(c.name, CA_PASSWD_KEY, no)) {
       elm.replace("<input ", "<input type=\"password\" " +c.attribs);
       //Generate view checkbox
       String s1(CONFIGASSIST_HTML_CHECK_VIEW_PASS);
@@ -956,10 +996,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     }else if(isNumeric(c.value))
       elm.replace("<input ", "<input type=\"number\" " +c.attribs);
 #ifdef CA_USE_TESTWIFI 
-    else if( c.name.indexOf(CA_SSID_KEY)>=0){
-      char n = c.name[c.name.length() - 1];
-      String no = "";
-      if(isDigit(n)) no += n;      
+    else if(endsWith(c.name, CA_SSID_KEY, no)) {
       out.replace("<td class=\"card-lbl\">", "<td class=\"card-lbl\" id=\"st_ssid" + no + "-lbl\">");
       c.label +="&nbsp;&nbsp;<a href=\"\" title=\"Test ST connection\" onClick=\"testWifi(" + no + "); return false;\" id=\"_TEST_WIFI" + no + "\">Test connection</a>";
     }
@@ -1007,11 +1044,17 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     String outSep = String(CONFIGASSIST_HTML_SEP);
     String sVal = _seperators[sepKeyPos].value;
     outSep.replace("{val}", sVal);
-    if(sepKeyPos > 0)
+    if(sepKeyPos > 0) //Close the previous seperator
       out = String(CONFIGASSIST_HTML_SEP_CLOSE) + outSep + out;
     else 
       out = outSep + out;
     LOG_V("SEP key[%i]: %s = %s\n", sepKeyPos, sKey.c_str(), sVal.c_str());
+  }else if(c.readNo==0 && _seperators.size() < 1 ){ //No start seperator found
+    LOG_W("No seperator found: %s, using default.\n", sKey.c_str());
+    //addSeperator("0","General settings");
+    String outSep = String(CONFIGASSIST_HTML_SEP);
+    outSep.replace("{val}", "General settings");
+    out = outSep + out;
   }  
   LOG_V("HTML key[%i]: %s = %s, type: %i, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.attribs.c_str() );
   return true;
@@ -1078,6 +1121,7 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
 
 // Get location of given key to retrieve other elements
 int ConfigAssist::getKeyPos(String key) {
+  if(!_init) init();
   if (_configs.empty()) return -1;
   auto lower = std::lower_bound(_configs.begin(), _configs.end(), key, [](
       const confPairs &a, const String &b) { 
@@ -1085,7 +1129,7 @@ int ConfigAssist::getKeyPos(String key) {
   );
   int keyPos = std::distance(_configs.begin(), lower); 
   if (key == _configs[keyPos].name) return keyPos;
-  else LOG_W("Key %s not found\n", key.c_str()); 
+  else LOG_V("Key %s not found\n", key.c_str()); 
   return -1; // not found
 }
 
