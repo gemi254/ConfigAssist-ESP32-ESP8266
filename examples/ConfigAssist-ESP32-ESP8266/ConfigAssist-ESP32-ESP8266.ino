@@ -119,7 +119,7 @@ const char* appConfigDict_json PROGMEM = R"~(
 X2=900, Y2=3.24"}
 ])~"; 
 
-ConfigAssist conf;                    // Config class
+ConfigAssist conf(INI_FILE, appConfigDict_json);                    // Config class
 String hostName;                      // Default Host name
 unsigned long pingMillis = millis();  // Ping 
 
@@ -202,10 +202,7 @@ void setup(void) {
     
   LOG_I("Starting..\n");
   debugMemory("setup");
-  //Initialize ConfigAssist json dictionary pointer
-  //If ini file is valid json will not be used
-  conf.init(INI_FILE, appConfigDict_json);  
-  
+
   //Uncomment to remove old ini file and re-built it fron dictionary
   //conf.deleteConfig();
 
