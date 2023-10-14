@@ -71,7 +71,7 @@ In your application sketch file you must define a json dictionary that includes 
 
 
 + If you use keywords `name, default` an **edit box** will be generated to edit the variable. You can add `attribs` keywords to specify min, max, step for a numeric field.
-+ If you keyword name contains ``_pass`` a **password field** will be used. See **CA_PASSWD_KEY** definition. 
++ If you keyword name ends with ``_pass`` (or ``_pass`` and a number i.e``_pass1``) a **password field** will be used. See **CA_PASSWD_KEY** definition. 
 + If you use keyword `checked` instead of `default` a Boolean value will be used that will be edited by a **check box**
 + You can combine keywords `default` with `options` in order to use a select list that will be edited by a **drop list**. 
   - The `options` field must contain a comma separated list of values and can be enclosed by single quotes.
@@ -148,15 +148,15 @@ X2=900, Y2=3.24"
 + include the **configAssist**  class
   - `#include <configAssist.h>  //ConfigAssist class`
 
-+ Define your static instance
-  - `ConfigAssist conf;         //ConfigAssist class`
++ Define your static instance with **defaults**
+  - `ConfigAssist conf;         
 
-+ in your setup function you must init the config class with a pointer to the dictionary
-  - `conf.initJsonDict(appConfigDict_json);` or `conf.init("/info.ini");` for default minimal settings
++ if you want to use a different external **ini file name**  
+- `ConfigAssist conf(INI_FILE);  
 
-+ if you want to use a different external **ini file name**
-  - `conf.init(ini_file_name, appConfigDict_json);`
-  
++ if you want to use a different external **ini file name** and **json description**
+  - `ConfigAssist conf(INI_FILE, appConfigDict_json);  // ConfigAssist with custom name & dictionry`
+ 
 ## WIFI Access point handlers
 
 **ConfigAssist** must be initialized with a pointer to a web server to automatically handle AP form requests.
@@ -179,9 +179,6 @@ void setup()
   // Must have storage to read from
   STORAGE.begin(true);
   
-  //Initialize config with application's json dictionary
-  conf.init(appConfigDict_json);  
-
   //Failed to load config or ssid empty
   if(!conf.valid() || conf["st_ssid"]=="" ){ 
     //Start Access point server and edit config
