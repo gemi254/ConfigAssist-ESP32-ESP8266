@@ -1,6 +1,6 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
-#define CA_CLASS_VERSION "2.6.9b"        // Class version
+#define CA_CLASS_VERSION "2.6.9c"        // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -8,6 +8,7 @@
 #define CA_DONT_ALLOW_SPACES false       // Allow spaces in var names ?
 #define CA_SSID_KEY     "_ssid"          // The key part that defines a ssid field
 #define CA_PASSWD_KEY   "_pass"          // The key part that defines a password field
+
 #define CA_HOSTNAME_KEY "host_name"      // The key that defines host name
 #define CA_TIMEZONE_KEY "time_zone"      // The key that defines time zone for setting time
 
@@ -48,17 +49,20 @@ struct confSeperators {
 // ConfigAssist class
 class ConfigAssist{ 
   public:
+    // Initialize with defaults
     ConfigAssist();
-    ConfigAssist(String ini_file);    
+    // Initialize with custom ini file, default dict
+    ConfigAssist(String ini_file);
+    // Initialize with custom Ini file, and custom json dict
+    ConfigAssist(String ini_file, const char * jStr);
     ~ConfigAssist();
   public:  
     // Load configs after storage is started
-    // Simple ini file, on the fly no dict
-    void init(String ini_file);
-    // Editable Ini file, with json dict
-    void init(String ini_file, const char * jStr);
-    // Dictionary only, default ini file
-    void initJsonDict(const char * jStr);    
+    void init();
+    // Set ini file at run time
+    void setIniFile(String ini_file);
+    // Set json at run time.. Must called before _init || _jsonLoaded
+    void setJsonDict(const char * jStr);
     // Is config loaded valid ?
     bool valid();
     bool exists(String variable);
@@ -103,7 +107,7 @@ class ConfigAssist{
     // Save configs vectors in an ini file
     bool saveConfigFile(String filename="");
     // Get system local time
-    String getLocalTime();    
+    String getLocalTime();
     // Compare browser with system time and correct if needed
     void checkTime(uint32_t timeUtc, int timeOffs);
     // Respond a HTTP request for /scan results
@@ -139,7 +143,9 @@ class ConfigAssist{
     
   private:
     // Is string numeric
-    bool isNumeric(String s);    
+    bool isNumeric(String s);
+    // Name ends with key + number?
+    bool endsWith(String name, String key, String& no);
     // Decode given string, replace encoded characters
     String urlDecode(String inVal);
     // Load a file into a string
@@ -170,7 +176,8 @@ class ConfigAssist{
     enum input_types { TEXT_BOX=1, TEXT_AREA=2, CHECK_BOX=3, OPTION_BOX=4, RANGE_BOX=5, COMBO_BOX=6};
     std::vector<confPairs> _configs;
     std::vector<confSeperators> _seperators;
-    bool _iniValid;
+    bool _init;
+    bool _iniLoaded;
     bool _jsonLoaded;
     bool _dirty;
     const char * _jStr;
