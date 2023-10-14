@@ -136,9 +136,10 @@ const char* appConfigDict_json PROGMEM = R"~(
 X2=900, Y2=3.24"}
 ])~";
 
-ConfigAssist conf;
+ConfigAssist conf(INI_FILE, appConfigDict_json);
 String hostName;
 unsigned long pingMillis = millis();
+
 
 void debugMemory(const char* caller) {
   #if defined(ESP32)
@@ -266,6 +267,7 @@ void setup(void) {
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
+
   LOG_I("Starting..\n");
   debugMemory("setup");
 
@@ -278,8 +280,6 @@ void setup(void) {
   //Uncomment to remove ini file for other examples and re-built it fron json
   //conf.deleteConfig();
   
-  conf.init(INI_FILE, appConfigDict_json);
-  
   //Connect to any available network
   bool bConn = connectToNetwork();
   digitalWrite(conf["led_pin"].toInt(), 1);
@@ -288,7 +288,7 @@ void setup(void) {
 
 
   if(!bConn){
-    LOG_E("Connect failed.");
+    LOG_E("Connect failed.\n");
     conf.setup(server, true);
     return;
   }
