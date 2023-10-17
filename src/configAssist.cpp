@@ -16,7 +16,7 @@
   #include "TZ.h"
 #endif
 #include <FS.h>
-#define LOGGER_LOG_LEVEL 3   //Set log level for this module
+#define LOGGER_LOG_LEVEL 3    //Set log level for this module
 #include "configAssist.h"
 #include "configAssistPMem.h" //Memory static valiables (html pages)
 
@@ -72,31 +72,36 @@ void ConfigAssist::setIniFile(String ini_file){
   if (ini_file != "") _confFile = ini_file;
 }
 // Set json at run time.. Must called before _init || _jsonLoaded
-void ConfigAssist::setJsonDict(const char * jStr){
-  if(_init || _jsonLoaded){
-    LOG_E("Configuration already loaded.\n");
+void ConfigAssist::setJsonDict(const char * jStr, bool load){
+  if(_jsonLoaded){
+    LOG_E("Configuration already initialized.\n");
     return;
   }
-  if(jStr!=NULL) _jStr = jStr;
+  
+  if(jStr==NULL) return;
+  _jStr = jStr;
+  if(load) loadJsonDict(_jStr);  
 }
 
 // Initialize with defaults
 void ConfigAssist::init() {
+  if(_init) return;
+  _init = true;
   loadConfigFile(_confFile);
-
+  
   if(!_iniLoaded){
     _dirty = true;
   }  
-  _init = true;
+  
   LOG_V("ConfigAssist::init done %i\n",_iniLoaded);
 }
 // Is configuration valid
 bool ConfigAssist::valid(){ 
   if(!_init) init();
-  return _iniLoaded;
+  return (_iniLoaded || _jsonLoaded);
 }
 
-bool ConfigAssist::exists(String variable){ return getKeyPos(variable) >= 0; }            
+bool ConfigAssist::exists(String key){ return getKeyPos(key) >= 0; }            
     
 // Start an AP with a web server and render config values loaded from json dictionary
 void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
@@ -184,21 +189,28 @@ bool ConfigAssist::put(String key, String val, bool force) {
 }
     
 // Add vectors by key (name in confPairs)
-void ConfigAssist::add(String key, String val){      
-  confPairs d = {key, val, "", "", -1 , TEXT_BOX };
-  //LOG_D("Adding key %s=%s\n", key.c_str(), val.c_str()); 
-  add(d);
+void ConfigAssist::add(String key, String val){
+  static int readNo = 0;      
+  confPairs c = {key, val, "", "", readNo , TEXT_BOX };
+  LOG_V("Adding key [%i] %s=%s\n", readNo, key.c_str(), val.c_str()); 
+  add(c);
+  readNo ++;
 }
 
-// Add vectors pairs
+// Add unique name vectors pairs
 void ConfigAssist::add(confPairs &c){
-    //LOG_D("Adding key[%i]: %s=%s\n", readNo, key.c_str(), val.c_str()); 
+  int keyPos = getKeyPos(c.name);
+  if(keyPos>=0){
+    LOG_E("Add Key: %s already exists\n", c.name.c_str());
+    return;
+  } 
+  LOG_V("Adding key[%i]: %s=%s\n", c.readNo, c.name.c_str(), c.value.c_str()); 
   _configs.push_back({c}) ;
 }
 
 // Add seperator by key
 void ConfigAssist::addSeperator(String key, String val){
-    //LOG_D("Adding sep key: %s=%s\n", key.c_str(), val.c_str()); 
+  LOG_V("Adding sep key: %s=%s\n", key.c_str(), val.c_str()); 
   _seperators.push_back({key, val}) ;      
 }
 
@@ -254,7 +266,7 @@ String ConfigAssist::getJsonConfig(){
 void ConfigAssist::dump(){
   confPairs c;
   while (getNextKeyVal(c)){
-      LOG_I("[%u]: %s = %s; %s; %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+      LOG_I("[%i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
   }
 }
     
@@ -295,7 +307,7 @@ int ConfigAssist::loadJsonDict(String jStr, bool update) {
         c.value = d;
         c.attribs = l;
         c.type = COMBO_BOX;            
-        }else if (obj.containsKey("range")){  //Input range
+      }else if (obj.containsKey("range")){  //Input range
         String d = obj["default"];
         String r = obj["range"];
         c.value = d;
@@ -322,7 +334,7 @@ int ConfigAssist::loadJsonDict(String jStr, bool update) {
         } 
         c.type = TEXT_BOX;
       }else{
-        LOG_E("Undefined value on param : %i.", i);
+        LOG_E("Undefined value on param no: %i\n", i);
       }  
 
       if (c.type) { //Valid
@@ -370,8 +382,8 @@ int ConfigAssist::loadJsonDict(String jStr, bool update) {
      
 // Load config pairs from an ini file
 bool ConfigAssist::loadConfigFile(String filename) {
-  LOG_D("Loading config: %s\n",filename.c_str());
   if(filename=="") filename = _confFile;
+  LOG_D("Loading file: %s\n",filename.c_str());
   File file = STORAGE.open(filename, "r");
   if (!file){
     LOG_E("File: %s not exists!\n", filename.c_str());
