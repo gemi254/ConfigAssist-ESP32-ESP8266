@@ -1,6 +1,6 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
-#define CA_CLASS_VERSION "2.6.9c"        // Class version
+#define CA_CLASS_VERSION "2.6.9"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -61,11 +61,12 @@ class ConfigAssist{
     void init();
     // Set ini file at run time
     void setIniFile(String ini_file);
-    // Set json at run time.. Must called before _init || _jsonLoaded
-    void setJsonDict(const char * jStr);
+    // Set json at run time.. Must called before _init 
+    void setJsonDict(const char * jStr, bool load=false);
     // Is config loaded valid ?
     bool valid();
-    bool exists(String variable);
+    // Is key exists in configuration
+    bool exists(String key);
     // Start an AP with a web server and render config values loaded from json dictionary
     void setup(WEB_SERVER &server, bool apEnable = false);
     // Get a temponary hostname
@@ -82,7 +83,7 @@ class ConfigAssist{
     bool put(String key, String val, bool force = false);    
     // Add vectors by key (name in confPairs)
     void add(String key, String val);
-    // Add vectors pairs
+    // Add unique name vectors pairs
     void add(confPairs &c);
     // Add seperator by key
     void addSeperator(String key, String val);
