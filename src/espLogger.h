@@ -106,16 +106,6 @@
     #define LOG_E(format, ...)
 #endif
 
-#if LOGGER_LOG_LEVEL >= _LOG_LEVEL_NONE
-    #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE
-        #define LOG_N(format, ...) { _CHK_LOG_FILE;  _log_printf(_LOG_FORMAT(N, format), ##__VA_ARGS__); }
-    #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
-        #define LOG_N(format, ...) { _log_printf(_LOG_FORMAT(N, format), ##__VA_ARGS__); }
-    #else
-        #define LOG_N(format, ...) _log_printf(_LOG_FORMAT(N, format), ##__VA_ARGS__)
-    #endif    
-#else
-    #define LOG_N(format, ...)
-#endif
+#define LOG_N(format, ...)
 
 #endif //__ESPLOGGER_H__
