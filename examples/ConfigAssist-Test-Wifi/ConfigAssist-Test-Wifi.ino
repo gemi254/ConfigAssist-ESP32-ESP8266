@@ -30,7 +30,7 @@
 #define APP_NAME "ConfigAssistTestWifi"
 #define INI_FILE "/ConfigAssistTestWifi.ini"
 
-const char* appConfigDict_json PROGMEM = R"~(
+const char* VARIABLES_DEF_JSON PROGMEM = R"~(
 [{
    "seperator": "Wifi settings"
   },{
@@ -136,7 +136,7 @@ const char* appConfigDict_json PROGMEM = R"~(
 X2=900, Y2=3.24"}
 ])~";
 
-ConfigAssist conf(INI_FILE, appConfigDict_json);
+ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
 String hostName;
 unsigned long pingMillis = millis();
 
