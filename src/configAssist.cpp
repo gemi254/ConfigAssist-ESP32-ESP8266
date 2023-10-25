@@ -60,8 +60,7 @@ ConfigAssist::ConfigAssist(String ini_file, const char * jStr){
   if (ini_file != "") _confFile = ini_file;
   else _confFile = CA_DEF_CONF_FILE; 
   
-  if(jStr!=NULL) _jStr = jStr;
-  else _jStr = CA_DEFAULT_DICT_JSON;
+  _jStr = jStr;  
 }
 
 // delete 
@@ -88,12 +87,14 @@ void ConfigAssist::init() {
   if(_init) return;
   _init = true;
   loadConfigFile(_confFile);
-  
+  //Failed to load ini file
   if(!_iniLoaded){
+    LOG_W("Loading json decription.\n");
     _dirty = true;
-  }  
+    loadJsonDict(_jStr, true);
+  }
   
-  LOG_V("ConfigAssist::init done %i\n",_iniLoaded);
+  LOG_V("ConfigAssist::init done ini:%i json:%i\n",_iniLoaded, _jsonLoaded);
 }
 // Is configuration valid
 bool ConfigAssist::valid(){ 
@@ -169,7 +170,7 @@ bool ConfigAssist::put(String key, String val, bool force) {
     if(_configs[keyPos].type == CHECK_BOX){
       val = String(IS_BOOL_TRUE(val));
     }
-    //LOG_D("Check : %s, %s\n", _configs[keyPos].value.c_str(), value.c_str());
+    LOG_N("Check : %s, %s\n", _configs[keyPos].value.c_str(), value.c_str());
     if(_configs[keyPos].value != val){
       LOG_D("Put %s=%s\n", key.c_str(), val.c_str()); 
       _configs[keyPos].value = val;
@@ -269,14 +270,14 @@ void ConfigAssist::dump(){
       LOG_I("[%i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
   }
 }
-    
+
 // Load json description file. On update=true update only additional pair info    
-int ConfigAssist::loadJsonDict(String jStr, bool update) { 
+int ConfigAssist::loadJsonDict(const char *jStr, bool update) { 
   if(jStr==NULL) return -1; 
   DeserializationError error;
   const int capacity = JSON_ARRAY_SIZE(CA_MAX_PARAMS)+ CA_MAX_PARAMS*JSON_OBJECT_SIZE(8);
   DynamicJsonDocument doc(capacity);
-  error = deserializeJson(doc, jStr.c_str());
+  error = deserializeJson(doc, jStr);
   
   if (error) { 
     LOG_E("Deserialize Json failed: %s\n", error.c_str());
@@ -910,7 +911,7 @@ bool ConfigAssist::isNumeric(String s){ //1.0, -.232, .233, -32.32
       if(sign) return false;
       else sign = true;
     }else if (!isDigit(s.charAt(i))){
-      //LOG_I("%c\n", s.charAt(i));
+      LOG_N("%c\n", s.charAt(i));
       return false;
     }
   }
@@ -1104,7 +1105,7 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
   char *token = NULL;
   char seps[] = ",";
   //Look for line feeds as seperators
-  //LOG_D("defVal: %s attribs: %s \n",defVal.c_str(), attribs.c_str());
+  LOG_N("defVal: %s attribs: %s \n",defVal.c_str(), attribs.c_str());
   if(attribs.indexOf("\n")>=0){          
       seps[0] = '\n';
   }      
@@ -1155,7 +1156,7 @@ int ConfigAssist::getSepKeyPos(String key) {
   );
   int keyPos = std::distance(_seperators.begin(), lower); 
   if (key == _seperators[keyPos].name) return keyPos;
-  //LOG_I("Sep key %s not found\n", key.c_str()); 
+  LOG_N("Sep key %s not found\n", key.c_str()); 
   return -1; // not found
 }
 
