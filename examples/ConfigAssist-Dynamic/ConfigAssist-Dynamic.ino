@@ -9,7 +9,7 @@
 #include <configAssist.h>  // Config assist class
 
 // Create a config class with an ini filename for storage 
-ConfigAssist config("/info1.ini");
+ConfigAssist config("/info1.ini", NULL);
 
 void setup() {
   // put your setup code here, to run once:
@@ -29,7 +29,7 @@ void setup() {
   //Uncomment to remove ini file and re-built   
   //config.deleteConfig(); 
 
-  //No Configuration is valid
+  //Json is disabled, Ini file not found
   if(!config.valid()){
     //Build a json description
     String dynJson="[\n";
