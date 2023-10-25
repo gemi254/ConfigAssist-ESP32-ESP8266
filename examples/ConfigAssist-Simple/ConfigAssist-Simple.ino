@@ -23,7 +23,8 @@ void setup() {
   LOG_I("Starting..\n");
   
   // Create a config class with an ini filename for storage 
-  ConfigAssist info("/info.ini");
+  // And json disabled
+  ConfigAssist info("/info.ini", NULL);
   
   //info.deleteConfig(); //Uncomment to remove ini file and re-built
   
