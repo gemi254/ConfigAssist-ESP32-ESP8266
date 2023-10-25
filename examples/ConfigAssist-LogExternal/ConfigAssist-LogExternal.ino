@@ -81,8 +81,8 @@ void setup() {
   LOG_D("F:This is a DEBUG message \n");
   LOG_V("F:This is a VERBOSE message \n");
 
-  // Create a config class with an ini filename for storage 
-  ConfigAssist info("/info.ini");
+  // Create a config class with an ini filename and json disabled
+  ConfigAssist info("/info.ini", NULL);
   
   // info.deleteConfig(); //Uncomment to remove ini file and re-built
     
