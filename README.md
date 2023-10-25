@@ -89,7 +89,7 @@ A **separator title** can also be used to group configuration values under a spe
 
 
 ```
-const char* appConfigDict_json PROGMEM = R"~(
+const char* VARIABLES_DEF_JSON PROGMEM = R"~(
 [{
  "seperator": "Wifi settings"
   },{
@@ -156,7 +156,10 @@ X2=900, Y2=3.24"
   - `ConfigAssist conf(INI_FILE);`
 
 + if you want to use a different external **ini file name** and **json description**
-  - `ConfigAssist conf(INI_FILE, appConfigDict_json);  // ConfigAssist with custom name & dictionry`
+  - `ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);  // ConfigAssist with custom name & dictionry`
+
++ if you want to use a different external **ini file name** and **json description** disabled
+  - `ConfigAssist conf(INI_FILE, NULL);  // ConfigAssist with custom ini name & dictionry disabled`
  
 ## WIFI Access point handlers
 
@@ -180,16 +183,14 @@ void setup()
   // Must have storage to read from
   STORAGE.begin(true);
   
-  //Failed to load config or ssid empty
-  if(!conf.valid() || conf["st_ssid"]=="" ){ 
+  //Will try to load ini file. On fail load json descr.
+  if( conf["st_ssid"]=="" ){  //Ssid empty  
     //Start Access point server and edit config
-    //Data will be availble instantly 
     conf.setup(server, true);
     return;
-  }
-  
+  }  
   ...
-  
+
   //Check connection
   if(WiFi.status() == WL_CONNECTED ){
     Serial.printf("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", conf["st_ssid"].c_str(), WiFi.localIP().toString().c_str()); 
@@ -202,9 +203,9 @@ void setup()
   ```
   
 **ConfigAssist** can also used to quick generate and store ini files.
-Just call the class constructor with a filename to be saved.
+Just call the class constructor with a filename to be saved and null to disable json.
 ```
-ConfigAssist info("/info.ini");
+ConfigAssist info("/info.ini", NULL);
 ```
 and add the parameters to be stored with
 ```
