@@ -1,6 +1,6 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
-#define CA_CLASS_VERSION "2.6.9"         // Class version
+#define CA_CLASS_VERSION "2.7.0a"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -100,7 +100,7 @@ class ConfigAssist{
     // Display config items
     void dump();    
     // Load json description file. On update=true update only additional pair info    
-    int loadJsonDict(String jStr, bool update=false);     
+    int loadJsonDict(const char *jStr, bool update=false);
     // Load config pairs from an ini file
     bool loadConfigFile(String filename="");
     // Delete configuration files
