@@ -29,7 +29,7 @@
 // Default application config dictionary
 // Modify the file with the params for you application
 // Then you can use then then by val = config[name];
-const char* appConfigDict_json PROGMEM = R"~(
+const char* VARIABLES_DEF_JSON PROGMEM = R"~(
 [{
    "seperator": "Wifi settings"
   },{
@@ -119,7 +119,9 @@ const char* appConfigDict_json PROGMEM = R"~(
 X2=900, Y2=3.24"}
 ])~"; 
 
-ConfigAssist conf(INI_FILE, appConfigDict_json);                    // Config class
+// Config class
+ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
+                   
 String hostName;                      // Default Host name
 unsigned long pingMillis = millis();  // Ping 
 
@@ -207,15 +209,20 @@ void setup(void) {
   //conf.deleteConfig();
 
   //Register handlers for web server    
-  server.on("/", handleRoot);    
-
+  server.on("/", handleRoot);
+  /*
+  if(!conf.valid()){    
+    conf.loadJsonDict();
+  } */   
+  //LOG_I("Conf valid: %i\n",conf.valid());
   //Failed to load config or ssid empty
-  if(!conf.valid() || conf["st_ssid"]=="" ){ 
+  if(conf["st_ssid"]=="" ){ 
     //Start Access point server and edit config
     //Data will be availble instantly 
     conf.setup(server, true);
     return;
   }
+
   debugMemory("Loaded config");
   pinMode(conf["led_pin"].toInt(), OUTPUT);
      
