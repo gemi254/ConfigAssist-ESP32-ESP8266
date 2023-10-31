@@ -6,7 +6,7 @@
         "type": "git",
         "url": "https://github.com/gemi254/ConfigAssist-ESP32-ESP8266.git"
     },
-    "version": "2.6.9",
+    "version": "2.7.0",
     "homepage": "https://github.com/gemi254/ConfigAssist-ESP32-ESP8266",
     "examples": "examples/*/*.ino",
     "frameworks": "arduino",
