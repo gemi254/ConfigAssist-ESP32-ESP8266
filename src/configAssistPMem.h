@@ -519,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
    // onChange events
   document.addEventListener("change", function (event) {
     const e = event.target;
-    const value = e.value.trim();
+    var value = e.value.trim();
     const et = event.target.type;
     
     if( e.name.includes("_PASS_VIEW") ){
@@ -531,17 +531,19 @@ document.addEventListener('DOMContentLoaded', function (event) {
     }
     
     if( e.name.includes("{CA_PASSWD_KEY}") ){
-       const no = getKeyNo(e.name);
-       const passV = $('#_PASS_VIEW' + no + "_GRP");
-       if(passV)
-          passV.style.display = "block";
+      const no = getKeyNo(e.name);
+      const passV = $('#_PASS_VIEW' + no + "_GRP");
+      if(passV)
+        passV.style.display = "block";
     }
 
     if (e.nodeName == 'INPUT' || e.nodeName == 'SELECT') {  
       if (e.type === 'checkbox') updateKey(e.id, e.checked ? 1 : 0);
       else updateKey(e.id, value);
     }else if(e.nodeName == 'TEXTAREA'){
-      updateKey(e.id, value, true);
+      const fileKey = e.name + "_F";
+      value += "&"+fileKey+"=" + $('#'+fileKey).value;
+      updateKey(e.id, value);
     }
   });
 
@@ -549,6 +551,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     var start = new Date().getTime();
     while (new Date().getTime() < start + delay);
   }
+  
   // Save config before unload
   window.addEventListener('beforeunload', function (event) {
     updateKey("_SAVE", 1);    
@@ -562,7 +565,8 @@ document.addEventListener('DOMContentLoaded', function (event) {
     if(parseInt(n)) no += n;
     return no;
   }
-  async function updateKey(key, value, isTxtArea = false) {      
+
+  async function updateKey(key, value) {      
     if(value == null ) return;      
     const baseHost = document.location.origin;
     var url = baseHost + "/cfg?" + key + "=" + value
@@ -572,14 +576,10 @@ document.addEventListener('DOMContentLoaded', function (event) {
     }else if (key=="_RBT"){
       let nowUTC = Math.floor(new Date().getTime() / 1000);
       document.location = url+"&_TS="+ nowUTC;
-    }else if (key=="_DWN" || key=="_UPG" || key.includes('_PASS_VIEW')){
+    }else if ( key=="_DWN" || key=="_UPG" || key.includes('_PASS_VIEW') ){
       return;
     }
     
-    if(isTxtArea){
-      const fileKey = key + "{CA_FILENAME_IDENTIFIER}";
-      url += "&"+fileKey+"=" + $('#'+fileKey).value;
-    }
     const response = await fetch(encodeURI(url));
     if (!response.ok){
       const html = await response.text();
@@ -703,7 +703,7 @@ async function getWifiScan() {
   scanTimer = setTimeout(getWifiScan, 2000); 
 )=====";
 #endif
-
+//Template for password view check group
 PROGMEM const char CONFIGASSIST_HTML_CHECK_VIEW_PASS[] = 
 R"=====(<span id="{key}_GRP" style="display: none;">
 <input type="checkbox" style="height:auto; min-width:auto;" id="{key}" name="{key}" {chk}/>
