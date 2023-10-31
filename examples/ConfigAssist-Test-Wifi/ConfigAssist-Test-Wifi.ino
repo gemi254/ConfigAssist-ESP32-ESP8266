@@ -16,7 +16,7 @@
 #include <FS.h>
 
 #define LOGGER_LOG_LEVEL 5
-#include <configAssist.h>
+#include <ConfigAssist.h>
 
 #if defined(ESP32)
   WebServer server(80);
@@ -249,17 +249,17 @@ bool connectToNetwork(){
       delay(500);
     }
     Serial.printf("\n");
-    if(WiFi.status() == WL_CONNECTED) break;
-  }
+    if (WiFi.status() != WL_CONNECTED){
+      LOG_E("Wifi connect fail\n");
+      WiFi.disconnect();
+    }else{
+      LOG_I("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", st_ssid.c_str(), WiFi.localIP().toString().c_str());
+      break;
+    }
+  }  
 
-  if (WiFi.status() != WL_CONNECTED){
-    LOG_E("Wifi connect fail\n");
-    WiFi.disconnect();
-    return false;
-  }else{
-    LOG_I("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", st_ssid.c_str(), WiFi.localIP().toString().c_str());
-  }
-  return true;
+  if (WiFi.status() == WL_CONNECTED)  return true;
+  else return false;
 }
 
 void setup(void) {
