@@ -6,7 +6,7 @@
   #include <ESP8266WebServer.h>  
 #endif
 #define LOGGER_LOG_LEVEL 5 // Errors & Warnings & Info & Debug & Verbose
-#include <configAssist.h>  // Config assist class
+#include <ConfigAssist.h>  // Config assist class
 
 void setup() {
   // put your setup code here, to run once:

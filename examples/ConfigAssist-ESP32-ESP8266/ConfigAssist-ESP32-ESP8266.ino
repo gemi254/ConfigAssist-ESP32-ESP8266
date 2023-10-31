@@ -15,7 +15,7 @@
 #include <FS.h>
 
 #define LOGGER_LOG_LEVEL 5
-#include <configAssist.h>  // Config assist class
+#include <ConfigAssist.h>  // Config assist class
 
 #if defined(ESP32)
   WebServer server(80);
@@ -210,11 +210,7 @@ void setup(void) {
 
   //Register handlers for web server    
   server.on("/", handleRoot);
-  /*
-  if(!conf.valid()){    
-    conf.loadJsonDict();
-  } */   
-  //LOG_I("Conf valid: %i\n",conf.valid());
+
   //Failed to load config or ssid empty
   if(conf["st_ssid"]=="" ){ 
     //Start Access point server and edit config
@@ -248,7 +244,7 @@ void setup(void) {
     LOG_I("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", conf["st_ssid"].c_str(), WiFi.localIP().toString().c_str()); 
   }else{
     //Fall back to Access point for editing config
-    LOG_E("Connect failed.");
+    LOG_E("Connect failed.\n");
     conf.setup(server, true);
     return;
   }

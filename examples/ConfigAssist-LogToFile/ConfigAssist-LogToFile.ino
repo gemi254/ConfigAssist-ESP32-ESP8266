@@ -11,7 +11,7 @@
 #define LOGGER_LOG_LEVEL 5          // Errors & Warnings & Info & Debug & Verbose
 #define LOGGER_LOG_FILENAME "/log1"
 
-#include <configAssist.h>           // Config assist class
+#include <ConfigAssist.h>           // Config assist class
 
 // Print the log generated to serial port
 void serialPrintLog(){

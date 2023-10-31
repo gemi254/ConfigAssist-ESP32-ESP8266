@@ -14,7 +14,7 @@ bool logToFile = true;
 static File logFile;
 void _log_printf(const char *format, ...);
 
-#include <configAssist.h>           // Config assist class
+#include <ConfigAssist.h>           // Config assist class
 
 #define MAX_LOG_FMT 128
 static char fmtBuf[MAX_LOG_FMT];
