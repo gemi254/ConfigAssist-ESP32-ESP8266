@@ -9,6 +9,7 @@ A lightweight library allowing quick configuration of **esp32/esp8266** devices.
 * On the fly **update** values in ini file using **ajax** requests.
 * **Backup & Restore** device configurations.
 * **Wi-Fi scan** support for auto fill nearby Wi-Fi station connections.
+* Save **WiFi credentials** to **nvs** to retain ST connections.
 * **Validate** Wi-Fi station connections when connecting from AP.
 * Auto **synchronize** ESP32/ESP8266 internal **clock** with browser clock.
 * Support on the fly **firmware upgrades** (OTA).
@@ -27,9 +28,14 @@ Application variables like **Wifi ssid**, **Wifi password**, **Host Name** can b
 
 **Station** Wifi **connections** can be **validated** during setup with ``Test connection`` link available on each **st_ssid** field. The device will be switched to **WIFI_AP_STA** and **ConfigAssist** will try to test the Station connection with **Wifi ssid**, **Wifi password** entered without disconnecting from the Access Point. If the connection is successful the Station ip address and signal strength will be displayed.
 
+**WiFi credentials** can also be saved to **nvs** to retain ST connections. On **factory defaults** the nvs will be not cleared and the ST connection will be still available.
+You can use the command ``http://ip/cfg?_CLEAR=1`` to clear nvs.
+Uncomment **CA_USE_PERSIST_CON** in ``ConfigAssist.h`` to use this feature.
+
 **ConfigAssist** can also check and synchronize the internal **clock** of ESP device with the browser time if needed. So even if no internet connection (AP mode) and no **npt** server is available the device will get the correct time. If **CA_TIMEZONE_KEY** string exists in variables it will be used to set the device time zone string. If not it will use browser offset.
 
 These features can be disabled to save memory by commenting the lines **CA_USE_WIFISCAN**, **CA_USE_TESTWIFI**, **CA_USE_TIMESYNC**, and **CA_USE_OTAUPLOAD** in ``configAssist.h``.
+
 
 Device's configuration ``(*.ini files)`` can be downloaded with the **Backup** button and can be restored later with the **Restore** button.
 
@@ -156,10 +162,10 @@ X2=900, Y2=3.24"
   - `ConfigAssist conf(INI_FILE);`
 
 + if you want to use a different external **ini file name** and **json description**
-  - `ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);  // ConfigAssist with custom name & dictionry`
+  - `ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);  // ConfigAssist with custom name & dictionary`
 
 + if you want to use a different external **ini file name** and **json description** disabled
-  - `ConfigAssist conf(INI_FILE, NULL);  // ConfigAssist with custom ini name & dictionry disabled`
+  - `ConfigAssist conf(INI_FILE, NULL);  // ConfigAssist with custom ini name & dictionary disabled`
  
 ## WIFI Access point handlers
 
@@ -172,7 +178,7 @@ You can add /cfg handler to your application after connecting the device to the 
 Editing config will be enabled for station users.
 
 ```
-//ConfigAssist will register handlers to the webserver
+//ConfigAssist will register handlers to the web server
 //After connecting to the internet AP will not be started
 conf.setup(server);
 ```
@@ -214,7 +220,7 @@ info.saveConfigFile();
 ```
 ## Logging to a file
 **ConfigAssist** can redirect serial print functions to a file in a spiffs and a **Debug log** can be generated.
-In you application you use **LOG_E**, **LOG_W**, **LOG_I**, **LOG_D** macros instead of **Serial.prinf**
+In your application you use **LOG_E**, **LOG_W**, **LOG_I**, **LOG_D** macros instead of **Serial.prinf**
 to print your messages. **ConfigAssist** can record these messages with **timestamps** to a file.
 
 + define **ConfigAssist**  log mode
@@ -236,12 +242,14 @@ if you want to enable serial print to a log file use..
   ```
 
  Check ConfigAssist-LotExternal.ino in ``examples/`` folder.
+
 ## Compile
-Donwload library files and place them on ./libraries directory under ArduinoProjects
+Download library files and place them on ./libraries directory under ArduinoProjects
 Then include the **configAssist.h** in your application and compile..
 
 + compile for arduino-esp3 or arduino-esp8266.
 + In order to compile you must install **ArduinoJson** library.
++ To use Persistent ST connections On ESP8266 devices you must install **Preferences** library to provide ESP32-compatible Preferences API using LittleFS
 + if your variables exceed **CA_MAX_PARAMS** increase this value in class header.
 
 Compiling included examples require to remove old **ini** file by calling `conf.deleteConfig();`
