@@ -1,6 +1,6 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
-#define CA_CLASS_VERSION "2.7.0a"         // Class version
+#define CA_CLASS_VERSION "2.7.0"        // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -12,10 +12,11 @@
 #define CA_HOSTNAME_KEY "host_name"      // The key that defines host name
 #define CA_TIMEZONE_KEY "time_zone"      // The key that defines time zone for setting time
 
-#define CA_USE_WIFISCAN                 // Comment to disable wifi scan
-#define CA_USE_TESTWIFI                 // Comment to disable test wifi st connection
-#define CA_USE_TIMESYNC                 // Comment to disable sync esp with browser if out of sync
-#define CA_USE_OTAUPLOAD                // Comment to disable ota and reduce memory
+#define CA_USE_WIFISCAN                  // Comment to disable wifi scan
+#define CA_USE_TESTWIFI                  // Comment to disable test wifi st connection
+#define CA_USE_TIMESYNC                  // Comment to disable sync esp with browser if out of sync
+#define CA_USE_OTAUPLOAD                 // Comment to disable ota and reduce memory
+#define CA_USE_PERSIST_CON               // Comment to disable saving wifi credentials to nvs
 
 // Define Platform libs
 #if defined(ESP32)
@@ -30,6 +31,10 @@
 
 #define IS_BOOL_TRUE(x) (x=="On" || x=="on" || x=="True" || x=="true" || x=="1")
 
+#ifdef CA_USE_PERSIST_CON
+  #define CA_PREFERENCES_NS "ConfigAssist" // Name space for pererences
+  #include <Preferences.h>  
+#endif
 //Structure for config elements
 struct confPairs {
     String name;
@@ -153,6 +158,14 @@ class ConfigAssist{
     bool loadText(String fPath, String &txt);    
     // Write a string to a file
     bool saveText(String fPath, String txt);
+#ifdef CA_USE_PERSIST_CON
+    // Clear nvs
+    bool clearPrefs();
+    // Save a key from nvs
+    bool savePref(String key, String val);
+    // Load a key from nvs
+    bool loadPref(String key, String &val);
+#endif    
     // Render keys,values to html lines
     bool getEditHtmlChunk(String &out);
     // Render range 
@@ -186,6 +199,9 @@ class ConfigAssist{
     static WEB_SERVER *_server;
     static String _jWifi;
     bool _apEnabled;
+#ifdef CA_USE_PERSIST_CON
+    static Preferences _prefs;
+#endif    
 };
 
 #endif // _CONFIG_ASSIST_H
