@@ -14,8 +14,9 @@
   #include <ESP8266WebServer.h>
   #include <ESP8266mDNS.h>
   #include "TZ.h"
-#endif
+#endif  
 #include <FS.h>
+
 #define LOGGER_LOG_LEVEL 3    //Set log level for this module
 #include "configAssist.h"
 #include "configAssistPMem.h" //Memory static valiables (html pages)
@@ -29,6 +30,10 @@
 // Class static members
 WEB_SERVER *ConfigAssist::_server = NULL;
 String ConfigAssist::_jWifi="[{}]";
+
+#ifdef CA_USE_PERSIST_CON
+ Preferences ConfigAssist::_prefs;
+#endif
 
 
 // Standard defaults constructor
@@ -89,7 +94,6 @@ void ConfigAssist::init() {
   loadConfigFile(_confFile);
   //Failed to load ini file
   if(!_iniLoaded){
-    LOG_W("Loading json decription.\n");
     _dirty = true;
     loadJsonDict(_jStr, true);
   }
@@ -193,7 +197,6 @@ bool ConfigAssist::put(String key, String val, bool force) {
 void ConfigAssist::add(String key, String val){
   static int readNo = 0;      
   confPairs c = {key, val, "", "", readNo , TEXT_BOX };
-  LOG_V("Adding key [%i] %s=%s\n", readNo, key.c_str(), val.c_str()); 
   add(c);
   readNo ++;
 }
@@ -205,7 +208,7 @@ void ConfigAssist::add(confPairs &c){
     LOG_E("Add Key: %s already exists\n", c.name.c_str());
     return;
   } 
-  LOG_V("Adding key[%i]: %s=%s\n", c.readNo, c.name.c_str(), c.value.c_str()); 
+  LOG_V("Add key [%i]: %s=%s\n", c.readNo, c.name.c_str(), c.value.c_str()); 
   _configs.push_back({c}) ;
 }
 
@@ -296,7 +299,7 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool update) {
       c.label = l;
       c.attribs ="";
       c.readNo = i;
-      if (obj.containsKey("options")){       //Options list
+      if (obj.containsKey("options")){        //Options list
         String d = obj["default"];
         String o = obj["options"];
         c.value = d;
@@ -308,13 +311,13 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool update) {
         c.value = d;
         c.attribs = l;
         c.type = COMBO_BOX;            
-      }else if (obj.containsKey("range")){  //Input range
+      }else if (obj.containsKey("range")){   //Input range
         String d = obj["default"];
         String r = obj["range"];
         c.value = d;
         c.attribs = r;
         c.type = RANGE_BOX;
-      }else if (obj.containsKey("file")){   //Text area
+      }else if (obj.containsKey("file")){    //Text area
         String f = obj["file"];
         c.value = f;            
         if(obj.containsKey("default")){
@@ -322,11 +325,11 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool update) {
           c.attribs = d;
         }
         c.type = TEXT_AREA;
-      }else if (obj.containsKey("checked")){ //Check box
+      }else if (obj.containsKey("checked")){  //Check box
         String ck = obj["checked"];
         c.value = ck;
         c.type = CHECK_BOX;
-      }else if (obj.containsKey("default")){ //Edit box
+      }else if (obj.containsKey("default")){  //Edit box
         String d = obj["default"];
         c.value = d;
         if(obj.containsKey("attribs")){
@@ -340,12 +343,20 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool update) {
 
       if (c.type) { //Valid
         if(c.name==CA_HOSTNAME_KEY) c.value.replace("{mac}", getMacID());
+#ifdef CA_USE_PERSIST_CON      
+        String no;
+        if(endsWith(c.name,CA_SSID_KEY, no)){ 
+          loadPref(c.name, c.value); 
+        }else if(endsWith(c.name,CA_PASSWD_KEY, no)){
+          loadPref(c.name, c.value);
+        }
+#endif         
         if(update){
           int keyPos = getKeyPos(c.name);
           //Add a Json key if not exists in ini file
           if (keyPos < 0) {
-            LOG_W("Key: %s not found in ini file.\n", c.name.c_str());
-            put(c.name, c.value,true);
+            LOG_V("Key: %s not found in ini file.\n", c.name.c_str());
+            put(c.name, c.value, true);
             keyPos = getKeyPos(c.name);
           }
           if (keyPos >= 0) {
@@ -389,14 +400,18 @@ bool ConfigAssist::loadConfigFile(String filename) {
   if (!file){
     LOG_E("File: %s not exists!\n", filename.c_str());
     _iniLoaded = false;       
+    _iniLoaded = false;       
+    return false;  
+    _iniLoaded = false;
     return false;  
   }else if(!file.size()) {
     LOG_E("Failed to load: %s, size: %u\n", filename.c_str(), file.size());
     //if (!file.size()) STORAGE.remove(CONFIG_FILE_PATH); 
-    _iniLoaded = false;       
-    return false;
-  }else{
-    _configs.reserve(CA_MAX_PARAMS);
+    _iniLoaded = false;    
+  }
+
+  _configs.reserve(CA_MAX_PARAMS);
+  if(file && file.size()){
     // extract each config line from file
     while (file.available()) {
       String configLineStr = file.readStringUntil('\n');
@@ -404,12 +419,12 @@ bool ConfigAssist::loadConfigFile(String filename) {
       loadVectItem(configLineStr);
     } 
     sort();
+    LOG_I("Loaded config: %s, keyCnt: %i\n",filename.c_str(), _configs.size());
+    _iniLoaded = true;
+    file.close();
   }
-  
-  file.close();
-  LOG_I("Loaded config: %s, keyCnt: %i\n",filename.c_str(), _configs.size());
-  _iniLoaded = true;
-  return true;
+
+  return _iniLoaded;
 }
 
 // Delete configuration file
@@ -423,28 +438,49 @@ bool ConfigAssist::deleteConfig(String filename){
 bool ConfigAssist::saveConfigFile(String filename) {
   if(filename=="") filename = _confFile;
   if(!_dirty){
-    LOG_I("Alread saved: %s\n", filename.c_str() );
+    LOG_V("Alread saved: %s\n", filename.c_str() );
     return true;
   } 
+
   File file = STORAGE.open(filename, "w+");
   if (!file){
     LOG_E("Failed to save config file\n");
-    return false;
+    _dirty = true;
   }
+
   //Save config file with updated content
   size_t szOut=0;
   for (auto& row: _configs) {
     if(row.name==CA_HOSTNAME_KEY){
       row.value.replace("{mac}", getMacID());
     }
-    char configLine[512];
-    sprintf(configLine, "%s%c%s\n", row.name.c_str(), CA_INI_FILE_DELIM, row.value.c_str());   
-    szOut+=file.write((uint8_t*)configLine, strlen(configLine));
-    LOG_D("Saved: %s = %s, type: %i\n", row.name.c_str(), row.value.c_str(), row.type);
+
+#ifdef CA_USE_PERSIST_CON        
+    String no;
+    if(endsWith(row.name, CA_SSID_KEY, no)){
+      savePref(row.name, row.value);
+      row.value = "";
+    }else if(endsWith(row.name, CA_PASSWD_KEY, no)){
+      savePref(row.name, row.value);
+      row.value = "";
+    }
+#endif 
+
+    if(file){
+      char configLine[512];
+      sprintf(configLine, "%s%c%s\n", row.name.c_str(), CA_INI_FILE_DELIM, row.value.c_str());   
+      szOut+=file.write((uint8_t*)configLine, strlen(configLine));
+      LOG_D("Saved: %s = %s, type: %i\n", row.name.c_str(), row.value.c_str(), row.type);
+    }
   }
-  LOG_I("File saved: %s, sz: %u B\n", filename.c_str(), szOut);
-  file.close();
-  _dirty = false;
+  
+  if(szOut>0){
+    file.close();
+    LOG_I("File saved: %s, sz: %u B\n", filename.c_str(), szOut);  
+    _dirty = false;
+  }
+  
+  if(file) file.close();
   return true;
 }
 // Get system local time
@@ -718,6 +754,16 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/\">");
       return;
     }
+#ifdef CA_USE_PERSIST_CON
+    //Clear preferences
+    if (server->hasArg(F("_CLEAR"))) {
+        if(clearPrefs()) reply = "Cleared preferences.";
+        else reply = "ERROR: Failed to clear preferences.";
+        server->send(200, "text/html", reply); 
+        server->client().flush();
+        return;
+    } 
+#endif    
     //Test wifi?    
     if (server->hasArg(F("_TEST_WIFI"))) {
       LOG_D("Testing WIFI ST connection..\n");
@@ -759,7 +805,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
           checkTime(val.toInt(), offs.toInt());
           server->send(200, "text/html", "OK");
           server->client().flush(); 
-          continue;
+          return;
       }
       //Check if it is a text box with file name
       String fileNameKey = server->argName(i) + CA_FILENAME_IDENTIFIER;
@@ -816,7 +862,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         server->send(200, "text/html", reply); 
         server->client().flush();
         return;
-    }      
+    }  
   }
   //Generate html page and send it to client
   if(server->args() < 1) sendHtmlEditPage(server);
@@ -920,17 +966,18 @@ bool ConfigAssist::isNumeric(String s){ //1.0, -.232, .233, -32.32
 
 // name ends with key + number?
 bool ConfigAssist::endsWith(String name, String key, String &no) {
-  std::string search(name.c_str()); 
-  std::string reg = String(key + "(.*[0-9])?$").c_str();
-  std::smatch match; 
+  int l = name.length();
+  while( --l >= 0 )
+    if( !isDigit(name.charAt(l)) ) break;
+  
+  String sKey = name.substring(0, l + 1);
+  no = name.substring(l + 1, name.length());
 
-  if(regex_search(search, match, std::regex(reg))) {
-    auto m = match[1];
-    no = m.str().c_str();
+  if(sKey.endsWith(key)){
     return true;
   }
-  no="";
-  return false;
+  LOG_N("Not endsWith name: %s, key: %s, sKey: %s no: %s\n", name.c_str(), key.c_str(), sKey.c_str(), no.c_str());
+  return false;  
 }
 
 // Decode given string, replace encoded characters
@@ -963,6 +1010,51 @@ bool ConfigAssist::loadText(String fPath, String &txt){
   return true;
 }
 
+#ifdef CA_USE_PERSIST_CON
+// Clear nvs
+bool ConfigAssist::clearPrefs(){
+  if (!_prefs.begin(CA_PREFERENCES_NS, false)) {  
+    LOG_E("Failed to begin prefs\n");
+    return false;
+  }
+  _prefs.clear();
+  _prefs.end();
+  LOG_I("Cleared prefs.\n");
+  return true;
+}
+
+// Save a key to nvs
+bool ConfigAssist::savePref(String key, String val){
+  if (!_prefs.begin(CA_PREFERENCES_NS, false)) {  
+    LOG_E("Failed to begin prefs\n");
+    return false;
+  }
+  _prefs.putString(key.c_str(), val.c_str());
+  _prefs.end();
+  LOG_D("Saved prefs key: %s = %s\n", key.c_str(), val.c_str());
+  return true;
+}
+
+// Load a key from nvs
+bool ConfigAssist::loadPref(String key, String &val){
+  if (!_prefs.begin(CA_PREFERENCES_NS, false)) {  
+    LOG_E("Failed to begin prefs\n");
+    return false;
+  }
+  String pVal = _prefs.getString(key.c_str(),"");
+  if(pVal != "" ){ //Pref exist
+    val = pVal;
+  }else if(val!=""){  //Pref not exist but val is not empty
+    //Move to nvs
+    LOG_I("Moving key: %s = %s to nvs\n", key.c_str(), val.c_str());
+    _prefs.putString(key.c_str(), val.c_str());
+  }
+  LOG_D("Loaded prefs key: %s = %s\n", key.c_str(), val.c_str());
+  _prefs.end();
+  return true;
+}
+#endif    
+
 // Write a string to a file
 bool ConfigAssist::saveText(String fPath, String txt){
   STORAGE.remove(fPath);
@@ -989,17 +1081,17 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
   String elm;
   String no;
   if(c.type == TEXT_BOX){
-    elm = String(CONFIGASSIST_HTML_TEXT_BOX);
-    if(endsWith(c.name, CA_PASSWD_KEY, no)) {
+    elm = String(CONFIGASSIST_HTML_TEXT_BOX);    
+    if(endsWith(c.name, CA_PASSWD_KEY, no)) { //Password field
       elm.replace("<input ", "<input type=\"password\" " +c.attribs);
-      //Generate view checkbox
-      String s1(CONFIGASSIST_HTML_CHECK_VIEW_PASS);
-      s1.replace("{key}","_PASS_VIEW" + String(no));
-      s1.replace("{label}","View");
-      s1 += "";
-      s1.replace("{chk}","");
-      c.label = s1 + c.label;
-      
+      //Generate pass view checkbox
+      String chk1(CONFIGASSIST_HTML_CHECK_VIEW_PASS);
+      chk1.replace("{key}","_PASS_VIEW" + String(no));
+      chk1.replace("{label}","View");
+      chk1 += "";
+      chk1.replace("{chk}","");
+      c.label = chk1 + c.label;
+
       //Don't show passwords
       String ast = "";
       for(unsigned int k=0; k < c.value.length(); ++k){
@@ -1162,33 +1254,45 @@ int ConfigAssist::getSepKeyPos(String key) {
 
 // Extract a config tokens from keyValPair and load it into configs vector
 void ConfigAssist::loadVectItem(String keyValPair) {  
-  if (keyValPair.length()) {
-    std::string token[2];
-    int i = 0;
-    std::istringstream pair(keyValPair.c_str());
-    while (std::getline(pair, token[i++], CA_INI_FILE_DELIM));
-    if (i != 3) 
-      if (i == 2) { //Empty param
-        String key(token[0].c_str()); 
-        add(key, "");
-      }else{
-        LOG_E("Unable to parse '%s', len %u, items: %i\n", keyValPair.c_str(), keyValPair.length(), i);
-      }
-    else {
-      String key(token[0].c_str()); 
-      String val(token[1].c_str());
-      val.replace("\r","");
-      val.replace("\n","");
-      #if CA_DONT_ALLOW_SPACES
-      val.replace(" ","");
-      #endif                    
-      //No label used for memory issues
-      add(key, val);
+  if (!keyValPair.length()) return;
+
+  std::string token[2];
+  int i = 0;
+  std::istringstream pair(keyValPair.c_str());
+  String key,val;
+  while (std::getline(pair, token[i++], CA_INI_FILE_DELIM));
+  if (i != 3){ 
+    if (i == 2) { //Empty param
+      key = token[0].c_str(); 
+      val = "";
+    }else{
+      LOG_E("Unable to parse '%s', len %u, items: %i\n", keyValPair.c_str(), keyValPair.length(), i);
     }
+  }else{
+    key = token[0].c_str(); 
+    val = token[1].c_str();
+#if CA_DONT_ALLOW_SPACES
+    val.replace(" ","");
+#endif
   }
+  val.replace("\r","");
+  val.replace("\n","");
+
+#ifdef CA_USE_PERSIST_CON      
+  String no;
+  if(endsWith(key,CA_SSID_KEY, no)){ 
+    loadPref(key, val);        
+  }else if(endsWith(key,CA_PASSWD_KEY, no)){
+    loadPref(key, val);
+  }
+#endif
+
+  //No label added for memory issues
+  add(key, val);
   if (_configs.size() > CA_MAX_PARAMS) 
     LOG_W("Config file entries: %u exceed max: %u\n", _configs.size(), CA_MAX_PARAMS);
 }
+
 #ifdef CA_USE_WIFISCAN     
 // Build json on Wifi scan complete     
 void ConfigAssist::scanComplete(int networksFound) {
