@@ -26,12 +26,11 @@ void setup() {
 
   LOG_I("Starting..\n");
   
-  //Uncomment to remove ini file and re-built   
-  //config.deleteConfig(); 
-
-  //Json is disabled, Ini file not found
+  //config.deleteConfig(); // Uncomment to remove ini file and re-built   
+  
+  // Json is disabled, Ini file not found
   if(!config.valid()){
-    //Build a json description
+    // Build a json description
     String dynJson="[\n";
     for(int i=0; i<10; ++i){
       dynJson += "{";
@@ -42,13 +41,13 @@ void setup() {
     }
     dynJson+="]";
     LOG_I("Generated Json: %s\n",dynJson.c_str());
-    //Build ini file from json
+    // Build ini file from json
     config.setJsonDict(dynJson.c_str(),true);
     LOG_I("Config valid: %i\n",config.valid());
     config.dump();
-    //Save keys & values into ini file
+    // Save keys & values into ini file
     config.saveConfigFile();
-  }else{ //Ini file is valid, display the values
+  }else{ // Ini file is valid, display the values
     LOG_I("Config valid: %i\n",config.valid());
     config.dump();
   }  
@@ -56,5 +55,4 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-
 }
