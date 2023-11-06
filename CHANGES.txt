@@ -1,3 +1,6 @@
+2.7.1 (2023-10-10)
+  * Dump to web server
+  
 2.7.0 (2023-10-10)
   * Enable saving wifi credentials to nvs
 
