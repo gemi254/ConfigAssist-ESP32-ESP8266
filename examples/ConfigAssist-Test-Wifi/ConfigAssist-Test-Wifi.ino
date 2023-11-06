@@ -184,6 +184,7 @@ void handleNotFound() {
   server.send(404, "text/plain", message);
   digitalWrite(conf["led_pin"].toInt(), 0);
 }
+
 // Set static ip if defined
 bool setStaticIP(String st_ip){
   if(st_ip.length() <= 0) return false;
@@ -277,8 +278,7 @@ void setup(void) {
     if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!");
   #endif
 
-  //Uncomment to remove ini file for other examples and re-built it fron json
-  //conf.deleteConfig();
+  //conf.deleteConfig();  //Uncomment to remove ini file and re-built it fron json
   
   //Connect to any available network
   bool bConn = connectToNetwork();
@@ -294,19 +294,19 @@ void setup(void) {
   }
 
   if (MDNS.begin(conf["host_name"].c_str())) {
-    LOG_I("MDNS responder started\n");
+    LOG_V("MDNS responder started\n");
   }
-
+  //Setup control assist handlers
   conf.setup(server);
-  server.on("/inline", []() {
-    server.send(200, "text/plain", "this works as well");
-    conf.dump();
+  //Append dump handler
+  server.on("/d", []() {
+    //server.send(200, "text/plain", "ConfigAssist dump");
+    conf.dump(server);
   });
 
   server.onNotFound(handleNotFound);
   server.begin();
-  LOG_I("HTTP server started\n");
-
+  LOG_V("HTTP server started\n");
 }
 
 void loop(void) {
