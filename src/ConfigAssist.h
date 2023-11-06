@@ -1,6 +1,6 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
-#define CA_CLASS_VERSION "2.7.0"        // Class version
+#define CA_CLASS_VERSION "2.7.1"        // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -103,7 +103,9 @@ class ConfigAssist{
     // Get the configuration in json format
     String getJsonConfig();
     // Display config items
-    void dump();    
+    void dump();   
+    // Display config items in web server
+    void dump(WEB_SERVER &server);
     // Load json description file. On update=true update only additional pair info    
     int loadJsonDict(const char *jStr, bool update=false);
     // Load config pairs from an ini file
@@ -194,7 +196,7 @@ class ConfigAssist{
     bool _iniLoaded;
     bool _jsonLoaded;
     bool _dirty;
-    const char * _jStr;
+    const char *_jStr;
     String _confFile;
     static WEB_SERVER *_server;
     static String _jWifi;
