@@ -6,7 +6,7 @@
   #include <ESP8266WebServer.h>  
 #endif
 
-//Set default logging mode using external function
+// Set default logging mode using external function
 #define LOGGER_LOG_MODE  3          // External
 #define LOGGER_LOG_FILENAME "/logE"
 #define LOGGER_LOG_LEVEL 5          // Errors & Warnings & Info & Debug & Verbose
@@ -28,7 +28,6 @@ void _log_printf(const char *format, ...){
   va_start(arglist, format);  
   vsnprintf(outBuf, MAX_LOG_FMT, fmtBuf, arglist);
   va_end(arglist);
-  //size_t msgLen = strlen(outBuf);
   Serial.print(outBuf);
   if (logToFile){
     if(!logFile) logFile = STORAGE.open(LOGGER_LOG_FILENAME, "a+");
@@ -45,7 +44,7 @@ void _log_printf(const char *format, ...){
 void serialPrintLog(){
   Serial.printf("Display log: %s\n", LOGGER_LOG_FILENAME);  
   File f = STORAGE.open(LOGGER_LOG_FILENAME,"r");
-  // read from the file until there's nothing else in it:
+  // Read from the file until there's nothing else in it:
   while (f.available()) 
   {
       Serial.write(f.read()); 
@@ -70,7 +69,7 @@ void setup() {
   
   // STORAGE.remove(LOGGER_LOG_FILENAME); //Uncomment to reset the log file
 
-  //Display the log file
+  // Display the log file
   serialPrintLog();
   
   LOG_I("* * * * Starting  * * * * * \n");
@@ -88,14 +87,14 @@ void setup() {
     
   if(!info.valid()){ //Add boot counter 
     info.put("bootCnt", 0, true);    
-  }else{ //Ini is valid, increase counter and display the value
+  }else{ // Ini is valid, increase counter and display the value
     info.put("bootCnt", info["bootCnt"].toInt() + 1, true);
     LOG_I("Info file: bootCnt:  %i\n", info["bootCnt"].toInt());
   }
-  //Save keys & values into ini file
+  // ave keys & values into ini file
   info.saveConfigFile();
   
-  //On the fly Stop loggin to file 
+  // On the fly Stop loggin to file 
   logToFile = false;
   logFile.close();
 
