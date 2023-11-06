@@ -116,7 +116,7 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(hostName.c_str(),"",1);
     LOG_I("Wifi AP SSID: %s started, use 'http://%s' to connect\n", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());      
-    if (MDNS.begin(hostName.c_str()))  LOG_I("AP MDNS responder Started\n");  
+    if (MDNS.begin(hostName.c_str()))  LOG_V("AP MDNS responder Started\n");  
     server.begin();
     _apEnabled = true;
   }
@@ -131,7 +131,7 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
   server.on("/ota", [this] { this->sendHtmlOtaUploadPage(); } );
 #endif
   server.onNotFound([this] { this->handleNotFound(); } );
-  LOG_D("ConfigAssist setup AP & handlers done.\n");      
+  LOG_V("ConfigAssist setup AP & handlers done.\n");      
 }
 
 // Implement operator [] i.e. val = config['key']    
@@ -274,6 +274,17 @@ void ConfigAssist::dump(){
   }
 }
 
+// Display config items
+void ConfigAssist::dump(WEB_SERVER &server){
+  confPairs c;
+  char outBuff[256];
+  server.sendContent(String("ConfigAssist dump configuration :\n"));
+  while (getNextKeyVal(c)){
+      int len =  sprintf(outBuff, "[%i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+      server.sendContent(outBuff, len);
+  }
+}
+
 // Load json description file. On update=true update only additional pair info    
 int ConfigAssist::loadJsonDict(const char *jStr, bool update) { 
   if(jStr==NULL) return -1; 
@@ -388,7 +399,7 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool update) {
   sort();
   sortSeperators();
   _jsonLoaded = true;
-  LOG_I("Loaded json dict\n");
+  LOG_V("Loaded json dict\n");
   return i;
 }
      
@@ -476,7 +487,7 @@ bool ConfigAssist::saveConfigFile(String filename) {
   
   if(szOut>0){
     file.close();
-    LOG_I("File saved: %s, sz: %u B\n", filename.c_str(), szOut);  
+    LOG_I("File saved: %s, keys: %i, sz: %u B\n", filename.c_str(), _configs.size(), szOut);  
     _dirty = false;
   }
   
@@ -552,7 +563,7 @@ String ConfigAssist::testWiFiSTConnection(String no){
   }else if(ssid != WiFi.SSID()){ //Connected and test other ssid
     msg += "\"status\": \"Failed\", ";
     msg += "\"ssid\": \"" + ssid + "\", ";
-    msg += "\"code\": \"" + String("Already in connection") + "\"";  
+    msg += "\"code\": \"" + String("Already in a ST connection") + "\"";  
   }else{
     msg += "\"status\": \"Success\", ";
     msg += "\"ip\": \"" + WiFi.localIP().toString()+ "\", ";
@@ -1049,7 +1060,7 @@ bool ConfigAssist::loadPref(String key, String &val){
     LOG_I("Moving key: %s = %s to nvs\n", key.c_str(), val.c_str());
     _prefs.putString(key.c_str(), val.c_str());
   }
-  LOG_D("Loaded prefs key: %s = %s\n", key.c_str(), val.c_str());
+  LOG_V("Loaded prefs key: %s = %s\n", key.c_str(), val.c_str());
   _prefs.end();
   return true;
 }
@@ -1234,7 +1245,7 @@ int ConfigAssist::getKeyPos(String key) {
   );
   int keyPos = std::distance(_configs.begin(), lower); 
   if (key == _configs[keyPos].name) return keyPos;
-  else LOG_V("Key %s not found\n", key.c_str()); 
+  else LOG_V("Key %s not found.\n", key.c_str()); 
   return -1; // not found
 }
 
@@ -1248,7 +1259,7 @@ int ConfigAssist::getSepKeyPos(String key) {
   );
   int keyPos = std::distance(_seperators.begin(), lower); 
   if (key == _seperators[keyPos].name) return keyPos;
-  LOG_N("Sep key %s not found\n", key.c_str()); 
+  LOG_N("Sep key %s not found.\n", key.c_str()); 
   return -1; // not found
 }
 
@@ -1309,7 +1320,7 @@ void ConfigAssist::scanComplete(int networksFound) {
       LOG_D("%i,%s\n", WiFi.RSSI(i), WiFi.SSID(i).c_str());
     }
   _jWifi += "]";
-  LOG_D("Scan complete \n");    
+  LOG_V("Scan complete \n");    
 }
 
 // Send wifi scan results to client
