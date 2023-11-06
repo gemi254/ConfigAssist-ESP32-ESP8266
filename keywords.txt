@@ -8,7 +8,7 @@
 # Datatypes (KEYWORD1)
 ###########################################
 
-configAssist KEYWORD1
+ConfigAssist KEYWORD1
 
 ###########################################
 # Methods and Functions (KEYWORD2)
