@@ -1,1 +1,4 @@
 https://raw.githubusercontent.com/gemi254/ConfigAssist-ESP32-ESP8266/main/examples/ConfigAssist-FirmwareCheck/firmware/FirmwareCheck1.0.1.bin
+This is a new firmware with bug fixes and improovments.
+* Check firmware version from www and upgrade if needed.
+* Some bug fixes.
