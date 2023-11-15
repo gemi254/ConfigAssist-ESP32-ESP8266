@@ -32,3 +32,5 @@ getTimeSyncScript KEYWORD2
 getMessageHtml KEYWORD2
 deleteConfig KEYWORD2
 handleWifiScanRequest KEYWORD2
+sendHtmlUploadPage KEYWORD2
+sendHtmlOtaUploadPage KEYWORD2
