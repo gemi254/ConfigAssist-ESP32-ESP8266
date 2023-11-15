@@ -13,7 +13,6 @@ ConfigAssist KEYWORD1
 ###########################################
 # Methods and Functions (KEYWORD2)
 ###########################################
-
 init KEYWORD2
 initJsonDict KEYWORD2
 handleFormRequest KEYWORD2
