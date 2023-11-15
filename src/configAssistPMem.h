@@ -142,6 +142,123 @@ const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
 )=====";
 #endif
 
+#ifdef CA_USE_FIMRMCHECK
+PROGMEM const char CONFIGASSIST_HTML_FIRMW_CHECK[] = R"=====(
+<script>
+const port = !window.location.port ? "80" : window.location.port;    
+  const otaServer = 'http://' + document.location.hostname + ':' + port;
+  const $ = document.querySelector.bind(document);
+  var otaUrl = "";
+
+  async function uploadFileFromUrl() {
+    // submit file for uploading    
+    if(otaUrl == "" ) return;
+    fetch(otaUrl)
+        .then(d => d.blob())
+        .then(d => {
+            console.log(d)
+            var filename = otaUrl.replace(/^.*[\\/]/, '')
+            let file = d;
+            let formdata = new FormData();
+            formdata.append("filename", filename);
+            formdata.append("fupload", file);
+
+            let ajax = new XMLHttpRequest();
+            ajax.upload.addEventListener("progress", progressHandler, false);
+            ajax.addEventListener("load", completeHandler, false);
+            ajax.addEventListener("error", errorHandler, false);
+            ajax.addEventListener("abort", abortHandler, false);
+            ajax.open("POST", otaServer + '/fupl?ota=1');
+            ajax.send(formdata);
+        })
+    
+  }
+
+  function progressHandler(event) {
+    $("#bytes_uploaded").innerHTML = "Uploaded " + event.loaded + " of " + event.total + " bytes";
+    let percent = (event.loaded / event.total) * 100;
+    $("#progressBar").value = Math.round(percent);
+    $("#upl_status").innerHTML = Math.round(percent) + "% transferred";
+    if (event.loaded  == event.total) $("#upl_status").innerHTML = 'Uploaded, wait for completion result';
+  }
+
+  function completeHandler(event) {
+    $("#upl_status").innerHTML = event.target.responseText;
+    const url = document.location.origin + "/cfg?_RBT_CONFIRM=1";
+    setTimeout(()=> {
+      try{
+        console.log('Restarting')
+        const response = fetch(encodeURI(url));
+      } catch (e) {
+        console.log(e)
+      }
+    }
+    ,500);
+    
+    setTimeout(()=> {
+      location.href =  document.location.origin + "/cfg";
+    }
+    ,8000);
+    
+  }
+
+  function errorHandler(event) {
+    $("#upl_status").innerHTML = "Upload Failed";
+  }
+
+  function abortHandler(event) {
+    $("#upl_status").innerHTML = "Upload Aborted";
+  }
+
+  function checKFirmware(url){
+    if(url==""){
+      $("#firmwareDescr").innerHTML += d.descr + "No firmware OTA url defined in configs"      
+      return;
+    } 
+    fetch(url)
+    .then(d => d.json())
+    .then(d => {
+      console.log(d)
+      if(d=="") return;      
+      
+      otaUrl = d.url;
+      var filename = d.url.replace(/^.*[\\/]/, '')
+      if(d.ver!="" && $("#fwv").innerHTML != d.ver){
+        $("#firmwareInfo").innerHTML = "New firmware version found: <font style='color: blue;'>" + d.ver +"</font>"
+        $("#firmwareLink").innerHTML += "File: " + "<font style='color: blue;'>" + filename + "</font>"
+        $("#firmwareDescr").innerHTML += d.descr + ""
+        $("#upgrade").style.display = "";
+        $("#progressBar").style.display = "";
+      }else{
+        $("#firmwareInfo").innerHTML = "You have the latest firmware version"
+        $("#upgrade").style.display = "";
+        $("#progressBar").style.display = "none";
+      }
+    });
+  }
+  checKFirmware("{FIRMWARE_URL}")
+</script>
+<body>
+  <div style="text-align:center;">
+    <h3>Your current firmware version is: <span style="color: gray;" id="fwv">{FIRMWARE_VERSION}</span></b></h3>
+  </div>
+  <div style="text-align:center;">
+      <h3 id="firmwareInfo"></h3>
+      <h4 id="firmwareLink"></h4>
+      <h4 id="firmwareDescr"></h4>  
+      <button style="display:none;" name='fupload' id='upgrade' onclick="uploadFileFromUrl()">Upgrade firmware</button>
+      <br><br>
+      <progress id="progressBar" style="display:none;" value="0" max="100" style="width:300px; height:25px;"></progress>
+      <h4 id="upl_status"></h4>      
+      <p id="bytes_uploaded"></p>
+      <br>
+      [&nbsp;<a href='/cfg'>Back</a>&nbsp;]<br><br>
+  </div>  
+</body>
+</html>
+)=====";
+#endif
+
 // Template for header, begin of the config form
 PROGMEM const char CONFIGASSIST_HTML_CSS[] =R"=====(
 <style>
@@ -576,7 +693,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     }else if (key=="_RBT"){
       let nowUTC = Math.floor(new Date().getTime() / 1000);
       document.location = url+"&_TS="+ nowUTC;
-    }else if ( key=="_DWN" || key=="_UPG" || key.includes('_PASS_VIEW') ){
+    }else if ( key=="_DWN" || key=="_UPG" || key=="_FWC" || key.includes('_PASS_VIEW') ){
       return;
     }
     
@@ -607,6 +724,7 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
   setTimeTimer = setTimeout(sendTime, 500);  
 )=====";
 #endif
+
 #ifdef CA_USE_TESTWIFI 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION[] = R"=====(
   async function testWifi(no="") {
@@ -654,6 +772,7 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION[] = R"=====(
   }
 )=====";
 #endif
+
 #ifdef CA_USE_WIFISCAN 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN[] = R"=====(
 async function getWifiScan() {      
@@ -821,5 +940,10 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
 
 // OTA Upload button
 PROGMEM const char HTML_UPGRADE_BUTTON[] = R"~(
-  <button type="button" title="Firmware upgrade" onClick="window.location.href = '/ota'" name="_UPG">Upgrade</button>
+  <button type="button" title="Upload firmware to upgrade" onClick="window.location.href = '/ota'" name="_UPG">Upgrade</button>
+)~";
+
+// Firmware check from url button
+PROGMEM const char HTML_FIRMWCHECK_BUTTON[] = R"~(
+  <button type="button" title="Online firmware check" onClick="window.location.href = '/fwc'" name="_FWC">Firmware</button>
 )~";
