@@ -154,11 +154,11 @@ const port = !window.location.port ? "80" : window.location.port;
     // submit file for uploading    
     if(otaUrl == "" ) return;
     fetch(otaUrl)
-        .then(d => d.blob())
-        .then(d => {
-            console.log(d)
+        .then(r => r.blob())
+        .then(r => {
+            console.log(r)
             var filename = otaUrl.replace(/^.*[\\/]/, '')
-            let file = d;
+            let file = r;
             let formdata = new FormData();
             formdata.append("filename", filename);
             formdata.append("fupload", file);
@@ -212,21 +212,29 @@ const port = !window.location.port ? "80" : window.location.port;
 
   function checKFirmware(url){
     if(url==""){
-      $("#firmwareDescr").innerHTML += d.descr + "No firmware OTA url defined in configs"      
+      $("#firmwareInfo").innerHTML += "No firmware OTA url defined in configs"      
       return;
     } 
-    fetch(url)
-    .then(d => d.json())
-    .then(d => {
-      console.log(d)
-      if(d=="") return;      
+    fetch(url).then((r) => {
+        if (r.ok) {
+            return r.json();
+        }else if(r.status = 404){
+            $("#firmwareInfo").innerHTML = "No firmware info file found!"
+            $("#firmwareLink").innerHTML = "Url: " + url;
+        }else{
+            console.log(r.statusText);
+        }        
+    })
+    .then(r => {
+      console.log(r)
+      if(r=="") return;      
       
-      otaUrl = d.url;
-      var filename = d.url.replace(/^.*[\\/]/, '')
-      if(d.ver!="" && $("#fwv").innerHTML != d.ver){
-        $("#firmwareInfo").innerHTML = "New firmware version found: <font style='color: blue;'>" + d.ver +"</font>"
+      otaUrl = r.url;
+      var filename = r.url.replace(/^.*[\\/]/, '')
+      if(r.ver!="" && $("#fwv").innerHTML != r.ver){
+        $("#firmwareInfo").innerHTML = "New firmware version found: <font style='color: blue;'>" + r.ver +"</font>"
         $("#firmwareLink").innerHTML += "File: " + "<font style='color: blue;'>" + filename + "</font>"
-        $("#firmwareDescr").innerHTML += d.descr + ""
+        $("#firmwareDescr").innerHTML += r.descr + ""
         $("#upgrade").style.display = "";
         $("#progressBar").style.display = "";
       }else{
@@ -234,9 +242,13 @@ const port = !window.location.port ? "80" : window.location.port;
         $("#upgrade").style.display = "";
         $("#progressBar").style.display = "none";
       }
-    });
+    })
+    .catch(e => {
+      console.log('Url error', e)  
+    })
   }
-  checKFirmware("{FIRMWARE_URL}")
+// Firmware check
+checKFirmware("{FIRMWARE_URL}")
 </script>
 <body>
   <div style="text-align:center;">
