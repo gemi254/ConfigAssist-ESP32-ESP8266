@@ -1,3 +1,6 @@
+2.7.2 (2023-10-15)
+  * Firmware updates over the internet.
+
 2.7.1 (2023-10-10)
   * Dump to web server
   
