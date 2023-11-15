@@ -1,6 +1,6 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
-#define CA_CLASS_VERSION "2.7.1"        // Class version
+#define CA_CLASS_VERSION "2.7.2"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -16,6 +16,7 @@
 #define CA_USE_TESTWIFI                  // Comment to disable test wifi st connection
 #define CA_USE_TIMESYNC                  // Comment to disable sync esp with browser if out of sync
 #define CA_USE_OTAUPLOAD                 // Comment to disable ota and reduce memory
+#define CA_USE_FIMRMCHECK                // Comment to disable firmware check and upgrade from url 
 //#define CA_USE_PERSIST_CON               // Comment to disable saving wifi credentials to nvs
 
 // Define Platform libs
@@ -126,6 +127,10 @@ class ConfigAssist{
     // Send html ota upload page to client
     void sendHtmlOtaUploadPage();
 #endif
+#ifdef CA_USE_FIMRMCHECK
+    // Send html firmware check page to client
+    void sendHtmlFirmwareCheckPage();
+#endif
     // Upload a file to SPIFFS
     void handleFileUpload();
     String testWiFiSTConnection(String no);    
@@ -205,5 +210,4 @@ class ConfigAssist{
     static Preferences _prefs;
 #endif    
 };
-
 #endif // _CONFIG_ASSIST_H
