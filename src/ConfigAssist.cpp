@@ -15,7 +15,6 @@
   #include <ESP8266mDNS.h>
   #include "TZ.h"
 #endif  
-#include <FS.h>
 
 #define LOGGER_LOG_LEVEL 3    //Set log level for this module
 #include "configAssist.h"
@@ -129,6 +128,9 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
   server.on("/fupl", HTTP_POST,[this](){  },  [this](){this->handleFileUpload(); });
 #ifdef CA_USE_OTAUPLOAD  
   server.on("/ota", [this] { this->sendHtmlOtaUploadPage(); } );
+#endif
+#ifdef CA_USE_FIMRMCHECK  
+  server.on("/fwc", [this] { this->sendHtmlFirmwareCheckPage(); } );
 #endif
   server.onNotFound([this] { this->handleNotFound(); } );
   LOG_V("ConfigAssist setup AP & handlers done.\n");      
@@ -546,7 +548,9 @@ String ConfigAssist::testWiFiSTConnection(String no){
     //Connect to Wifi station with ssid from conf file
     uint32_t startAttemptTime = millis();
     if(WiFi.getMode()!=WIFI_AP_STA) WiFi.mode(WIFI_AP_STA);
-    LOG_D("Wifi Station testing :%s, %s\n", no.c_str(), ssid.c_str());
+    LOG_D("Wifi Station testing, no: %s, ssid: %s\n", (no != "") ? no.c_str():"0", ssid.c_str());
+    LOG_N("Wifi Station testing, no: %s, ssid: %s, pass: %s\n", (no != "") ? no.c_str():"0", ssid.c_str(), pass.c_str());
+    
     WiFi.begin(ssid.c_str(), pass.c_str());
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000)  {
       Serial.print(".");
@@ -627,6 +631,22 @@ void ConfigAssist::sendHtmlOtaUploadPage(){
   _server->sendContent(out);
 }
 #endif //CA_USE_OTAUPLOAD
+
+#ifdef CA_USE_FIMRMCHECK
+// External variable with current version number
+extern char FIRMWARE_VERSION[];
+// Send html OTA upload page to client
+void ConfigAssist::sendHtmlFirmwareCheckPage(){
+  String out(CONFIGASSIST_HTML_START);
+  out.replace("{title}", "Check firmware");  
+  out += CONFIGASSIST_HTML_FIRMW_CHECK;
+  out.replace("{FIRMWARE_VERSION}", FIRMWARE_VERSION);
+  out.replace("{FIRMWARE_URL}", get("firmware_url"));
+  _server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  _server->sendContent(out);
+}
+#endif //CA_USE_FIMRMCHECK
+
 // Respond a HTTP request for upload a file
 void ConfigAssist::handleFileUpload(){
   static File tmpFile;
@@ -683,7 +703,7 @@ void ConfigAssist::handleFileUpload(){
 #ifdef CA_USE_OTAUPLOAD
     if(isOta){ // flashing firmware to ESP
       if (Update.end(true)) { //true to set the size to the current progress
-        msg = "Firmware update successful file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B";
+        msg = "Firmware update successful file: <font style='color: blue;'>" + uploadfile.filename + "</font>, size: " + uploadfile.totalSize + " B";
         LOG_I("\n%s\n", msg.c_str());
         out.replace("{reboot}", "true");
         msg += "<br>Device now will reboot..";
@@ -742,7 +762,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       }
       return;
     }
-    if (server->hasArg(F("_UPL")) || server->hasArg(F("_UPG"))) {
+    if( server->hasArg(F("_UPL")) || server->hasArg(F("_UPG")) || server->hasArg(F("_FWC")) ){
       return;
     }
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);        
@@ -774,7 +794,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         server->client().flush();
         return;
     } 
-#endif    
+#endif //CA_USE_PERSIST_CON   
     //Test wifi?    
     if (server->hasArg(F("_TEST_WIFI"))) {
       LOG_D("Testing WIFI ST connection..\n");
@@ -803,7 +823,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       String val(server->arg(i));
       key = urlDecode(key);
       val = urlDecode(val);
-      if(key=="apName" || key =="_SAVE" || key=="_RST" || key=="_RBT" || key=="_UPG" || key=="plain" || key=="_TS") continue;
+      if(key=="apName" || key =="_SAVE" || key=="_RST" || key=="_RBT" || key=="_UPG" || key=="_FWC" || key=="plain" || key=="_TS") continue;
       //Ignore text box save filenames
       if(key.endsWith(CA_FILENAME_IDENTIFIER)) continue;
       if(key=="clockOffs" && server->hasArg("clockUTC")) continue;
@@ -924,7 +944,10 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   out = String(CONFIGASSIST_HTML_END);
   
   #ifdef CA_USE_OTAUPLOAD   
-  out.replace("<!--extraButtons-->", HTML_UPGRADE_BUTTON);
+  out.replace("<!--extraButtons-->", String(HTML_UPGRADE_BUTTON) +"\n<!--extraButtons-->");
+  #endif
+  #ifdef CA_USE_FIMRMCHECK
+  out.replace("<!--extraButtons-->", String(HTML_FIRMWCHECK_BUTTON) +"\n<!--extraButtons-->");
   #endif
   out.replace("{appVer}", CA_CLASS_VERSION);
   server->sendContent(out);
@@ -1086,7 +1109,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
   out="";
   if(!getNextKeyVal(c)) return false;
   LOG_V("getEditHtmlChunk %i, %s\n", c.readNo, c.name.c_str());
-  //Values added manually not editable
+  // Values added manually not editable
   if(c.readNo<0) return true;
   out = String(CONFIGASSIST_HTML_LINE);
   String elm;
