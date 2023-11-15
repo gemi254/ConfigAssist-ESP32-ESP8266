@@ -1,0 +1,5 @@
+{
+"ver" : "1.0.1",
+"url" : "https://raw.githubusercontent.com/gemi254/ConfigAssist-ESP32-ESP8266/main/examples/ConfigAssist-FirmwareCheck/firmware/ESP8266/FirmwareCheck1.0.1.bin",
+"descr": "A new firmware for ESP8266 v1.0.1 with bug fixes and improvements."
+}
