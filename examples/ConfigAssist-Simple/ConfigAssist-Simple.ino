@@ -7,6 +7,7 @@
 #endif
 #define LOGGER_LOG_LEVEL 5 // Errors & Warnings & Info & Debug & Verbose
 #include <ConfigAssist.h>  // Config assist class
+char FIRMWARE_VERSION[] = "1.0.0";    // Firmware version
 
 void setup() {
   // put your setup code here, to run once:

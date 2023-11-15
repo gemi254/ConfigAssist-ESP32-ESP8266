@@ -26,6 +26,8 @@
 // Define application name
 #define APP_NAME "ConfigAssistDemo"
 #define INI_FILE "/ConfigAssistDemo.ini"
+
+char FIRMWARE_VERSION[] = "1.0.0";    // Firmware version
 // Default application config dictionary
 // Modify the file with the params for you application
 // Then you can use then then by val = config[name];

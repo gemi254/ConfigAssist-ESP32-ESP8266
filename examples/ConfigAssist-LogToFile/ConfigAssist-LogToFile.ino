@@ -12,6 +12,7 @@
 #define LOGGER_LOG_FILENAME "/log1"
 
 #include <ConfigAssist.h>           // Config assist class
+char FIRMWARE_VERSION[] = "1.0.0";    // Firmware version
 
 // Print the log generated to serial port
 void serialPrintLog(){

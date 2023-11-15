@@ -17,7 +17,7 @@
 
 #define LOGGER_LOG_LEVEL 5
 #include <ConfigAssist.h>
-
+char FIRMWARE_VERSION[] = "1.0.0";    // Firmware version
 #if defined(ESP32)
   WebServer server(80);
 #else
