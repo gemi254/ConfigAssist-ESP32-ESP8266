@@ -20,6 +20,7 @@ Application variables like **Wifi ssid**, **Wifi password**, **Host Name** can b
 * **Validate** Wi-Fi station connections when connecting from AP.
 * Auto **synchronize** ESP32/ESP8266 internal **clock** with browser clock.
 * Support on the fly **firmware upgrades** (OTA).
+* Support automatic firmware **upgrades** over the **internet**.
 
 <p align="center">
   <img src="docs/config.png">
@@ -38,11 +39,16 @@ Uncomment **CA_USE_PERSIST_CON** in ``ConfigAssist.h`` to use this feature.
 
 **ConfigAssist** can also check and synchronize the internal **clock** of ESP device with the browser time if needed. So even if no internet connection (AP mode) and no **npt** server is available the device will get the correct time. If **CA_TIMEZONE_KEY** string exists in variables it will be used to set the device time zone string. If not it will use browser offset.
 
-These features can be disabled to save memory by commenting the lines **CA_USE_WIFISCAN**, **CA_USE_TESTWIFI**, **CA_USE_TIMESYNC**, and **CA_USE_OTAUPLOAD** in ``configAssist.h``.
+**ConfigAssist** can add web based **OTA** updates to your ESP32/ESP8266 projects. With the button **Upgrade** you can upload a firmware file (*.bin) from you pc and perform a **firmware upgrade** to the device.
+
+**ConfigAssist** can also pefrom **Firmware upgrades** over **internet**. It will compare the currnet firmware version of the device with a remote firmware stored in a **web site** location. If there is a new firmware it will automatically download it and pefrom the upgrade.
+
+Check the <a href="/examples/ConfigAssist-FirmwareCheck/README.txt">FirmwareCheck</a>  example for more details.
+
+These features can be disabled to save memory by commenting the lines **CA_USE_WIFISCAN**, **CA_USE_TESTWIFI**, **CA_USE_TIMESYNC**, **CA_USE_OTAUPLOAD**, and **CA_USE_FIMRMCHECK** in ``configAssist.h``.
 
 Device's configuration ``(*.ini files)`` can be downloaded with the **Backup** button and can be restored later with the **Restore** button.
 
-**ConfigAssist** can add web based **OTA** updates to your ESP32/ESP8266 projects. With the button **Upgrade** you can upload a firmware file (*.bin) and perform a **firmware upgrade** to the esp device.
 
 ## Configuration variables
 
