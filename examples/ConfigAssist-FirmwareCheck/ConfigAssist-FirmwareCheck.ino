@@ -12,7 +12,6 @@
   #include <ESP8266mDNS.h>
   #include "TZ.h"
 #endif
-#include <FS.h>
 
 #define LOGGER_LOG_LEVEL 5
 #include <ConfigAssist.h>  // Config assist class
@@ -91,9 +90,18 @@ void setup(void) {
 
   // Uncomment to remove old ini file and re-built it fron dictionary
   //conf.deleteConfig();
-
+  conf.put("firmware_ver", FIRMWARE_VERSION, true);
+  conf.put("test1", 1, true);
+  conf.put("test2", 2, true);
+  
   // Register handlers for web server    
   server.on("/", handleRoot);
+  // Append dump handler
+  server.on("/d", []() {
+    conf.dump(server);
+  });
+
+  server.onNotFound(handleNotFound);
 
   // Failed to load config or ssid empty
   if(conf["st_ssid"]=="" ){ 
@@ -134,15 +142,10 @@ void setup(void) {
 
   // Add handlers to web server 
   conf.setup(server);
-  
-  // Append dump handler
-  server.on("/d", []() {
-    conf.dump(server);
-  });
-
-  server.onNotFound(handleNotFound);
+  // Start web server
   server.begin();
   LOG_V("HTTP server started\n");
+  conf.dump();
 }
 // App main loop 
 void loop(void) {
