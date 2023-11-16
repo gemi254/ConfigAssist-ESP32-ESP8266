@@ -13,11 +13,10 @@
   #include <ESP8266mDNS.h>
   #include "TZ.h"
 #endif
-#include <FS.h>
 
 #define LOGGER_LOG_LEVEL 5
 #include <ConfigAssist.h>
-char FIRMWARE_VERSION[] = "1.0.0";    // Firmware version
+
 #if defined(ESP32)
   WebServer server(80);
 #else
@@ -137,6 +136,7 @@ X2=900, Y2=3.24"}
 ])~";
 
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
+
 String hostName;
 unsigned long pingMillis = millis();
 
@@ -283,9 +283,13 @@ void setup(void) {
   //Connect to any available network
   bool bConn = connectToNetwork();
   digitalWrite(conf["led_pin"].toInt(), 1);
-
-  server.on("/", handleRoot);
-
+  
+  // Setup web server 
+  server.on("/", handleRoot);  
+  server.on("/d", []() {    // Append dump handler
+    conf.dump(server);
+  });
+  server.onNotFound(handleNotFound);
 
   if(!bConn){
     LOG_E("Connect failed.\n");
@@ -296,15 +300,9 @@ void setup(void) {
   if (MDNS.begin(conf["host_name"].c_str())) {
     LOG_V("MDNS responder started\n");
   }
-  //Setup control assist handlers
+  // Append control assist handlers
   conf.setup(server);
-  //Append dump handler
-  server.on("/d", []() {
-    //server.send(200, "text/plain", "ConfigAssist dump");
-    conf.dump(server);
-  });
 
-  server.onNotFound(handleNotFound);
   server.begin();
   LOG_V("HTTP server started\n");
 }
