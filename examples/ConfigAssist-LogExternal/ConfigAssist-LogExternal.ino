@@ -15,7 +15,6 @@ static File logFile;
 void _log_printf(const char *format, ...);
 
 #include <ConfigAssist.h>           // Config assist class
-char FIRMWARE_VERSION[] = "1.0.0";    // Firmware version
 #define MAX_LOG_FMT 128
 static char fmtBuf[MAX_LOG_FMT];
 static char outBuf[512];
