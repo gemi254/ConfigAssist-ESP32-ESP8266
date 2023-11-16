@@ -449,17 +449,19 @@ input {
   height: var(--inputHeight);
   border-radius: var(--elmQuart);
   border: 1px solid gray;
+  width: 99%
 }
 
 textarea {
   min-width: calc(var(--elmSize) * 11);      
   border-radius: var(--elmQuart);        
   border: 1px solid gray;
+  width: 99%
 }
 
 input[type=range] {
   -webkit-appearance: none;
-  width: 100%;
+  width: 99%;
   height: calc(var(--elmHalf) * 3/4);
   background: var(--sliderBodyBackground);
   cursor: pointer;
@@ -474,7 +476,7 @@ input[type=range]:focus {
 }
 
 input[type=range]::-webkit-slider-runnable-track {
-  width: 100%;
+  width: 99%;
   height: 2px;
   cursor: pointer;
   background: var(--sliderBackground); 
@@ -548,6 +550,7 @@ input[type=range]:focus::-webkit-slider-runnable-track {
   background: var(--toggleInactive);
   width: calc(var(--elmSize) * 2.3);                      
   transition: .4s;
+  width: 100%
 }
 
 .slider:before {
@@ -578,6 +581,7 @@ select {
   border-radius: var(--elmQuart);
   height: var(--inputHeight);
   margin-top: 2px;
+  width: 99%
 }
 select:focus{
   outline: auto;
@@ -837,7 +841,7 @@ async function getWifiScan() {
 //Template for password view check group
 PROGMEM const char CONFIGASSIST_HTML_CHECK_VIEW_PASS[] = 
 R"=====(<span id="{key}_GRP" style="display: none;">
-<input type="checkbox" style="height:auto; min-width:auto;" id="{key}" name="{key}" {chk}/>
+<input type="checkbox" style="height:auto; min-width:auto; width:auto;" id="{key}" name="{key}" {chk}/>
 <label for="{key}">{label}</label></span>
 )=====";
 
