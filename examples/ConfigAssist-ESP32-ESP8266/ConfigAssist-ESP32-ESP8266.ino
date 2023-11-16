@@ -27,7 +27,6 @@
 #define APP_NAME "ConfigAssistDemo"
 #define INI_FILE "/ConfigAssistDemo.ini"
 
-char FIRMWARE_VERSION[] = "1.0.0";    // Firmware version
 // Default application config dictionary
 // Modify the file with the params for you application
 // Then you can use then then by val = config[name];
@@ -211,8 +210,13 @@ void setup(void) {
   //conf.deleteConfig();
 
   // Register handlers for web server    
-  server.on("/", handleRoot);
-
+  server.on("/", handleRoot);  
+  server.on("/d", []() { // Append dump handler
+    //server.send(200, "text/plain", "ConfigAssist dump");
+    conf.dump(server);
+  });
+  server.onNotFound(handleNotFound);
+  
   // Failed to load config or ssid empty
   if(conf["st_ssid"]=="" ){ 
     // Start Access point server and edit config
@@ -269,16 +273,9 @@ void setup(void) {
   // Also change an int/bool value
   //conf.put("led_pin", 4);
   
-  // Add handlers to web server 
+  // Append config assist handlers to web server 
   conf.setup(server);
-  
-  // Append dump handler
-  server.on("/d", []() {
-    //server.send(200, "text/plain", "ConfigAssist dump");
-    conf.dump(server);
-  });
 
-  server.onNotFound(handleNotFound);
   server.begin();
   LOG_V("HTTP server started\n");
   
