@@ -11,7 +11,8 @@
 
 #define CA_HOSTNAME_KEY "host_name"      // The key that defines host name
 #define CA_TIMEZONE_KEY "time_zone"      // The key that defines time zone for setting time
-
+#define CA_FIRMWVER_KEY "firmware_ver"   // The key that defines the firmware version
+#define CA_FIRMWURL_KEY "firmware_url"   // The key that defines the url with firmware information
 #define CA_USE_WIFISCAN                  // Comment to disable wifi scan
 #define CA_USE_TESTWIFI                  // Comment to disable test wifi st connection
 #define CA_USE_TIMESYNC                  // Comment to disable sync esp with browser if out of sync
@@ -86,9 +87,9 @@ class ConfigAssist{
     // Update the value of key = val (int)
     bool put(String key, int val, bool force = false);
     // Update the value of key = val (string)
-    bool put(String key, String val, bool force = false);    
+    bool put(String key, String val, bool force = false);
     // Add vectors by key (name in confPairs)
-    void add(String key, String val);
+    void add(String key, String val, bool force = false);
     // Add unique name vectors pairs
     void add(confPairs &c);
     // Add seperator by key
@@ -107,8 +108,8 @@ class ConfigAssist{
     void dump();   
     // Display config items in web server
     void dump(WEB_SERVER &server);
-    // Load json description file. On update=true update only additional pair info    
-    int loadJsonDict(const char *jStr, bool update=false);
+    // Load json description file. On updateInfo = true update only additional pair info    
+    int loadJsonDict(const char *jStr, bool updateInfo = false);
     // Load config pairs from an ini file
     bool loadConfigFile(String filename="");
     // Delete configuration files
