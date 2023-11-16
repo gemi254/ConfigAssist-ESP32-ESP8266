@@ -49,6 +49,7 @@ These features can be disabled to save memory by commenting the lines **CA_USE_W
 
 Device's configuration ``(*.ini files)`` can be downloaded with the **Backup** button and can be restored later with the **Restore** button.
 
+You can use the command ``http://ip/cfg?_RST=1`` to manually clear the ini file and load defaults.
 
 ## Configuration variables
 
@@ -265,8 +266,8 @@ Then include the **configAssist.h** in your application and compile..
 + To use Persistent ST connections On ESP8266 devices you must install **Preferences** library to provide ESP32-compatible Preferences API using LittleFS
 + if your variables exceed **CA_MAX_PARAMS** increase this value in class header.
 
-Compiling included examples require to remove old **ini** file by calling `conf.deleteConfig();`
-See **ConfigAssist-ESP32-ESP8266.ino** line:206
+You can remove old **ini** config file by calling `conf.deleteConfig();` in your setup function.
+See **ConfigAssist-ESP32-ESP8266.ino** line:210
 
 ###### If you get compilation errors on arduino-esp32 you need to update your arduino-esp32 library in the IDE using Boards Manager
 
