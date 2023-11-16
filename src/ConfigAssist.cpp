@@ -94,7 +94,7 @@ void ConfigAssist::init() {
   //Failed to load ini file
   if(!_iniLoaded){
     _dirty = true;
-    loadJsonDict(_jStr, true);
+    loadJsonDict(_jStr);
   }
   
   LOG_V("ConfigAssist::init done ini:%i json:%i\n",_iniLoaded, _jsonLoaded);
@@ -129,8 +129,9 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
 #ifdef CA_USE_OTAUPLOAD  
   server.on("/ota", [this] { this->sendHtmlOtaUploadPage(); } );
 #endif
-#ifdef CA_USE_FIMRMCHECK  
-  server.on("/fwc", [this] { this->sendHtmlFirmwareCheckPage(); } );
+#ifdef CA_USE_FIMRMCHECK
+  if(get(CA_FIRMWURL_KEY) != "")
+    server.on("/fwc", [this] { this->sendHtmlFirmwareCheckPage(); } );
 #endif
   server.onNotFound([this] { this->handleNotFound(); } );
   LOG_V("ConfigAssist setup AP & handlers done.\n");      
@@ -162,17 +163,12 @@ String ConfigAssist::get(String key) {
   }
   return String(""); 
 }
-    
-// Update the value of key = value (int)
-bool ConfigAssist::put(String key, int val, bool force) {
-    return  put(key, String(val), force); 
-} 
-    
+ 
 // Update the value of key = value (string)
 bool ConfigAssist::put(String key, String val, bool force) {
   int keyPos = getKeyPos(key);      
   if (keyPos >= 0) {
-    //Save 0,1 on booleans
+    // Save 0,1 on booleans
     if(_configs[keyPos].type == CHECK_BOX){
       val = String(IS_BOOL_TRUE(val));
     }
@@ -184,23 +180,36 @@ bool ConfigAssist::put(String key, String val, bool force) {
     }
     return true;
   }else if(force) {
-      add(key, val);
+      add(key, val, force);
       sort();
       _dirty = true; 
       return true;
   }else{
-    LOG_E("Put failed on Key: %s=%s\n", key.c_str(), val.c_str());
+    LOG_E("Put failed, key: %s, val: %s\n", key.c_str(), val.c_str());
   } 
-  LOG_D("Put key %s=%s\n", key.c_str(), val.c_str()); 
+  LOG_D("Put key: %s. val: %s\n", key.c_str(), val.c_str()); 
   return false;    
 }
-    
+
+// Update the value of key = value (int), force to add if not exists
+bool ConfigAssist::put(String key, int val, bool force) {
+    return  put(key, String(val), force); 
+}
+
 // Add vectors by key (name in confPairs)
-void ConfigAssist::add(String key, String val){
-  static int readNo = 0;      
-  confPairs c = {key, val, "", "", readNo , TEXT_BOX };
-  add(c);
-  readNo ++;
+void ConfigAssist::add(String key, String val, bool force){
+  static int readNo = 0;
+  static int forcedNo = -1;
+  confPairs c;
+  if(force){ // Forced variables will not be editable
+    c = {key, val, "", "", forcedNo , TEXT_BOX };
+    forcedNo --;
+    add(c);
+  }else{
+    c = {key, val, "", "", readNo , TEXT_BOX };
+    readNo ++;
+    add(c);
+  }
 }
 
 // Add unique name vectors pairs
@@ -209,9 +218,9 @@ void ConfigAssist::add(confPairs &c){
   if(keyPos>=0){
     LOG_E("Add Key: %s already exists\n", c.name.c_str());
     return;
-  } 
-  LOG_V("Add key [%i]: %s=%s\n", c.readNo, c.name.c_str(), c.value.c_str()); 
-  _configs.push_back({c}) ;
+  }   
+  _configs.push_back({c});
+  LOG_V("Add key no: %i, key: %s, val: %s\n", c.readNo, c.name.c_str(), c.value.c_str()); 
 }
 
 // Add seperator by key
@@ -271,24 +280,55 @@ String ConfigAssist::getJsonConfig(){
 // Display config items
 void ConfigAssist::dump(){
   confPairs c;
+  LOG_I("ConfigAssist dump editable keys: \n");
   while (getNextKeyVal(c)){
-      LOG_I("[%i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+      if(c.readNo >= 0)
+        LOG_I("[%i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
   }
+
+  LOG_I("ConfigAssist dump read only keys: \n");
+  while (getNextKeyVal(c)){
+      if(c.readNo < 0)
+        LOG_I("[%i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+  }
+
+  LOG_I("ConfigAssist dump sperators: \n");  
+  int i = 0;
+  while( i < _seperators.size() ){
+      LOG_I("[%02i]: %s = %s\n", i, _seperators[i].name.c_str(), _seperators[i].value.c_str() );      
+      i++;
+  } 
 }
 
 // Display config items
 void ConfigAssist::dump(WEB_SERVER &server){
   confPairs c;
   char outBuff[256];
-  server.sendContent(String("ConfigAssist dump configuration :\n"));
+  server.sendContent(String("ConfigAssist dump editable keys: \n"));
   while (getNextKeyVal(c)){
-      int len =  sprintf(outBuff, "[%i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
-      server.sendContent(outBuff, len);
+      if(c.readNo >= 0){
+        int len =  sprintf(outBuff, "[%02i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+        server.sendContent(outBuff, len);
+      }
   }
+  server.sendContent(String("\nConfigAssist dump read only keys: \n"));
+  while (getNextKeyVal(c)){
+      if(c.readNo < 0){
+        int len =  sprintf(outBuff, "[%03i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+        server.sendContent(outBuff, len);
+      }
+  }
+  server.sendContent(String("\nConfigAssist dump sperators: \n"));  
+  int i = 0;
+  while( i < _seperators.size() ){
+      int len =  sprintf(outBuff, "[%02i]: %s = %s\n", i, _seperators[i].name.c_str(), _seperators[i].value.c_str() );
+      server.sendContent(outBuff, len);
+      i++;
+  }  
 }
 
-// Load json description file. On update=true update only additional pair info    
-int ConfigAssist::loadJsonDict(const char *jStr, bool update) { 
+// Load json description file. On updateInfo = true update only additional pair info    
+int ConfigAssist::loadJsonDict(const char *jStr, bool updateInfo) { 
   if(jStr==NULL) return -1; 
   DeserializationError error;
   const int capacity = JSON_ARRAY_SIZE(CA_MAX_PARAMS)+ CA_MAX_PARAMS*JSON_OBJECT_SIZE(8);
@@ -300,6 +340,7 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool update) {
     _jsonLoaded = false;   
     return -1;    
   }
+  LOG_V("Load json dict\n");
   //Parse json description
   JsonArray array = doc.as<JsonArray>();
   int i=0;
@@ -364,21 +405,20 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool update) {
           loadPref(c.name, c.value);
         }
 #endif         
-        if(update){
+        if(updateInfo){
           int keyPos = getKeyPos(c.name);
           //Add a Json key if not exists in ini file
           if (keyPos < 0) {
-            LOG_V("Key: %s not found in ini file.\n", c.name.c_str());
-            put(c.name, c.value, true);
+            LOG_V("Json key: %s not found in ini file.\n", c.name.c_str());
+            add(c.name, c.value);
             keyPos = getKeyPos(c.name);
-          }
-          if (keyPos >= 0) {
-            //Update all other fields but not value,key        
+          }           
+          if (keyPos >= 0) { //Update all other fields but not value,key        
             _configs[keyPos].readNo = i;
             _configs[keyPos].label = c.label;
             _configs[keyPos].type = c.type;
             _configs[keyPos].attribs = c.attribs;
-            LOG_D("Json upd key[%i]=%s, type:%i, read: %i\n", keyPos, c.name.c_str(), c.type, i);
+            LOG_D("Json upd pos: %i, key: %s, type:%i, read: %i\n", keyPos, c.name.c_str(), c.type, i);
           }else{
             LOG_E("Undefined json Key: %s\n", c.name.c_str());
           }
@@ -394,14 +434,14 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool update) {
       String val =  obj["seperator"];
       addSeperator(sepNo, val);          
     }else{
-      LOG_E("Undefined keys name/default on param : %i.", i);
+      LOG_E("Undefined key name/default on param : %i.", i);
     }
   }
   //sort vector for binarry search
   sort();
   sortSeperators();
   _jsonLoaded = true;
-  LOG_V("Loaded json dict\n");
+  LOG_D("Loaded json dict, keys: %i\n", i);
   return i;
 }
      
@@ -633,16 +673,16 @@ void ConfigAssist::sendHtmlOtaUploadPage(){
 #endif //CA_USE_OTAUPLOAD
 
 #ifdef CA_USE_FIMRMCHECK
-// External variable with current version number
-extern char FIRMWARE_VERSION[];
 // Send html OTA upload page to client
 void ConfigAssist::sendHtmlFirmwareCheckPage(){
   String out(CONFIGASSIST_HTML_START);
   out.replace("{title}", "Check firmware");  
-  out += CONFIGASSIST_HTML_FIRMW_CHECK;
-  out.replace("{FIRMWARE_VERSION}", FIRMWARE_VERSION);
-  out.replace("{FIRMWARE_URL}", get("firmware_url"));
   _server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  _server->sendContent(out);
+  out = "";
+  out += CONFIGASSIST_HTML_FIRMW_CHECK;
+  out.replace("{FIRMWARE_VERSION}", get(CA_FIRMWVER_KEY));
+  out.replace("{FIRMWARE_URL}", get(CA_FIRMWURL_KEY));  
   _server->sendContent(out);
 }
 #endif //CA_USE_FIMRMCHECK
@@ -902,7 +942,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     
 // Send edit html to client
 void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
-  //Load dictionary if no pressent
+  //Load dictionary if no pressent and update info only
   if(!_jsonLoaded) loadJsonDict(_jStr, true);
   LOG_D("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniLoaded, _jsonLoaded, _dirty);      
   //Send config form data
@@ -943,12 +983,13 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   sort();
   out = String(CONFIGASSIST_HTML_END);
   
-  #ifdef CA_USE_OTAUPLOAD   
+#ifdef CA_USE_OTAUPLOAD   
   out.replace("<!--extraButtons-->", String(HTML_UPGRADE_BUTTON) +"\n<!--extraButtons-->");
-  #endif
-  #ifdef CA_USE_FIMRMCHECK
-  out.replace("<!--extraButtons-->", String(HTML_FIRMWCHECK_BUTTON) +"\n<!--extraButtons-->");
-  #endif
+#endif
+#ifdef CA_USE_FIMRMCHECK
+  if(get(CA_FIRMWURL_KEY) != "")
+    out.replace("<!--extraButtons-->", String(HTML_FIRMWCHECK_BUTTON) +"\n<!--extraButtons-->");
+#endif
   out.replace("{appVer}", CA_CLASS_VERSION);
   server->sendContent(out);
 }
@@ -1268,8 +1309,8 @@ int ConfigAssist::getKeyPos(String key) {
   );
   int keyPos = std::distance(_configs.begin(), lower); 
   if (key == _configs[keyPos].name) return keyPos;
-  else LOG_V("Key %s not found.\n", key.c_str()); 
-  return -1; // not found
+  else LOG_V("Get pos, key %s not found.\n", key.c_str()); 
+  return -1; // Not found
 }
 
 // Get seperation location of given key
@@ -1277,7 +1318,6 @@ int ConfigAssist::getSepKeyPos(String key) {
   if (_seperators.empty()) return -1;
   auto lower = std::lower_bound(_seperators.begin(), _seperators.end(), key, [](
       const confSeperators &a, const String &b) { 
-      //Serial.printf("Comp conf sep: %s %s \n", a.name.c_str(), b.c_str());    
       return a.name < b;}
   );
   int keyPos = std::distance(_seperators.begin(), lower); 
@@ -1322,7 +1362,7 @@ void ConfigAssist::loadVectItem(String keyValPair) {
 #endif
 
   //No label added for memory issues
-  add(key, val);
+  add(key, val, true);
   if (_configs.size() > CA_MAX_PARAMS) 
     LOG_W("Config file entries: %u exceed max: %u\n", _configs.size(), CA_MAX_PARAMS);
 }
