@@ -205,17 +205,16 @@ void setup(void) {
     
   LOG_I("Starting..\n");
   debugMemory("setup");
-
-  // Uncomment to remove old ini file and re-built it fron dictionary
-  //conf.deleteConfig();
+ 
+  //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
 
   // Register handlers for web server    
-  server.on("/", handleRoot);  
-  server.on("/d", []() { // Append dump handler
-    //server.send(200, "text/plain", "ConfigAssist dump");
-    conf.dump(server);
+  server.on("/", handleRoot);         // Add root handler
+  server.on("/d", []() {              // Append dump handler
+    conf.dump(&server);
   });
-  server.onNotFound(handleNotFound);
+  server.onNotFound(handleNotFound);  // Append not found handler
+  
   
   // Failed to load config or ssid empty
   if(conf["st_ssid"]=="" ){ 
