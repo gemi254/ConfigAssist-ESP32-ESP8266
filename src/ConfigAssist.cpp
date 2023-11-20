@@ -181,7 +181,6 @@ bool ConfigAssist::put(String key, String val, bool force) {
     return true;
   }else if(force) {
       add(key, val, force);
-      sort();
       _dirty = true; 
       return true;
   }else{
@@ -220,6 +219,8 @@ void ConfigAssist::add(confPairs &c){
     return;
   }   
   _configs.push_back({c});
+  _keysNdx.push_back( {c.name, _configs.size() - 1} );
+  sortKeysNdx();
   LOG_V("Add key no: %i, key: %s, val: %s\n", c.readNo, c.name.c_str(), c.value.c_str()); 
 }
 
@@ -229,27 +230,18 @@ void ConfigAssist::addSeperator(String key, String val){
   _seperators.push_back({key, val}) ;      
 }
 
-// Sort vectors by key (name in confPairs)
-void ConfigAssist::sort(){
-  std::sort(_configs.begin(), _configs.end(), [] (
-    const confPairs &a, const confPairs &b) {
-    return a.name < b.name;}
+// Sort vectors by key (name in logKeysNdx)
+void ConfigAssist::sortKeysNdx(){
+  std::sort(_keysNdx.begin(), _keysNdx.end(), [] (
+    const keysNdx &a, const keysNdx &b) {
+    return a.key < b.key;}
   );
 }
-
 // Sort seperator vectors by key (name in confSeperators)
 void ConfigAssist::sortSeperators(){
   std::sort(_seperators.begin(), _seperators.end(), [] (
     const confSeperators &a, const confSeperators &b) {
     return a.name < b.name;}
-  );
-}
-
-// Sort vectors by readNo in confPairs
-void ConfigAssist::sortReadOrder(){
-  std::sort(_configs.begin(), _configs.end(), [] (
-    const confPairs &a, const confPairs &b) {
-    return a.readNo < b.readNo;}
   );
 }
 
@@ -278,53 +270,57 @@ String ConfigAssist::getJsonConfig(){
 }
 
 // Display config items
-void ConfigAssist::dump(){
-  confPairs c;
-  LOG_I("ConfigAssist dump editable keys: \n");
-  while (getNextKeyVal(c)){
-      if(c.readNo >= 0)
-        LOG_I("[%i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
-  }
-
-  LOG_I("ConfigAssist dump read only keys: \n");
-  while (getNextKeyVal(c)){
-      if(c.readNo < 0)
-        LOG_I("[%i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
-  }
-
-  LOG_I("ConfigAssist dump sperators: \n");  
-  int i = 0;
-  while( i < _seperators.size() ){
-      LOG_I("[%02i]: %s = %s\n", i, _seperators[i].name.c_str(), _seperators[i].value.c_str() );      
-      i++;
-  } 
-}
-
-// Display config items
-void ConfigAssist::dump(WEB_SERVER &server){
+void ConfigAssist::dump(WEB_SERVER *server){
   confPairs c;
   char outBuff[256];
-  server.sendContent(String("ConfigAssist dump editable keys: \n"));
+  int len = 0;
+  strcpy(outBuff, "ConfigAssist dump editable keys: \n");
+  if(server){
+    server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server->sendContent(String(outBuff));    
+  }else{
+    LOG_I("%s", outBuff);
+  }
   while (getNextKeyVal(c)){
       if(c.readNo >= 0){
-        int len =  sprintf(outBuff, "[%02i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
-        server.sendContent(outBuff, len);
+        len =  sprintf(outBuff, "No: %02i. key: %s, val: %s, lbl: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+        if(server) server->sendContent(outBuff, len);
+        else LOG_I("%s", outBuff);
       }
   }
-  server.sendContent(String("\nConfigAssist dump read only keys: \n"));
+
+  strcpy(outBuff, "ConfigAssist dump read only keys: \n");
+  if(server) server->sendContent("\n" + String(outBuff));    
+  else LOG_I("%s", outBuff);  
   while (getNextKeyVal(c)){
       if(c.readNo < 0){
-        int len =  sprintf(outBuff, "[%03i]: %s = %s, l: %s, t: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
-        server.sendContent(outBuff, len);
+        len =  sprintf(outBuff, "No: %03i, key: %s, val: %s, lbl: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+        if(server) server->sendContent(outBuff, len);
+        else LOG_I("%s", outBuff);
       }
   }
-  server.sendContent(String("\nConfigAssist dump sperators: \n"));  
-  int i = 0;
-  while( i < _seperators.size() ){
-      int len =  sprintf(outBuff, "[%02i]: %s = %s\n", i, _seperators[i].name.c_str(), _seperators[i].value.c_str() );
-      server.sendContent(outBuff, len);
+
+  strcpy(outBuff, "ConfigAssist dump indexes: \n");
+  if(server) server->sendContent("\n" + String(outBuff));    
+  else LOG_I("%s", outBuff);  
+  size_t i = 0;  
+  while( i < _keysNdx.size() ){
+      int len =  sprintf(outBuff, "No: %02i, ndx: %i, key: %s\n", i, _keysNdx[i].ndx, _keysNdx[i].key.c_str());      
+      if(server) server->sendContent(outBuff, len);
+      else LOG_I("%s", outBuff);
       i++;
-  }  
+  }   
+  
+  strcpy(outBuff, "ConfigAssist dump sperators: \n");
+  if(server) server->sendContent("\n" + String(outBuff));    
+  else LOG_I("%s", outBuff);  
+  i = 0;
+  while( i < _seperators.size() ){
+      int len =  sprintf(outBuff, "No: %02i, key: %s, val: %s\n", i, _seperators[i].name.c_str(), _seperators[i].value.c_str() );
+      if(server) server->sendContent(outBuff, len);
+      else LOG_I("%s", outBuff);
+      i++;
+  }
 }
 
 // Load json description file. On updateInfo = true update only additional pair info    
@@ -437,8 +433,7 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool updateInfo) {
       LOG_E("Undefined key name/default on param : %i.", i);
     }
   }
-  //sort vector for binarry search
-  sort();
+  //Sort seperators vectors for binarry search
   sortSeperators();
   _jsonLoaded = true;
   LOG_D("Loaded json dict, keys: %i\n", i);
@@ -471,7 +466,6 @@ bool ConfigAssist::loadConfigFile(String filename) {
       LOG_D("Load: %s\n" , configLineStr.c_str());          
       loadVectItem(configLineStr);
     } 
-    sort();
     LOG_I("Loaded config: %s, keyCnt: %i\n",filename.c_str(), _configs.size());
     _iniLoaded = true;
     file.close();
@@ -560,8 +554,8 @@ void ConfigAssist::checkTime(uint32_t timeUtc, int timeOffs){
     tvRemote.tv_usec = 0;
     tvRemote.tv_sec = timeUtc;
     settimeofday(&tvRemote, NULL);
-    String tmz;
-    if(getKeyPos(CA_TIMEZONE_KEY) >= 0) tmz = get(CA_TIMEZONE_KEY);
+    String tmz="";
+    if(exists(CA_TIMEZONE_KEY)) tmz = get(CA_TIMEZONE_KEY);
     if(tmz==""){
       String tmz = "GMT";
       if(timeOffs >= 0) tmz += "+" + String(timeOffs);
@@ -976,11 +970,11 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   out.replace("{host_name}", getHostName());
   server->sendContent(out);
   //Render html keys
-  sortReadOrder();      
+  //sortReadOrder();      
   while(getEditHtmlChunk(out)){
     server->sendContent(out);        
   }
-  sort();
+  //sort();
   out = String(CONFIGASSIST_HTML_END);
   
 #ifdef CA_USE_OTAUPLOAD   
@@ -996,13 +990,11 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
     
 //Get edit page html table (no form)
 String ConfigAssist::getEditHtml(){
-  sortReadOrder();      
   String ret = "";
   String out = "";
   while(getEditHtmlChunk(out)){
     ret += out;
   }
-  sort();
   return ret;
 }
 // Get page css
@@ -1302,13 +1294,13 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
 // Get location of given key to retrieve other elements
 int ConfigAssist::getKeyPos(String key) {
   if(!_init) init();
-  if (_configs.empty()) return -1;
-  auto lower = std::lower_bound(_configs.begin(), _configs.end(), key, [](
-      const confPairs &a, const String &b) { 
-      return a.name < b;}
+  if (_keysNdx.empty()) return -1;
+  auto lower = std::lower_bound(_keysNdx.begin(), _keysNdx.end(), key, [](
+      const keysNdx &a, const String &b) { 
+      return a.key < b;}
   );
-  int keyPos = std::distance(_configs.begin(), lower); 
-  if (key == _configs[keyPos].name) return keyPos;
+  int keyPos = std::distance(_keysNdx.begin(), lower); 
+  if (key == _keysNdx[keyPos].key) return _keysNdx[keyPos].ndx;
   else LOG_V("Get pos, key %s not found.\n", key.c_str()); 
   return -1; // Not found
 }
