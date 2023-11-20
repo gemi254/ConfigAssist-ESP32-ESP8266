@@ -287,7 +287,7 @@ void setup(void) {
   // Setup web server 
   server.on("/", handleRoot);  
   server.on("/d", []() {    // Append dump handler
-    conf.dump(server);
+    conf.dump(&server);
   });
   server.onNotFound(handleNotFound);
 
