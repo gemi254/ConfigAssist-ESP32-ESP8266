@@ -1,6 +1,6 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
-#define CA_CLASS_VERSION "2.7.2"         // Class version
+#define CA_CLASS_VERSION "2.7.2a"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -53,6 +53,11 @@ struct confSeperators {
     String value;
 };
 
+// Positions of keys inside array
+struct keysNdx {
+    String key;
+    size_t ndx;
+};
 // ConfigAssist class
 class ConfigAssist{ 
   public:
@@ -94,20 +99,16 @@ class ConfigAssist{
     void add(confPairs &c);
     // Add seperator by key
     void addSeperator(String key, String val);
-    // Sort vectors by key (name in confPairs)
-    void sort();
+    // Sort keys asc by name
+    void sortKeysNdx();
     // Sort seperator vectors by key (name in confSeperators)
     void sortSeperators();
-    // Sort vectors by readNo in confPairs
-    void sortReadOrder();    
     // Return next key and val from configs on each call in key order
     bool getNextKeyVal(confPairs &c);
     // Get the configuration in json format
     String getJsonConfig();
-    // Display config items
-    void dump();   
-    // Display config items in web server
-    void dump(WEB_SERVER &server);
+    // Display config items in web server, or on log on NULL
+    void dump(WEB_SERVER *server = NULL);
     // Load json description file. On updateInfo = true update only additional pair info    
     int loadJsonDict(const char *jStr, bool updateInfo = false);
     // Load config pairs from an ini file
@@ -197,6 +198,7 @@ class ConfigAssist{
   private: 
     enum input_types { TEXT_BOX=1, TEXT_AREA=2, CHECK_BOX=3, OPTION_BOX=4, RANGE_BOX=5, COMBO_BOX=6};
     std::vector<confPairs> _configs;
+    std::vector<keysNdx> _keysNdx;
     std::vector<confSeperators> _seperators;
     bool _init;
     bool _iniLoaded;
