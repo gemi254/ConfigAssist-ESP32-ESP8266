@@ -87,21 +87,18 @@ void setup(void) {
   #endif
     
   LOG_I("Starting.. ver: %s\n", FIRMWARE_VERSION);
-
-  // Uncomment to remove old ini file and re-built it fron dictionary
-  //conf.deleteConfig();
-  conf.put("firmware_ver", FIRMWARE_VERSION, true);
-  conf.put("test1", 1, true);
-  conf.put("test2", 2, true);
+ 
+  //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
   
+  // Store readonly firmware version
+  conf.put("firmware_ver", FIRMWARE_VERSION, true);
+ 
   // Register handlers for web server    
-  server.on("/", handleRoot);
-  // Append dump handler
-  server.on("/d", []() {
-    conf.dump(server);
+  server.on("/", handleRoot);  
+  server.on("/d", []() {              // Append dump handler
+    conf.dump(&server);
   });
-
-  server.onNotFound(handleNotFound);
+  server.onNotFound(handleNotFound);  // Append not found handler
 
   // Failed to load config or ssid empty
   if(conf["st_ssid"]=="" ){ 
