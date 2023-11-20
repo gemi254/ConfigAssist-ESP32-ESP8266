@@ -23,7 +23,7 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
   },{
       "name": "firmware_url",
      "label": "Firmware upgrade url with version and info",
-   "default": "https://raw.githubusercontent.com/gemi254/ConfigAssist-ESP32-ESP8266/main/examples/ConfigAssist-FirmwareCheck/firmware/8266/lastest.json"
+   "default": "https://raw.githubusercontent.com/gemi254/ConfigAssist-ESP32-ESP8266/main/examples/ConfigAssist-FirmwareCheck/firmware/ESP8266/lastest.json"
   },{
       "name": "time_zone",
      "label": "Needs to be a valid time zone string",
