@@ -1,6 +1,24 @@
 #if !defined(_CONFIG_ASSIST_H)
 #define  _CONFIG_ASSIST_H
-#define CA_CLASS_VERSION "2.7.2a"         // Class version
+
+#include <vector>
+#include <regex>
+#include <ArduinoJson.h>
+#if defined(ESP32)
+  #include <WebServer.h>
+  #include "SPIFFS.h"
+  #include <ESPmDNS.h>
+#else
+  #include <ESP8266WebServer.h>
+  #include <LittleFS.h>
+  #include <ESP8266mDNS.h>  
+#endif  
+
+#ifndef LOGGER_LOG_LEVEL
+  #define LOGGER_LOG_LEVEL 3             //Set log level for this module
+#endif 
+
+#define CA_CLASS_VERSION "2.7.3"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
