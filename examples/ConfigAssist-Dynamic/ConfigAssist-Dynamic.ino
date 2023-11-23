@@ -1,15 +1,8 @@
-#if defined(ESP32)
-  #include "SPIFFS.h"
-  #include <WebServer.h>
-#else
-  #include <LittleFS.h>
-  #include <ESP8266WebServer.h>  
-#endif
-#define LOGGER_LOG_LEVEL 5 // Errors & Warnings & Info & Debug & Verbose
-#include <configAssist.h>  // Config assist class
+//#define LOGGER_LOG_LEVEL 5 // Errors & Warnings & Info & Debug & Verbose
+#include <configAssist.h>  // Config assist class definition
 
 // Create a config class with an ini filename for storage 
-ConfigAssist config("/info1.ini", NULL);
+ConfigAssist config("/info1.ini");
 
 void setup() {
   // put your setup code here, to run once:
