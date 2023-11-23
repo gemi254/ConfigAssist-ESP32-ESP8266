@@ -1,19 +1,3 @@
-#include <Arduino.h>
-#include <LittleFS.h>
-#if defined(ESP32)
-  #include <WebServer.h>
-  #include "SPIFFS.h"
-  #include <ESPmDNS.h>
-  #include <SD_MMC.h>
-#else
-  #include <ESP8266WiFi.h>
-  #include <WiFiClient.h>
-  #include <ESP8266WebServer.h>
-  #include <ESP8266mDNS.h>
-  #include "TZ.h"
-#endif
-
-#define LOGGER_LOG_LEVEL 5
 #include <ConfigAssist.h>  // Config assist class
 
 #if defined(ESP32)
@@ -113,8 +97,7 @@ void setup(void) {
   WiFi.setAutoReconnect(false);
   WiFi.setAutoConnect(false);
   WiFi.mode(WIFI_STA);
-  LOG_D("Wifi Station starting, connecting to: %s\n", conf["st_ssid"].c_str());
-  LOG_N("Wifi Station starting, connecting to ssid: %s, pass: %s\n", conf["st_ssid"].c_str(), conf["st_pass"].c_str());
+  LOG_I("Wifi Station starting, connecting to: %s\n", conf["st_ssid"].c_str());  
   WiFi.begin(conf["st_ssid"].c_str(), conf["st_pass"].c_str());
   while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000)  {
     Serial.print(".");
@@ -134,16 +117,17 @@ void setup(void) {
   }
   
   if (MDNS.begin(conf["host_name"].c_str())) {
-    LOG_V("MDNS responder started\n");
+    LOG_I("MDNS responder started\n");
   }
 
   // Add handlers to web server 
   conf.setup(server);
   // Start web server
   server.begin();
-  LOG_V("HTTP server started\n");
+  LOG_I("HTTP server started\n");
   conf.dump();
 }
+
 // App main loop 
 void loop(void) {
   server.handleClient();
