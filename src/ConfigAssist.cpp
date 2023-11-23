@@ -1,24 +1,5 @@
-#include <Arduino.h>
-#include <vector>
-#include <regex>
-#include <ArduinoJson.h>
-#if defined(ESP32)
-  #include <WebServer.h>
-  #include "SPIFFS.h"
-  #include <ESPmDNS.h>
-  #include <SD_MMC.h>
-#else
-  #include <LittleFS.h>
-  #include <ESP8266WiFi.h>
-  #include <WiFiClient.h>
-  #include <ESP8266WebServer.h>
-  #include <ESP8266mDNS.h>
-  #include "TZ.h"
-#endif  
-
-#define LOGGER_LOG_LEVEL 3    //Set log level for this module
-#include "configAssist.h"
-#include "configAssistPMem.h" //Memory static valiables (html pages)
+#include "configAssist.h"     // Config assist class
+#include "configAssistPMem.h" // Memory static valiables (html pages)
 
 #if defined(ESP32)
   #ifdef CA_USE_OTAUPLOAD
@@ -33,7 +14,6 @@ String ConfigAssist::_jWifi="[{}]";
 #ifdef CA_USE_PERSIST_CON
  Preferences ConfigAssist::_prefs;
 #endif
-
 
 // Standard defaults constructor
 ConfigAssist::ConfigAssist() {
@@ -217,7 +197,7 @@ void ConfigAssist::add(confPairs &c){
   if(keyPos>=0){
     LOG_E("Add Key: %s already exists\n", c.name.c_str());
     return;
-  }   
+  }
   _configs.push_back({c});
   _keysNdx.push_back( {c.name, _configs.size() - 1} );
   sortKeysNdx();
@@ -274,7 +254,7 @@ void ConfigAssist::dump(WEB_SERVER *server){
   confPairs c;
   char outBuff[256];
   int len = 0;
-  strcpy(outBuff, "ConfigAssist dump editable keys: \n");
+  strcpy(outBuff, "Dump editable keys: \n");
   if(server){
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);
     server->sendContent(String(outBuff));    
@@ -289,7 +269,7 @@ void ConfigAssist::dump(WEB_SERVER *server){
       }
   }
 
-  strcpy(outBuff, "ConfigAssist dump read only keys: \n");
+  strcpy(outBuff, "Dump read only keys: \n");
   if(server) server->sendContent("\n" + String(outBuff));    
   else LOG_I("%s", outBuff);  
   while (getNextKeyVal(c)){
@@ -300,7 +280,7 @@ void ConfigAssist::dump(WEB_SERVER *server){
       }
   }
 
-  strcpy(outBuff, "ConfigAssist dump indexes: \n");
+  strcpy(outBuff, "Dump indexes: \n");
   if(server) server->sendContent("\n" + String(outBuff));    
   else LOG_I("%s", outBuff);  
   size_t i = 0;  
@@ -311,7 +291,7 @@ void ConfigAssist::dump(WEB_SERVER *server){
       i++;
   }   
   
-  strcpy(outBuff, "ConfigAssist dump sperators: \n");
+  strcpy(outBuff, "Dump sperators: \n");
   if(server) server->sendContent("\n" + String(outBuff));    
   else LOG_I("%s", outBuff);  
   i = 0;
@@ -616,7 +596,7 @@ String ConfigAssist::testWiFiSTConnection(String no){
 
 // Download a file in browser window
 void ConfigAssist::handleDownloadFile(String fileName){
-  File f = STORAGE.open(fileName.c_str(),"r");
+  File f = STORAGE.open(fileName.c_str(), "r");
   if (!f) {
     f.close();
     const char* resp_str = "File does not exist or cannot be opened";
@@ -1300,8 +1280,12 @@ int ConfigAssist::getKeyPos(String key) {
       return a.key < b;}
   );
   int keyPos = std::distance(_keysNdx.begin(), lower); 
-  if (key == _keysNdx[keyPos].key) return _keysNdx[keyPos].ndx;
-  else LOG_V("Get pos, key %s not found.\n", key.c_str()); 
+  //LOG_I("getKeyPos  ndx: %i\n", _keysNdx[keyPos].ndx);
+  //if (key == _keysNdx[keyPos].key) return _keysNdx[keyPos].ndx;
+  if (_keysNdx[keyPos].ndx < _configs.size() && key == _configs[ _keysNdx[keyPos].ndx ].name) 
+    return _keysNdx[keyPos].ndx;
+  else 
+    LOG_V("Get pos, key %s not found.\n", key.c_str()); 
   return -1; // Not found
 }
 
