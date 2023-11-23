@@ -1,20 +1,13 @@
-#if defined(ESP32)
-  #include "SPIFFS.h"
-  #include <WebServer.h>
-#else
-  #include <LittleFS.h>
-  #include <ESP8266WebServer.h>  
-#endif
-
-// Set default logging mode using external function
-#define LOGGER_LOG_MODE  3          // External
+#define LOGGER_LOG_MODE  3                  // Set default logging mode using external function
 #define LOGGER_LOG_FILENAME "/logE"
-#define LOGGER_LOG_LEVEL 5          // Errors & Warnings & Info & Debug & Verbose
+#define LOGGER_LOG_LEVEL 5                  // Errors & Warnings & Info & Debug & Verbose
+void _log_printf(const char *format, ...);  // Provide custom print log function
+
+#include <ConfigAssist.h>                   // Config assist class
+
 bool logToFile = true;
 static File logFile;
-void _log_printf(const char *format, ...);
 
-#include <ConfigAssist.h>           // Config assist class
 #define MAX_LOG_FMT 128
 static char fmtBuf[MAX_LOG_FMT];
 static char outBuf[512];
@@ -39,10 +32,11 @@ void _log_printf(const char *format, ...){
     logFile.flush();
   }
 }
+
 // Print the log generated to serial port
 void serialPrintLog(){
   Serial.printf("Display log: %s\n", LOGGER_LOG_FILENAME);  
-  File f = STORAGE.open(LOGGER_LOG_FILENAME,"r");
+  File f = STORAGE.open(LOGGER_LOG_FILENAME, "r");
   // Read from the file until there's nothing else in it:
   while (f.available()) 
   {
@@ -88,7 +82,7 @@ void setup() {
     info.put("bootCnt", 0, true);    
   }else{ // Ini is valid, increase counter and display the value
     info.put("bootCnt", info["bootCnt"].toInt() + 1, true);
-    LOG_I("Info file: bootCnt:  %i\n", info["bootCnt"].toInt());
+    LOG_I("Info file: bootCnt:  %lu\n", info["bootCnt"].toInt());
   }
   // ave keys & values into ini file
   info.saveConfigFile();
