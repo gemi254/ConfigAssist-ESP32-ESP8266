@@ -1,12 +1,3 @@
-#if defined(ESP32)
-  #include "SPIFFS.h"
-  #include <WebServer.h>
-#else
-  #include <LittleFS.h>
-  #include <ESP8266WebServer.h>  
-#endif
-
-//Set logger defaults
 #define LOGGER_LOG_MODE  2          // Log to file
 #define LOGGER_LOG_LEVEL 5          // Errors & Warnings & Info & Debug & Verbose
 #define LOGGER_LOG_FILENAME "/log1"
@@ -15,8 +6,8 @@
 
 // Print the log generated to serial port
 void serialPrintLog(){
-  Serial.printf("Display log: %s\n", LOGGER_LOG_FILENAME);  
-  File f = STORAGE.open(LOGGER_LOG_FILENAME); 
+  Serial.printf("Display log: %s\n", LOGGER_LOG_FILENAME);
+  File f = STORAGE.open(LOGGER_LOG_FILENAME, "r"); 
   // read from the file until there's nothing else in it:
   while (f.available()) 
   {
@@ -62,7 +53,7 @@ void setup() {
     info.put("bootCnt", 0, true);    
   }else{ //Ini is valid, increase counter and display the value
     info.put("bootCnt", info["bootCnt"].toInt() + 1, true);
-    LOG_I("Info file: bootCnt:  %i\n", info["bootCnt"].toInt());
+    LOG_I("Info file: bootCnt:  %lu\n", info["bootCnt"].toInt());
   }
   //Save keys & values into ini file
   info.saveConfigFile();
