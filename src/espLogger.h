@@ -34,16 +34,20 @@
 #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
     #ifndef _log_printf
     #endif 
+#else 
+    #define _DEBUG_PORT Serial    
 #endif
 
 #if LOGGER_LOG_MODE != LOGGER_LOG_MODE_EXTERNAL
 #define _log_printf(...) _DEBUG_PORT.printf(__VA_ARGS__)
 #endif 
 
-#ifdef ESP32
-    #define _LOG_FORMAT(type, format) "[%s %s @ %s:%u] " format "", esp_log_system_timestamp(), #type, pathToFileName(__FILE__), __LINE__
-#else
-    #define _LOG_FORMAT(type, format) "[%s @ %s:%u] " format "", #type, __FILE__, __LINE__
+#ifndef _LOG_FORMAT
+    #ifdef ESP32
+        #define _LOG_FORMAT(type, format) "[%s %s @ %s:%u] " format "", esp_log_system_timestamp(), #type, pathToFileName(__FILE__), __LINE__
+    #else
+        #define _LOG_FORMAT(type, format) "[ %s @ %s:%u] " format "", #type, __FILE__, __LINE__
+    #endif
 #endif
 
 #if LOGGER_LOG_LEVEL >= _LOG_LEVEL_VERBOSE
