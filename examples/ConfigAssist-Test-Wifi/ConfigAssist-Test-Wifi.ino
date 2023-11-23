@@ -1,19 +1,3 @@
-#include <Arduino.h>
-#include <Arduino.h>
-#include <LittleFS.h>
-#if defined(ESP32)
-  #include <WebServer.h>
-  #include "SPIFFS.h"
-  #include <ESPmDNS.h>
-  #include <SD_MMC.h>
-#else
-  #include <ESP8266WiFi.h>
-  #include <WiFiClient.h>
-  #include <ESP8266WebServer.h>
-  #include <ESP8266mDNS.h>
-  #include "TZ.h"
-#endif
-
 #define LOGGER_LOG_LEVEL 5
 #include <ConfigAssist.h>
 
