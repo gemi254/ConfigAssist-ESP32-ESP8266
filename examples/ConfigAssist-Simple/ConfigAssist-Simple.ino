@@ -1,11 +1,3 @@
-#if defined(ESP32)
-  #include "SPIFFS.h"
-  #include <WebServer.h>
-#else
-  #include <LittleFS.h>
-  #include <ESP8266WebServer.h>  
-#endif
-#define LOGGER_LOG_LEVEL 5 // Errors & Warnings & Info & Debug & Verbose
 #include <ConfigAssist.h>  // Config assist class
 
 void setup() {
@@ -22,8 +14,7 @@ void setup() {
   #endif
   LOG_I("Starting..\n");
   
-  // Create a config class with an ini filename for storage 
-  // And json disabled
+  // Create a config class with an ini filename for storage and disabled json 
   ConfigAssist info("/info.ini", NULL);
   
   //info.deleteConfig(); // Uncomment to remove ini file and re-built
