@@ -213,6 +213,24 @@ void ConfigAssist::addSeperator(String key, String val){
   _seperators.push_back({key, val}) ;      
 }
 
+// Rebuild keys indexes wher sorting by readNo
+void ConfigAssist::rebuildKeysNdx(){
+  _keysNdx.clear();  
+  for(size_t i = 0; i < _configs.size(); ++i){
+    _keysNdx.push_back( {_configs[i].name, i} );
+  }
+  sortKeysNdx();
+}
+
+// Sort vectors by readNo in confPairs
+void ConfigAssist::sortReadOrder(){
+  std::sort(_configs.begin(), _configs.end(), [] (
+    const confPairs &a, const confPairs &b) {
+    return a.readNo < b.readNo;}
+  );  
+  rebuildKeysNdx();
+}
+
 // Sort vectors by key (name in logKeysNdx)
 void ConfigAssist::sortKeysNdx(){
   std::sort(_keysNdx.begin(), _keysNdx.end(), [] (
@@ -265,7 +283,8 @@ void ConfigAssist::dump(WEB_SERVER *server){
   }else{
     LOG_I("%s", outBuff);
   }
-  while (getNextKeyVal(c)){
+  
+  while (getNextKeyVal(c)){ //List by array ndx
       if(c.readNo >= 0){
         len =  sprintf(outBuff, "No: %02i. key: %s, val: %s, lbl: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
         if(server) server->sendContent(outBuff, len);
@@ -421,6 +440,8 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool updateInfo) {
   sortSeperators();
   _jsonLoaded = true;
   LOG_D("Loaded json dict, keys: %i\n", i);
+  // Sort by read order if ini file was not sorted
+  sortReadOrder();  
   return i;
 }
      
@@ -1139,6 +1160,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
   LOG_V("getEditHtmlChunk %i, %s\n", c.readNo, c.name.c_str());
   // Values added manually not editable
   if(c.readNo<0) return true;
+
   out = String(CONFIGASSIST_HTML_LINE);
   String elm;
   String no;
@@ -1361,7 +1383,7 @@ void ConfigAssist::loadVectItem(String keyValPair) {
 #ifdef CA_USE_WIFISCAN     
 // Build json on Wifi scan complete     
 void ConfigAssist::scanComplete(int networksFound) {
-  LOG_I("%d network(s) found\n", networksFound);      
+  LOG_V("%d network(s) found\n", networksFound);      
   if( networksFound <= 0 ) return;
   
   _jWifi = "[";
