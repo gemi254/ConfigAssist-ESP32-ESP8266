@@ -76,7 +76,7 @@ void setup() {
   // Create a config class with an ini filename and json disabled
   ConfigAssist info("/info.ini", NULL);
   
-  // info.deleteConfig(); //Uncomment to remove ini file and re-built
+  //info.deleteConfig(); //Uncomment to remove ini file and re-built
     
   if(!info.valid()){ //Add boot counter 
     info.put("bootCnt", 0, true);    
