@@ -1,5 +1,4 @@
-#define LOGGER_LOG_LEVEL 5
-#include <ConfigAssist.h>
+#include <ConfigAssist.h>  // Config assist class
 
 #if defined(ESP32)
   WebServer server(80);
@@ -10,8 +9,8 @@
 #define CONNECT_TIMEOUT 8000
 #define MAX_SSID_ARR_NO 2
 
-#define APP_NAME "ConfigAssistTestWifi"
-#define INI_FILE "/ConfigAssistTestWifi.ini"
+#define APP_NAME "ConfigAssistTestWifi"      // Define application name
+#define INI_FILE "/ConfigAssistTestWifi.ini" // Define SPIFFS storage file
 
 const char* VARIABLES_DEF_JSON PROGMEM = R"~(
 [{
@@ -123,8 +122,7 @@ ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
 
 String hostName;
 unsigned long pingMillis = millis();
-
-
+// Print memory info
 void debugMemory(const char* caller) {
   #if defined(ESP32)
     LOG_D("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
@@ -133,6 +131,7 @@ void debugMemory(const char* caller) {
   #endif
 }
 
+// Web server root handler
 void handleRoot() {
   digitalWrite(conf["led_pin"].toInt(), 0);
 
@@ -152,6 +151,7 @@ void handleRoot() {
   digitalWrite(conf["led_pin"].toInt(), 1);
 }
 
+// Page not found handler
 void handleNotFound() {
   digitalWrite(conf["led_pin"].toInt(), 1);
   String message = "File Not Found\n\n";
@@ -204,6 +204,7 @@ bool setStaticIP(String st_ip){
   return true;  
 }
 
+// Try multiple connections and connect wifi 
 bool connectToNetwork(){
   WiFi.mode(WIFI_AP_STA);
   WiFi.setHostname(conf["host_name"].c_str());
@@ -247,6 +248,7 @@ bool connectToNetwork(){
   else return false;
 }
 
+//Setup function
 void setup(void) {
 
   Serial.begin(115200);
@@ -282,15 +284,16 @@ void setup(void) {
   }
 
   if (MDNS.begin(conf["host_name"].c_str())) {
-    LOG_V("MDNS responder started\n");
+    LOG_I("MDNS responder started\n");
   }
   // Append control assist handlers
   conf.setup(server);
 
   server.begin();
-  LOG_V("HTTP server started\n");
+  LOG_I("HTTP server started\n");
 }
 
+//Loop function
 void loop(void) {
   server.handleClient();
   #if not defined(ESP32)
