@@ -1,4 +1,3 @@
-//#define LOGGER_LOG_LEVEL 5 // Errors & Warnings & Info & Debug & Verbose
 #include <configAssist.h>  // Config assist class definition
 
 // Create a config class with an ini filename for storage 
