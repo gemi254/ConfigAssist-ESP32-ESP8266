@@ -6,7 +6,7 @@
   ESP8266WebServer server(80);
 #endif
 
-#define CONNECT_TIMEOUT 8000
+#define CONNECT_TIMEOUT 15000
 #define MAX_SSID_ARR_NO 2
 
 #define APP_NAME "ConfigAssistTestWifi"      // Define application name
