@@ -8,9 +8,8 @@
   ESP8266WebServer  server(80);
 #endif
 
-// Define application name
-#define APP_NAME "FirmwareCheck"
-#define INI_FILE "/FirmwareCheck.ini"
+#define APP_NAME "FirmwareCheck"      // Define application name
+#define INI_FILE "/FirmwareCheck.ini" // Define SPIFFS storage file
 
 char FIRMWARE_VERSION[] = "1.0.0";    // Firmware version to check
 
@@ -19,8 +18,6 @@ ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
                    
 String hostName;                      // Default Host name
 unsigned long pingMillis = millis();  // Ping 
-
-// *********** Helper funcions ************
 
 // Handler function for Home page
 void handleRoot() {
@@ -56,7 +53,7 @@ void handleNotFound() {
   server.send(404, "text/plain", message);  
 }
 
-// *********** Main application funcions ************
+// Setup function
 void setup(void) {
   
   Serial.begin(115200);
