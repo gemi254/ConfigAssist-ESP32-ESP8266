@@ -34,6 +34,7 @@
 #define CA_USE_WIFISCAN                  // Comment to disable wifi scan
 #define CA_USE_TESTWIFI                  // Comment to disable test wifi st connection
 #define CA_USE_TIMESYNC                  // Comment to disable sync esp with browser if out of sync
+#define CA_USE_NTPSYNC                   // Comment to disable sync esp with ntp after wifi conn 
 #define CA_USE_OTAUPLOAD                 // Comment to disable ota and reduce memory
 #define CA_USE_FIMRMCHECK                // Comment to disable firmware check and upgrade from url 
 //#define CA_USE_PERSIST_CON               // Comment to disable saving wifi credentials to nvs
