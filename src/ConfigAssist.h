@@ -118,12 +118,16 @@ class ConfigAssist{
     void add(confPairs &c);
     // Add seperator by key
     void addSeperator(String key, String val);
+    // Rebuild keys indexes wher sorting by readNo
+    void rebuildKeysNdx();
     // Sort keys asc by name
     void sortKeysNdx();
+    // Sort keys in Json definition read order
+    void sortReadOrder();
     // Sort seperator vectors by key (name in confSeperators)
     void sortSeperators();
     // Return next key and val from configs on each call in key order
-    bool getNextKeyVal(confPairs &c);
+    bool getNextKeyVal(confPairs &c);    
     // Get the configuration in json format
     String getJsonConfig();
     // Display config items in web server, or on log on NULL
