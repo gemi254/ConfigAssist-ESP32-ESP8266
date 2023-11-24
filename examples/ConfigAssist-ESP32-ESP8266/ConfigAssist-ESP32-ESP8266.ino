@@ -6,9 +6,8 @@
   ESP8266WebServer  server(80);
 #endif
 
-// Define application name
-#define APP_NAME "ConfigAssistDemo"
-#define INI_FILE "/ConfigAssistDemo.ini"
+#define APP_NAME "ConfigAssistDemo"       // Define application name
+#define INI_FILE "/ConfigAssistDemo.ini"  // Define SPIFFS storage file
 
 // Default application config dictionary
 // Modify the file with the params for you application
@@ -103,13 +102,13 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
 X2=900, Y2=3.24"}
 ])~"; 
 
-// Config class
-ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
-                   
-String hostName;                      // Default Host name
-unsigned long pingMillis = millis();  // Ping 
 
-// *********** Helper funcions ************
+ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON); // Config assist class
+                   
+String hostName;                                 // Default Host name
+unsigned long pingMillis = millis();             // Ping 
+
+// Print memory info
 void debugMemory(const char* caller) {      
   #if defined(ESP32)
     LOG_I("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
@@ -117,7 +116,8 @@ void debugMemory(const char* caller) {
     LOG_I("%s > Free: heap %u\n", caller, ESP.getFreeHeap());
   #endif   
 }
-// List storage file system
+
+// List the storage file system
 void ListDir(const char * dirname) {
   LOG_I("Listing directory: %s\n", dirname);
   // List details of files on file system
@@ -133,6 +133,7 @@ void ListDir(const char * dirname) {
   }
   Serial.println("");
 }
+
 // Handler function for Home page
 void handleRoot() {
   digitalWrite(conf["led_pin"].toInt(), 0); 
@@ -171,7 +172,7 @@ void handleNotFound() {
   digitalWrite(conf["led_pin"].toInt(), 0);
 }
 
-// *********** Main application funcions ************
+// Setup function
 void setup(void) {
   
   Serial.begin(115200);
@@ -259,7 +260,7 @@ void setup(void) {
   conf.setup(server);
 
   server.begin();
-  LOG_V("HTTP server started\n");
+  LOG_I("HTTP server started\n");
   
   // On the fly generate an ini info file on SPIFFS
   {
