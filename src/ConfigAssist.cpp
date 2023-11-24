@@ -35,6 +35,7 @@ ConfigAssist::ConfigAssist(String ini_file) {
 
   _jStr = CA_DEFAULT_DICT_JSON;
 }
+
 // Standard constructor with ini file and json description
 ConfigAssist::ConfigAssist(String ini_file, const char * jStr){
   _init = false;
@@ -54,6 +55,7 @@ ConfigAssist::~ConfigAssist() {}
 void ConfigAssist::setIniFile(String ini_file){
   if (ini_file != "") _confFile = ini_file;
 }
+
 // Set json at run time.. Must called before _init || _jsonLoaded
 void ConfigAssist::setJsonDict(const char * jStr, bool load){
   if(_jsonLoaded){
@@ -79,6 +81,7 @@ void ConfigAssist::init() {
   
   LOG_V("ConfigAssist::init done ini:%i json:%i\n",_iniLoaded, _jsonLoaded);
 }
+
 // Is configuration valid
 bool ConfigAssist::valid(){ 
   if(!_init) init();
@@ -217,6 +220,7 @@ void ConfigAssist::sortKeysNdx(){
     return a.key < b.key;}
   );
 }
+
 // Sort seperator vectors by key (name in confSeperators)
 void ConfigAssist::sortSeperators(){
   std::sort(_seperators.begin(), _seperators.end(), [] (
@@ -510,6 +514,7 @@ bool ConfigAssist::saveConfigFile(String filename) {
   if(file) file.close();
   return true;
 }
+
 // Get system local time
 String ConfigAssist::getLocalTime() {      
   struct timeval tv;
@@ -547,12 +552,14 @@ void ConfigAssist::checkTime(uint32_t timeUtc, int timeOffs){
     
   }      
 }
+
 #ifdef CA_USE_WIFISCAN
 // Respond a HTTP request for /scan results
 void ConfigAssist::handleWifiScanRequest(){
   checkScanRes();   _server->sendContent(_jWifi); 
 }
 #endif
+
 // Test Station connections
 String ConfigAssist::testWiFiSTConnection(String no){
   String msg = "";
@@ -622,10 +629,12 @@ void ConfigAssist::handleDownloadFile(String fileName){
   } 
   f.close();
 }
+
 // Respond a not found HTTP request
 void ConfigAssist::handleNotFound(){
   _server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/cfg\">");
 }
+
 // Send html upload page to client
 void ConfigAssist::sendHtmlUploadPage(){
   String out(CONFIGASSIST_HTML_START);
@@ -636,6 +645,7 @@ void ConfigAssist::sendHtmlUploadPage(){
   _server->sendContent(out);
 }
 #ifdef CA_USE_OTAUPLOAD
+
 // Send html OTA upload page to client
 void ConfigAssist::sendHtmlOtaUploadPage(){
   String out(CONFIGASSIST_HTML_START);
@@ -757,6 +767,7 @@ void ConfigAssist::handleFileUpload(){
     }
   }
 }
+
 // Respond a HTTP request for the form use the CONF_FILE
 // to save. Save, Reboot ESP, Reset to defaults, cancel edits
 void ConfigAssist::handleFormRequest(WEB_SERVER * server){
@@ -977,20 +988,24 @@ String ConfigAssist::getEditHtml(){
   }
   return ret;
 }
+
 // Get page css
 String ConfigAssist::getCSS(){
   return String(CONFIGASSIST_HTML_CSS);
 }
-#ifdef CA_USE_TIMESYNC 
+#ifdef CA_USE_TIMESYNC
+
 // Get browser time synchronization java script
 String ConfigAssist::getTimeSyncScript(){
   return String(CONFIGASSIST_HTML_SCRIPT_TIME_SYNC);
 }
 #endif //CA_USE_TIMESYNC 
+
 // Get html custom message page
 String ConfigAssist::getMessageHtml(){
   return String(CONFIGASSIST_HTML_START) + String(CONFIGASSIST_HTML_MESSAGE);
 }
+
 // Is string numeric
 bool ConfigAssist::isNumeric(String s){ //1.0, -.232, .233, -32.32
   unsigned int l = s.length();
