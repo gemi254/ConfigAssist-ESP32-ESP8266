@@ -1,4 +1,5 @@
 #include <ConfigAssist.h>  // Config assist class
+#include <ConfigAssistHelper.h>  // Config assist helper class
 
 #if defined(ESP32)
   WebServer server(80);
@@ -6,8 +7,14 @@
   ESP8266WebServer  server(80);
 #endif
 
+#ifndef LED_BUILTIN
+  #define LED_BUILTIN 22
+#endif
+
 #define APP_NAME "ConfigAssistDemo"       // Define application name
 #define INI_FILE "/ConfigAssistDemo.ini"  // Define SPIFFS storage file
+
+unsigned long pingMillis = millis();             // Ping 
 
 // Default application config dictionary
 // Modify the file with the params for you application
@@ -34,10 +41,10 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
      "label": "Name your application",
    "default": "ConfigAssist"
   },{
-      "name": "led_pin",
-     "label": "Enter the pin that the led is connected",
-   "default": "4",
-   "attribs": "min=\"2\" max=\"16\" step=\"1\" "
+      "name": "led_buildin",
+     "label": "Enter the pin that the build in led is connected. Leave blank for auto.",
+   "default": "",
+   "attribs": "min=\"4\" max=\"23\" step=\"1\" "
   },{
  "seperator": "Other settings"
   },{
@@ -104,9 +111,6 @@ X2=900, Y2=3.24"}
 
 
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON); // Config assist class
-                   
-String hostName;                                 // Default Host name
-unsigned long pingMillis = millis();             // Ping 
 
 // Print memory info
 void debugMemory(const char* caller) {      
@@ -136,8 +140,6 @@ void ListDir(const char * dirname) {
 
 // Handler function for Home page
 void handleRoot() {
-  digitalWrite(conf["led_pin"].toInt(), 0); 
-
   String out("<h2>Hello from {name}</h2>");
   out += "<h4>Device time: " + conf.getLocalTime() +"</h4>";
   out += "<a href='/cfg'>Edit config</a>";   
@@ -151,12 +153,10 @@ void handleRoot() {
   out += "<script>" + conf.getTimeSyncScript() + "</script>";
   #endif
   server.send(200, "text/html", out);
-  digitalWrite(conf["led_pin"].toInt(), 1);  
 }
 
 // Handler for page not found
 void handleNotFound() {
-  digitalWrite(conf["led_pin"].toInt(), 1);
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += server.uri();
@@ -169,7 +169,6 @@ void handleNotFound() {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
   server.send(404, "text/plain", message);
-  digitalWrite(conf["led_pin"].toInt(), 0);
 }
 
 // Setup function
@@ -178,18 +177,15 @@ void setup(void) {
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
-  
-  // Start local storage
-  #if defined(ESP32)  
-    if(!STORAGE.begin(true)) Serial.println("ESP32 storage init failed!"); 
-  #else
-    if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!"); 
-  #endif
-  ListDir("/");
     
   LOG_I("Starting..\n");
   debugMemory("setup");
  
+  // Setup led
+  if(conf["led_buildin"]=="") conf.put("led_buildin", LED_BUILTIN);
+
+  ListDir("/");
+  
   //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
 
   // Register handlers for web server    
@@ -199,46 +195,23 @@ void setup(void) {
   });
   server.onNotFound(handleNotFound);  // Append not found handler
   
-  
-  // Failed to load config or ssid empty
-  if(conf["st_ssid"]=="" ){ 
-    // Start Access point server and edit config
-    // Data will be availble instantly 
-    conf.setup(server, true);
-    return;
-  }
-
   debugMemory("Loaded config");
-  pinMode(conf["led_pin"].toInt(), OUTPUT);
+  pinMode(conf["led_buildin"].toInt(), OUTPUT);
      
-  // Connect to Wifi station with ssid from conf file
-  uint32_t startAttemptTime = millis();
-  WiFi.setAutoReconnect(false);
-  WiFi.setAutoConnect(false);
-  WiFi.mode(WIFI_STA);
-  LOG_I("Wifi Station starting, connecting to: %s\n", conf["st_ssid"].c_str());
-  WiFi.begin(conf["st_ssid"].c_str(), conf["st_pass"].c_str());
-  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000)  {
-    digitalWrite(conf["led_pin"].toInt(), 0);
-    Serial.print(".");
-    delay(50);
-    digitalWrite(conf["led_pin"].toInt(), 1);
-    delay(500);
-    Serial.flush();
-  }  
-  Serial.println();
+  // Define a ConfigAssist helper
+  ConfigAssistHelper confHelper(conf);
   
+  // Connect to any available network  
+  bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
+
   // Check connection
-  if(WiFi.status() == WL_CONNECTED ){
-    LOG_I("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", conf["st_ssid"].c_str(), WiFi.localIP().toString().c_str()); 
-  }else{
-    // Fall back to Access point for editing config
+  if(!bConn){
     LOG_E("Connect failed.\n");
     conf.setup(server, true);
     return;
   }
   
-  if (MDNS.begin(conf["host_name"].c_str())) {
+  if (MDNS.begin(conf[CA_HOSTNAME_KEY].c_str())) {
     LOG_I("MDNS responder started\n");
   }
 
@@ -249,13 +222,7 @@ void setup(void) {
   // Get float value
   float float_value = atof(conf["float_val"].c_str());
   LOG_I("Float value: %1.5f\n", float_value);
-  
-  // Change a value
-  //conf.put("led_pin","3");
-  
-  // Also change an int/bool value
-  //conf.put("led_pin", 4);
-  
+ 
   // Append config assist handlers to web server 
   conf.setup(server);
 
@@ -265,17 +232,21 @@ void setup(void) {
   // On the fly generate an ini info file on SPIFFS
   {
     if(debug) STORAGE.remove("/info.ini");
-    ConfigAssist info("/info.ini");
+    ConfigAssist info("/info.ini", NULL);
     // Add a key even if not exists. It will be not editable
     if(!info.valid()){
-      info.put("var1", "test1", true);
-      info.put("var2", 1234, true);
-      info.saveConfigFile();
+      LOG_D("Info file not exists\n"); 
+      info.put("bootCnt", 1, true);
+      info.put("lastRSSI", WiFi.RSSI(), true);
     }else{
-      LOG_D("Info file: var1:  %s, var2: %s\n", info["var1"].c_str(), info["var2"].c_str() );      
+      LOG_D("Info file: bootCnt:  %s, lastRSSI: %s\n", info["bootCnt"].c_str(), info["lastRSSI"].c_str() );      
+      info.put("bootCnt", info["bootCnt"].toInt() + 1, true);
+      info.put("lastRSSI", WiFi.RSSI(), true);
     }
+    info.saveConfigFile();
   }  
 }
+
 // App main loop 
 void loop(void) {
   server.handleClient();
