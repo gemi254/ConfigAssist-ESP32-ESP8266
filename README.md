@@ -230,7 +230,7 @@ void setup()
   // Setup led on empty string
   if(conf["led_buildin"]=="") conf.put("led_buildin", LED_BUILTIN);
   
-  // Connect to any available network  
+  // Connect to any available network with timeout 1500 and led pin on led_buildin variable
   bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
   
   // Check connection and start ap on failure  
