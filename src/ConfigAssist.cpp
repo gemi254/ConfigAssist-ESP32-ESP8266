@@ -67,11 +67,22 @@ void ConfigAssist::setJsonDict(const char * jStr, bool load){
   _jStr = jStr;
   if(load) loadJsonDict(_jStr);  
 }
-
+// Start storage if not init
+void ConfigAssist::startStorage() {
+    // Start local storage
+  #if defined(ESP32)  
+    if(!STORAGE.begin(true)) LOG_E("ESP32 storage init failed!\n"); 
+    else LOG_I("Storage started.\n");
+  #else
+    if(!STORAGE.begin()) LOG_E("ESP8266 storage init failed!\n"); 
+    else LOG_I("Storage started.\n");
+  #endif
+}
 // Initialize with defaults
 void ConfigAssist::init() {
   if(_init) return;
   _init = true;
+  startStorage();
   loadConfigFile(_confFile);
   //Failed to load ini file
   if(!_iniLoaded){
@@ -234,7 +245,7 @@ void ConfigAssist::sortReadOrder(){
 // Sort vectors by key (name in logKeysNdx)
 void ConfigAssist::sortKeysNdx(){
   std::sort(_keysNdx.begin(), _keysNdx.end(), [] (
-    const keysNdx &a, const keysNdx &b) {
+    const confNdx &a, const confNdx &b) {
     return a.key < b.key;}
   );
 }
@@ -481,6 +492,7 @@ bool ConfigAssist::loadConfigFile(String filename) {
 
 // Delete configuration file
 bool ConfigAssist::deleteConfig(String filename){
+  if(!_init) init();
   if(filename=="") filename = _confFile;
   LOG_I("Removing config: %s\n",filename.c_str());
   return STORAGE.remove(filename);
@@ -488,6 +500,7 @@ bool ConfigAssist::deleteConfig(String filename){
 
 // Save configs vectors in an ini file
 bool ConfigAssist::saveConfigFile(String filename) {
+  if(!_init) init();
   if(filename=="") filename = _confFile;
   if(!_dirty){
     LOG_V("Alread saved: %s\n", filename.c_str() );
@@ -1313,7 +1326,7 @@ int ConfigAssist::getKeyPos(String key) {
   if(!_init) init();
   if (_keysNdx.empty()) return -1;
   auto lower = std::lower_bound(_keysNdx.begin(), _keysNdx.end(), key, [](
-      const keysNdx &a, const String &b) { 
+      const confNdx &a, const String &b) { 
       return a.key < b;}
   );
   int keyPos = std::distance(_keysNdx.begin(), lower); 
