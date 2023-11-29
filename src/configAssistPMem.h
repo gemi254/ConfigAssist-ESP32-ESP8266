@@ -13,9 +13,9 @@ const char* CA_DEFAULT_DICT_JSON PROGMEM = R"=====(
      "label": "Enter a name for your host",
    "default": "configAssist_{mac}"
   }
-  ])=====";
+])=====";
 
-//Template for message page
+// Template for message page
 PROGMEM const char CONFIGASSIST_HTML_START[] = R"=====(
 <!DOCTYPE HTML>
 <html lang="en">
@@ -28,7 +28,7 @@ PROGMEM const char CONFIGASSIST_HTML_START[] = R"=====(
 </head>
 )=====";
 
-//Template for message page
+// Template for message page
 PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
   <script>
   document.addEventListener('DOMContentLoaded', function (event) {
@@ -54,7 +54,7 @@ PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
 </body></html>
 )=====";
 
-//Template for uploading a file
+// Template for uploading a file
 PROGMEM const char CONFIGASSIST_HTML_UPLOAD[] = R"=====(
 <body>
 <div style="text-align:center;"><h3>Select a config file to upload to the device</h3></div>
@@ -68,7 +68,7 @@ PROGMEM const char CONFIGASSIST_HTML_UPLOAD[] = R"=====(
 </html>
 )=====";
 #ifdef CA_USE_OTAUPLOAD
-//Template for uploading a ota file
+// Template for uploading a ota file
 const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
 <script>
   const port = !window.location.port ? "80" : window.location.port;    
@@ -143,6 +143,7 @@ const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
 #endif
 
 #ifdef CA_USE_FIMRMCHECK
+// Template for checking firmware
 PROGMEM const char CONFIGASSIST_HTML_FIRMW_CHECK[] = R"=====(
 <script>
 const port = !window.location.port ? "80" : window.location.port;    
@@ -425,7 +426,7 @@ button:hover {
   }
 }
 </style>)=====";
-//Html controls
+// Html controls
 PROGMEM const char CONFIGASSIST_HTML_CSS_CTRLS[] = R"=====(
 <style>
 :root {
@@ -722,6 +723,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
   /*{SUB_SCRIPT}*/   
 })
 </script>)=====";
+
 #ifdef CA_USE_TIMESYNC 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
   async function sendTime() {
@@ -838,26 +840,27 @@ async function getWifiScan() {
   scanTimer = setTimeout(getWifiScan, 2000); 
 )=====";
 #endif
-//Template for password view check group
+
+// Template for password view check group
 PROGMEM const char CONFIGASSIST_HTML_CHECK_VIEW_PASS[] = 
 R"=====(<span id="{key}_GRP" style="display: none;">
 <input type="checkbox" style="height:auto; min-width:auto; width:auto;" id="{key}" name="{key}" {chk}/>
 <label for="{key}">{label}</label></span>
 )=====";
 
-//Template for one input text box
+// Template for one input text box
 PROGMEM const char CONFIGASSIST_HTML_TEXT_BOX[] = 
 R"=====(<input id="{key}" name="{key}" length="64" value="{val}">)=====";
 
-//Template for one input text area
+// Template for one input text area
 PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA[] = 
 R"=====(<textarea id="{key}" name="{key}" rows="auto" cols="auto">{val}</textarea>)=====";
 
-//Template for one input text area file name
+// Template for one input text area file name
 PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA_FNAME[] = 
 R"=====(<input type="hidden" id="{key}" name="{key}" value="{val}">)=====";
 
-//Template for one input check box 
+// Template for one input check box 
 PROGMEM const char CONFIGASSIST_HTML_CHECK_BOX[] = R"=====(
             <div class="card-val-ctrl">              
               <div class="switch">
@@ -866,30 +869,30 @@ PROGMEM const char CONFIGASSIST_HTML_CHECK_BOX[] = R"=====(
               </div>
             </div>)=====";
 
-//Template for one input select box
+// Template for one input select box
 PROGMEM const char CONFIGASSIST_HTML_SELECT_BOX[] = R"=====(
             <select id="{key}" name="{key}" style="width:100%">
               {opt}
             </select>)=====";
 
-//Template for one input select option
+// Template for one input select option
 PROGMEM const char CONFIGASSIST_HTML_SELECT_OPTION[] = 
 R"=====(            <option value="{optVal}"{sel}>{optVal}</option>
 )=====";
 
-//Template for one input select datalist option
+// Template for one input select datalist option
 PROGMEM const char CONFIGASSIST_HTML_SELECT_DATALIST_OPTION[] = 
 R"=====(            <option value="{optVal}"></option>
 )=====";
 
-//Template for one input select datalist
+// Template for one input select datalist
 PROGMEM const char CONFIGASSIST_HTML_DATA_LIST[] = 
 R"=====(<input type="text" id="{key}" name="{key}" list="{key}_list" value="{val}"/>
           <datalist id="{key}_list">
               {opt}
           </datalist>)=====";
 
-//Template for one input select range <label for="{key}">{key}</label>
+// Template for one input select range <label for="{key}">{key}</label>
 PROGMEM const char CONFIGASSIST_HTML_INPUT_RANGE[] = R"=====(
             <div class="card-val-ctrl">              
               <div class="range-min">{min}</div>
@@ -916,7 +919,8 @@ PROGMEM const char CONFIGASSIST_HTML_LINE[] = R"=====(
             <td class="card-val">{elm}</td>
             <td class="card-lbl">{lbl}</td>
           </tr>)=====";
-//Seperator line
+
+// Seperator line
 PROGMEM const char CONFIGASSIST_HTML_SEP[] = R"=====(
       <div class="card">
         <div class="card-header" onClick="this.parentElement.classList.toggle('closed')">
