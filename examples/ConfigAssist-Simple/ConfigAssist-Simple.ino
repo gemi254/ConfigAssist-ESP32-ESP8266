@@ -19,9 +19,10 @@ void setup() {
   
   //info.deleteConfig(); // Uncomment to remove ini file and re-built
   
-  // Add a key even if ini not exists. 
-  // It will be not editable, but it will be saved to an ini file
-  if(!info.valid()){
+  // Ini file not exists
+  if(!info.valid()) {
+    // Add a key even if not exists. 
+    // It will be not editable, but it will be saved to an ini file
     info.put("var1", "test1", true);
     info.put("var2", 1234, true);
     // Save keys & values into ini file
