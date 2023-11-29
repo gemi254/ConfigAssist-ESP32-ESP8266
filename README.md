@@ -82,7 +82,7 @@ i.e.
 + `String ssid = conf["st_ssid"];`
 + `bool debug = conf["debug"].toInt();`
 + `int pinNo = conf["st_ssid"].toInt();`
-+ `digitalWrite(conf["led_pin"].toInt(), 0)`;
++ `digitalWrite(conf["led_buildin"].toInt(), 0)`;
 + `float float_value = atof(conf["float_value"].c_str());`
 
 ## Variables definition with JSON dictionary
@@ -136,7 +136,7 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
    "options": "'BMP280', 'DHT12', 'DHT21', 'DHT22'",
    "default": "DHT22"
  },{
-      "name": "led_pin",
+      "name": "led_buildin",
      "label": "Enter the pin that the led is connected",
    "default": "4",
    "attribs": "min='2' max='16' step='1'"
@@ -168,7 +168,6 @@ X2=900, Y2=3.24"
 + include the **configAssist**  class
   - `#include <configAssist.h>  //ConfigAssist class`
 
-
 + Define your static instance with **defaults**
   - `ConfigAssist conf;`        
 
@@ -196,6 +195,33 @@ Editing config will be enabled for station users.
 //After connecting to the internet AP will not be started
 conf.setup(server);
 ```
+## Connect the WiFi using **ConfigAsistHelper**
+In order to simplify the proccess of connect to WiFi and set static ip address use the **ConfigAsistHelper class**. It will connect the WiFi using credentials contained in a ConfigAssist class. It will search the ConfigAssist class for variables ending with **CA_SSID_KEY** for ssid and **CA_PASSWD_KEY** for passwords.
+  For example..
+  ```
+  st_ssid,  st_pass,
+  station_ssid, station_pass
+  ```
+  It can also use variables like   
+  ```
+  st_ssid1, st_pass1,
+  st_ssid2, st_pass2
+  ```
+  for failover connections.
+  
+  If a variable found ending with **CA_STATICIP_KEY** it will automatically set static ip.
+
+  To use **ConfigAsistHelper**
+  ```
+  // Define a ConfigAssist helper class with a ConfigAssist conf 
+  // containig credentials 
+  ConfigAssistHelper confHelper(conf);
+  ```
+
+  ```
+  // Connect to any available network  
+  bool bConn = confHelper.connectToNetwork(15000 /*Timeout ms*/, "led_buildin" /*Key containig internal led*/);
+  ```
 
 ## Setup function
 ```
@@ -238,11 +264,12 @@ In your application you use **LOG_E**, **LOG_W**, **LOG_I**, **LOG_D** macros in
 to print your messages. **ConfigAssist** can record these messages with **timestamps** to a file.
 
 + define **ConfigAssist**  log mode
-Define the log level (Error = 1 .. Verbose = 5)
+  Define the log level (Error = 1 .. Verbose = 5)
   ```
   #define LOGGER_LOG_LEVEL 5 // Errors & Warnings & Info & Debug & Verbose
   ```
-if you want to enable serial print to a log file use..
+
++ if you want to enable serial print to a log file use..
   ```
   //Enable configAssist logging to file
   #define LOGGER_LOG_MODE  2 // Log to file
@@ -250,12 +277,13 @@ if you want to enable serial print to a log file use..
   //Define the log filename
   #define LOGGER_LOG_FILENAME "/log1"
   ```
- You can also use your own log_printf function by setting log mode to 3
-   ```
- #define LOGGER_LOG_MODE  3        // External log_printf function
-  ```
 
- Check ConfigAssist-LotExternal.ino in ``examples/`` folder.
+ + You can also use your own log_printf function by setting log mode to 3
+    ```
+    #define LOGGER_LOG_MODE  3        // External log_printf function
+    ```
+
+ Check <a href="examples/ConfigAssist-LogExternal/">ConfigAssist-LogExternal</a> in ``examples/`` folder.
 
 ## Compile
 Download library files and place them on ./libraries directory under ArduinoProjects
