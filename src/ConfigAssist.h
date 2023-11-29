@@ -18,14 +18,15 @@
   #define LOGGER_LOG_LEVEL 3             //Set log level for this module
 #endif 
 
-#define CA_CLASS_VERSION "2.7.3"         // Class version
+#define CA_CLASS_VERSION "2.7.4"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
 #define CA_FILENAME_IDENTIFIER "_F"      // Keys ending with this is a text box with the filename of a text area
 #define CA_DONT_ALLOW_SPACES false       // Allow spaces in var names ?
-#define CA_SSID_KEY     "_ssid"          // The key part that defines a ssid field
+#define CA_SSID_KEY     "_ssid"          // Vars ending with this key or key + Num defines a ssid field
 #define CA_PASSWD_KEY   "_pass"          // The key part that defines a password field
+#define CA_STATICIP_KEY "_ip"            // The key part that defines a static ip field
 
 #define CA_HOSTNAME_KEY "host_name"      // The key that defines host name
 #define CA_TIMEZONE_KEY "time_zone"      // The key that defines time zone for setting time
@@ -34,10 +35,9 @@
 #define CA_USE_WIFISCAN                  // Comment to disable wifi scan
 #define CA_USE_TESTWIFI                  // Comment to disable test wifi st connection
 #define CA_USE_TIMESYNC                  // Comment to disable sync esp with browser if out of sync
-#define CA_USE_NTPSYNC                   // Comment to disable sync esp with ntp after wifi conn 
 #define CA_USE_OTAUPLOAD                 // Comment to disable ota and reduce memory
 #define CA_USE_FIMRMCHECK                // Comment to disable firmware check and upgrade from url 
-//#define CA_USE_PERSIST_CON               // Comment to disable saving wifi credentials to nvs
+//#define CA_USE_PERSIST_CON             // Comment to disable saving wifi credentials to nvs
 
 // Define Platform libs
 #if defined(ESP32)
@@ -73,10 +73,11 @@ struct confSeperators {
 };
 
 // Positions of keys inside array
-struct keysNdx {
+struct confNdx {
     String key;
     size_t ndx;
 };
+
 // ConfigAssist class
 class ConfigAssist{ 
   public:
@@ -89,7 +90,9 @@ class ConfigAssist{
     ~ConfigAssist();
   public:  
     // Load configs after storage is started
-    void init();
+    void init();    
+    // Start storage if not init
+    void startStorage();
     // Set ini file at run time
     void setIniFile(String ini_file);
     // Set json at run time.. Must called before _init 
@@ -178,12 +181,11 @@ class ConfigAssist{
 #endif    
     // Get html custom message page
     String getMessageHtml();
-    
+    // Name ends with key + number?
+    bool endsWith(String name, String key, String& no);    
   private:
     // Is string numeric
     bool isNumeric(String s);
-    // Name ends with key + number?
-    bool endsWith(String name, String key, String& no);
     // Decode given string, replace encoded characters
     String urlDecode(String inVal);
     // Load a file into a string
@@ -221,7 +223,7 @@ class ConfigAssist{
   private: 
     enum input_types { TEXT_BOX=1, TEXT_AREA=2, CHECK_BOX=3, OPTION_BOX=4, RANGE_BOX=5, COMBO_BOX=6};
     std::vector<confPairs> _configs;
-    std::vector<keysNdx> _keysNdx;
+    std::vector<confNdx> _keysNdx;
     std::vector<confSeperators> _seperators;
     bool _init;
     bool _iniLoaded;
