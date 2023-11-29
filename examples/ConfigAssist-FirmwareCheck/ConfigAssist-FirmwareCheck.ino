@@ -1,4 +1,5 @@
 #include <ConfigAssist.h>  // Config assist class
+#include <ConfigAssistHelper.h>  // Config assist helper class
 
 #if defined(ESP32)
   #include "firmCheckESP32PMem.h"
@@ -6,6 +7,10 @@
 #else
   #include "firmCheckESP8266PMem.h"
   ESP8266WebServer  server(80);
+#endif
+
+#ifndef LED_BUILTIN
+  #define LED_BUILTIN 22
 #endif
 
 #define APP_NAME "FirmwareCheck"      // Define application name
@@ -60,13 +65,6 @@ void setup(void) {
   Serial.print("\n\n\n\n");
   Serial.flush();
   
-  // Start local storage
-  #if defined(ESP32)  
-    if(!STORAGE.begin(true)) Serial.println("ESP32 storage init failed!"); 
-  #else
-    if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!"); 
-  #endif
-    
   LOG_I("Starting.. ver: %s\n", FIRMWARE_VERSION);
  
   //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
@@ -81,38 +79,22 @@ void setup(void) {
   });
   server.onNotFound(handleNotFound);  // Append not found handler
 
-  // Failed to load config or ssid empty
-  if(conf["st_ssid"]=="" ){ 
-    // Start Access point server and edit config
-    // Data will be availble instantly 
-    conf.setup(server, true);
-    return;
-  }
-    
-  // Connect to Wifi station with ssid from conf file
-  uint32_t startAttemptTime = millis();
-  WiFi.setAutoReconnect(false);
-  WiFi.setAutoConnect(false);
-  WiFi.mode(WIFI_STA);
-  LOG_I("Wifi Station starting, connecting to: %s\n", conf["st_ssid"].c_str());  
-  WiFi.begin(conf["st_ssid"].c_str(), conf["st_pass"].c_str());
-  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000)  {
-    Serial.print(".");
-    delay(500);
-    Serial.flush();
-  }  
-  Serial.println();
+  // Define a ConfigAssist helper
+  ConfigAssistHelper confHelper(conf);
+  
+  // Setup led
+  if(conf["led_buildin"]=="") conf.put("led_buildin", LED_BUILTIN, true); 
+  
+  // Connect to any available network  
+  bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
   
   // Check connection
-  if(WiFi.status() == WL_CONNECTED ){
-    LOG_I("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", conf["st_ssid"].c_str(), WiFi.localIP().toString().c_str()); 
-  }else{
-    // Fall back to Access point for editing config
+  if(!bConn){
     LOG_E("Connect failed.\n");
     conf.setup(server, true);
     return;
   }
-  
+    
   if (MDNS.begin(conf["host_name"].c_str())) {
     LOG_I("MDNS responder started\n");
   }
