@@ -10,12 +10,6 @@ void setup() {
   Serial.print("\n\n\n\n");
   Serial.flush();
 
-  #if defined(ESP32)  
-    if(!STORAGE.begin(true)) Serial.println("ESP32 storage init failed!"); 
-  #else
-    if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!"); 
-  #endif
-
   LOG_I("Starting..\n");
   
   //config.deleteConfig(); // Uncomment to remove ini file and re-built   
