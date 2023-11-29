@@ -1,4 +1,5 @@
-#include <ConfigAssist.h>  // Config assist class
+#include <ConfigAssist.h>        // Config assist class
+#include <ConfigAssistHelper.h>  // Config assist helper class
 
 #if defined(ESP32)
   WebServer server(80);
@@ -6,11 +7,12 @@
   ESP8266WebServer server(80);
 #endif
 
-#define CONNECT_TIMEOUT 15000
-#define MAX_SSID_ARR_NO 2
-
 #define APP_NAME "ConfigAssistTestWifi"      // Define application name
 #define INI_FILE "/ConfigAssistTestWifi.ini" // Define SPIFFS storage file
+
+#ifndef LED_BUILTIN
+  #define LED_BUILTIN 22
+#endif
 
 const char* VARIABLES_DEF_JSON PROGMEM = R"~(
 [{
@@ -50,9 +52,9 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
      "label": "Name your application",
    "default": "ConfigAssist"
   },{
-      "name": "led_pin",
-     "label": "Enter the pin that the led is connected",
-   "default": "4",
+      "name": "led_buildin",
+     "label": "Enter the pin that the build in led is connected to",
+   "default": "",
    "attribs": "min=\"2\" max=\"16\" step=\"1\" "
   },{
  "seperator": "Other settings"
@@ -133,8 +135,6 @@ void debugMemory(const char* caller) {
 
 // Web server root handler
 void handleRoot() {
-  digitalWrite(conf["led_pin"].toInt(), 0);
-
   String out("<h2>Hello from {name}</h2>");
   out += "<h4>Device time: " + conf.getLocalTime() +"</h4>";
   out += "<a href='/cfg'>Edit config</a>";
@@ -144,16 +144,15 @@ void handleRoot() {
   #else
     out.replace("{name}", "ESP8266!");
   #endif
-#ifdef CA_USE_TESTWIFI
-  out += "<script>" + conf.getTimeSyncScript() + "</script>";
-#endif  
-  server.send(200, "text/html", out);
-  digitalWrite(conf["led_pin"].toInt(), 1);
+  // Send browser time sync script
+  #ifdef CA_USE_TESTWIFI
+    out += "<script>" + conf.getTimeSyncScript() + "</script>";
+  #endif  
+  server.send(200, "text/html", out);  
 }
 
 // Page not found handler
 void handleNotFound() {
-  digitalWrite(conf["led_pin"].toInt(), 1);
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += server.uri();
@@ -165,87 +164,7 @@ void handleNotFound() {
   for (uint8_t i = 0; i < server.args(); i++) {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
-  server.send(404, "text/plain", message);
-  digitalWrite(conf["led_pin"].toInt(), 0);
-}
-
-// Set static ip if defined
-bool setStaticIP(String st_ip){
-  if(st_ip.length() <= 0) return false;
-
-  IPAddress ip, mask, gw;
-
-  int ndx = st_ip.indexOf(' ');
-  String s = st_ip.substring(0, ndx);
-  s.trim();
-  if(!ip.fromString(s)){
-    LOG_E("Error parsing static ip: %s\n",s.c_str());
-    return false;
-  }
-
-  st_ip = st_ip.substring(ndx + 1, st_ip.length() );
-  ndx = st_ip.indexOf(' ');
-  s = st_ip.substring(0, ndx);
-  s.trim();
-  if(!mask.fromString(s)){
-    LOG_E("Error parsing static ip mask: %s\n",s.c_str());
-    return false;
-  }
-
-  st_ip = st_ip.substring(ndx + 1, st_ip.length() );
-  s = st_ip;
-  s.trim();
-  if(!gw.fromString(s)){
-    LOG_E("Error parsing static ip gw: %s\n",s.c_str());
-    return false;
-  }
-  LOG_I("Wifi ST setting static ip: %s, mask: %s  gw: %s \n", ip.toString().c_str(), mask.toString().c_str(), gw.toString().c_str());
-  WiFi.config(ip, gw, mask);
-  return true;  
-}
-
-// Try multiple connections and connect wifi 
-bool connectToNetwork(){
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.setHostname(conf["host_name"].c_str());
-  String st_ssid ="";
-  String st_pass = "";
-  String st_ip = "";
-  for (int i = 1; i < MAX_SSID_ARR_NO + 1; i++){
-    st_ssid = conf["st_ssid" + String(i)];
-    if(st_ssid=="") continue;
-    st_pass = conf["st_pass" + String(i)];
-    
-    //Set static ip if defined
-    st_ip = conf["st_ip" + String(i)];
-    setStaticIP(st_ip);  
-    
-    LOG_I("Wifi ST connecting to: %s, %s \n",st_ssid.c_str(), st_pass.c_str());
-
-    WiFi.begin(st_ssid.c_str(), st_pass.c_str());
-    int col = 0;
-    uint32_t startAttemptTime = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < CONNECT_TIMEOUT) {
-      Serial.printf(".");
-      if (++col >= 60){
-        col = 0;
-        Serial.printf("\n");
-      }
-      Serial.flush();
-      delay(500);
-    }
-    Serial.printf("\n");
-    if (WiFi.status() != WL_CONNECTED){
-      LOG_E("Wifi connect fail\n");
-      WiFi.disconnect();
-    }else{
-      LOG_I("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", st_ssid.c_str(), WiFi.localIP().toString().c_str());
-      break;
-    }
-  }  
-
-  if (WiFi.status() == WL_CONNECTED)  return true;
-  else return false;
+  server.send(404, "text/plain", message);  
 }
 
 //Setup function
@@ -258,32 +177,32 @@ void setup(void) {
   LOG_I("Starting..\n");
   debugMemory("setup");
 
-  #if defined(ESP32)
-    if(!STORAGE.begin(true)) Serial.println("ESP32 storage init failed!");
-  #else
-    if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!");
-  #endif
-
-  //conf.deleteConfig();  //Uncomment to remove ini file and re-built it fron json
-  
-  //Connect to any available network
-  bool bConn = connectToNetwork();
-  digitalWrite(conf["led_pin"].toInt(), 1);
-  
+   //conf.deleteConfig();  //Uncomment to remove ini file and re-built it fron json
+    
   // Setup web server 
   server.on("/", handleRoot);  
   server.on("/d", []() {    // Append dump handler
     conf.dump(&server);
   });
-  server.onNotFound(handleNotFound);
 
+  server.onNotFound(handleNotFound);
+  // Setup led on empty string
+  if(conf["led_buildin"]=="") conf.put("led_buildin", LED_BUILTIN);  
+
+  // Define a ConfigAssist helper class to connect wifi
+  ConfigAssistHelper confHelper(conf);
+  
+  // Connect to any available network  
+  bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
+  
+  // Check connection and start ap on failure  
   if(!bConn){
     LOG_E("Connect failed.\n");
     conf.setup(server, true);
     return;
   }
 
-  if (MDNS.begin(conf["host_name"].c_str())) {
+  if (MDNS.begin(conf[CA_HOSTNAME_KEY].c_str())) {
     LOG_I("MDNS responder started\n");
   }
   // Append control assist handlers
