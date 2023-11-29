@@ -196,13 +196,13 @@ Editing config will be enabled for station users.
 conf.setup(server);
 ```
 ## Connect the WiFi using **ConfigAsistHelper**
-In order to simplify the proccess of connect to WiFi and set static ip address use the **ConfigAsistHelper class**. It will connect the WiFi using credentials contained in a ConfigAssist class. It will search the ConfigAssist class for variables ending with **CA_SSID_KEY** for ssid and **CA_PASSWD_KEY** for passwords.
-  For example..
+In order to simplify the proccess of connect to WiFi and set static ip address use the **ConfigAsistHelper class**. It will connect the WiFi using credentials contained in a ConfigAssist class. It will search for variables ending with **CA_SSID_KEY** for ssid and **CA_PASSWD_KEY** for passwords.
+  For example variables like..
   ```
   st_ssid,  st_pass,
   station_ssid, station_pass
   ```
-  It can also use variables like   
+  It can also use variables like..
   ```
   st_ssid1, st_pass1,
   st_ssid2, st_pass2
@@ -226,23 +226,16 @@ In order to simplify the proccess of connect to WiFi and set static ip address u
 ## Setup function
 ```
 void setup()
-  // Must have storage to read from
-  STORAGE.begin(true);
   
-  //Will try to load ini file. On fail load json descr.
-  if( conf["st_ssid"]=="" ){  //Ssid empty  
-    //Start Access point server and edit config
-    conf.setup(server, true);
-    return;
-  }  
-  ...
-
-  //Check connection
-  if(WiFi.status() == WL_CONNECTED ){
-    Serial.printf("Wifi AP SSID: %s connected, use 'http://%s' to connect\n", conf["st_ssid"].c_str(), WiFi.localIP().toString().c_str()); 
-  }else{
-    //Fall back to Access point for editing config
-    Serial.println("Connect failed.");
+  // Setup led on empty string
+  if(conf["led_buildin"]=="") conf.put("led_buildin", LED_BUILTIN);
+  
+  // Connect to any available network  
+  bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
+  
+  // Check connection and start ap on failure  
+  if(!bConn){
+    LOG_E("Connect failed.\n");
     conf.setup(server, true);
     return;
   }
