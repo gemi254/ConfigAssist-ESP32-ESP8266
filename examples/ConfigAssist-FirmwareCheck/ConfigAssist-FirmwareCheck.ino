@@ -104,7 +104,7 @@ void setup(void) {
   // Start web server
   server.begin();
   LOG_I("HTTP server started\n");
-  conf.dump();
+  //conf.dump();
 }
 
 // App main loop 
