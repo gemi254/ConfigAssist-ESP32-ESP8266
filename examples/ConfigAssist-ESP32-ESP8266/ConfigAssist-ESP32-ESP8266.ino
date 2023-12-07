@@ -46,6 +46,13 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
    "default": "",
    "attribs": "min=\"4\" max=\"23\" step=\"1\" "
   },{
+ "seperator": "ConfigAssist settings"
+  },{
+      "name": "display_style",
+     "label": "Choose how the config sections are displayed. Must reboot to apply",
+   "options": "'AllOpen', 'AllClosed', 'Accordion'",
+   "default": "AllOpen"
+  },{
  "seperator": "Other settings"
   },{
       "name": "float_val",
@@ -200,7 +207,8 @@ void setup(void) {
      
   // Define a ConfigAssist helper
   ConfigAssistHelper confHelper(conf);
-  
+  WiFi.setAutoConnect(false);
+  WiFi.setAutoReconnect(false);
   // Connect to any available network  
   bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
 
@@ -225,6 +233,14 @@ void setup(void) {
  
   // Append config assist handlers to web server 
   conf.setup(server);
+
+  // Set the display type 
+  if(conf["display_type"]=="AllOpen")
+    conf.setDisplayType(DisplayType::AllOpen);
+  else if(conf["display_type"]=="AllClosed")
+    conf.setDisplayType(DisplayType::AllClosed);
+  else if(conf["display_type"]=="Accordion")
+    conf.setDisplayType(DisplayType::Accordion);
 
   server.begin();
   LOG_I("HTTP server started\n");
