@@ -609,9 +609,25 @@ document.addEventListener('DOMContentLoaded', function (event) {
     rangeVal.innerHTML = '<span>'+range.value+'</span>';
     rangeVal.style.left = 'calc('+position+'px)';
   }
+
+  function closeAllCards(target){
+    $$('.card-header').forEach(el => {
+      if(el != target)        
+        el.parentElement.classList.add("closed");
+      else
+        el.parentElement.classList.remove("closed");
+    });  
+  }
   
+  // Accordion
+  $$('.card-header').forEach(el => {
+     el.addEventListener("click", function (event) {
+        closeAllCards(event.target.parentElement)
+    });
+  });
+
   //Update all ranges
-  $$('input[type=range]').forEach(el => {updateRange(el);});  
+  $$('input[type=range]').forEach(el => {updateRange(el);});
 
   // input events
   document.addEventListener("input", function (event) {
@@ -689,7 +705,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
   // Save config before unload
   window.addEventListener('beforeunload', function (event) {
     updateKey("_SAVE", 1);    
-    console.log("Unload.. saved");
+    console.log("Unload.. Saved ini");
     sleep(500);
   });
 
@@ -713,7 +729,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     }else if ( key=="_DWN" || key=="_UPG" || key=="_FWC" || key.includes('_PASS_VIEW') ){
       return;
     }
-    
+    //console.log("Request ", url);
     const response = await fetch(encodeURI(url));
     if (!response.ok){
       const html = await response.text();
