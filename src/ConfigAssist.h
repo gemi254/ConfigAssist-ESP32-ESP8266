@@ -18,7 +18,7 @@
   #define LOGGER_LOG_LEVEL 3             //Set log level for this module
 #endif 
 
-#define CA_CLASS_VERSION "2.7.4"         // Class version
+#define CA_CLASS_VERSION "2.7.5"        // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -66,6 +66,15 @@ struct confPairs {
     byte type;
 };
 
+enum class DisplayType:uint8_t  {  
+  // All cards open
+  AllOpen = 0,
+  // All cards closed
+  AllClosed,
+  // Open clicked and close other cards
+  Accordion
+};
+
 //Seperators of config elements
 struct confSeperators {
     String name;
@@ -91,6 +100,7 @@ class ConfigAssist{
   public:  
     // Load configs after storage is started
     void init();    
+    void setDisplayType(DisplayType display) {_display = display; }
     // Start storage if not init
     void startStorage();
     // Set ini file at run time
@@ -130,7 +140,7 @@ class ConfigAssist{
     // Sort seperator vectors by key (name in confSeperators)
     void sortSeperators();
     // Return next key and val from configs on each call in key order
-    bool getNextKeyVal(confPairs &c);    
+    bool getNextKeyVal(confPairs &c, bool reset = false); 
     // Get the configuration in json format
     String getJsonConfig();
     // Display config items in web server, or on log on NULL
@@ -199,7 +209,9 @@ class ConfigAssist{
     bool savePref(String key, String val);
     // Load a key from nvs
     bool loadPref(String key, String &val);
-#endif    
+#endif
+    // Setup seperator to openClose
+    void modifySeperator(int sepNo, String &outSep);
     // Render keys,values to html lines
     bool getEditHtmlChunk(String &out);
     // Render range 
@@ -234,6 +246,7 @@ class ConfigAssist{
     static WEB_SERVER *_server;
     static String _jWifi;
     bool _apEnabled;
+    DisplayType _display;
 #ifdef CA_USE_PERSIST_CON
     static Preferences _prefs;
 #endif    
