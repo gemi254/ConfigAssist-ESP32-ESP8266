@@ -108,6 +108,15 @@ A **separator title** can also be used to group configuration values under a spe
 </p>
 
 
+Seperators can be opened and closed when click on their title. You can define the initial state by using **setDisplayType** function.
+
+ Use **AllOpen** to display opened tabs, **AllClosed** to display seperator titles only and **Accordion** to close all but not current tab.
+  ```
+  // Set the display type 
+  conf.setDisplayType(DisplayType::Accordion);
+  ```
+
+## Sample variables definition text    
 ```
 const char* VARIABLES_DEF_JSON PROGMEM = R"~(
 [{
