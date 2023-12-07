@@ -1,5 +1,5 @@
-2.7.4 (2023-10-29)
-  * Added ConfigAssist helper class to auto connect and set static ip
+2.7.5 (2023-11-07)
+  * Added didplay types for seperators. Fixed errors.
 
 2.7.3 (2023-10-24)
   * Added headers inside class
