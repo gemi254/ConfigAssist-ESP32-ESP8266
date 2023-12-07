@@ -97,6 +97,8 @@ class ConfigAssistHelper
                     }
                 }                
             }
+            //Close key vals
+            _conf->getNextKeyVal(c, true);
             // Turn off led
             if(ledPin >=0 ) digitalWrite(ledPin, 1);
 
