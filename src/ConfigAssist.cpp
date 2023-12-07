@@ -1,4 +1,4 @@
-#include "configAssist.h"     // Config assist class
+#include "ConfigAssist.h"     // Config assist class
 #include "configAssistPMem.h" // Memory static valiables (html pages)
 
 #if defined(ESP32)
@@ -22,6 +22,7 @@ ConfigAssist::ConfigAssist() {
   _dirty = false; _apEnabled=false;
   _confFile = String(CA_DEF_CONF_FILE);
   _jStr = CA_DEFAULT_DICT_JSON;
+  _display = DisplayType::AllOpen;
 }
 
 // Standard constructor with ini file
@@ -259,8 +260,13 @@ void ConfigAssist::sortSeperators(){
 }
 
 // Return next key and value from configs on each call in key order
-bool ConfigAssist::getNextKeyVal(confPairs &c) {
+bool ConfigAssist::getNextKeyVal(confPairs &c, bool reset ) {
   static uint8_t row = 0;
+  if(reset){
+    row = 0;
+    return false;
+  } 
+
   if (row++ < _configs.size()) { 
       c = _configs[row - 1];
       return true;
@@ -353,7 +359,7 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool updateInfo) {
   LOG_V("Load json dict\n");
   //Parse json description
   JsonArray array = doc.as<JsonArray>();
-  int i=0;
+  int i = 0;
   for (JsonObject  obj  : array) {                
     confPairs c = {"", "", "", "", 0, 1};        
     if (obj.containsKey("name")){
@@ -442,11 +448,13 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool updateInfo) {
     }else if (obj.containsKey("seperator")){
       String sepNo = "sep_" + String(i);
       String val =  obj["seperator"];
-      addSeperator(sepNo, val);          
+      addSeperator(sepNo, val);   
+      LOG_V("Json add seperator no: %s, val: %s\n",sepNo.c_str(), val.c_str());
     }else{
       LOG_E("Undefined key name/default on param : %i.", i);
     }
   }
+
   //Sort seperators vectors for binarry search
   sortSeperators();
   _jsonLoaded = true;
@@ -710,19 +718,21 @@ void ConfigAssist::handleFileUpload(){
   static File tmpFile;
   static String filename,tmpFilename;
   HTTPUpload& uploadfile = _server->upload(); 
-  bool isOta = _server->hasArg("ota");  
+  #ifdef CA_USE_OTAUPLOAD
+    bool isOta = _server->hasArg("ota");  
+  #endif //CA_USE_OTAUPLOAD
   if(uploadfile.status == UPLOAD_FILE_START){
-#ifdef CA_USE_OTAUPLOAD
-    if(isOta){
-      uint32_t otaSize = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-      LOG_I("Firmware update initiated: %s\r\n", uploadfile.filename.c_str());
-      if (!Update.begin(otaSize)) { //start with max available size
-				LOG_E("OTA Error: %x\n", Update.getError());
-        Update.printError(Serial);
-			}
-      return;
-    }
-#endif //CA_USE_OTAUPLOAD
+    #ifdef CA_USE_OTAUPLOAD
+        if(isOta){
+          uint32_t otaSize = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+          LOG_I("Firmware update initiated: %s\r\n", uploadfile.filename.c_str());
+          if (!Update.begin(otaSize)) { //start with max available size
+            LOG_E("OTA Error: %x\n", Update.getError());
+            Update.printError(Serial);
+          }
+          return;
+        }
+    #endif //CA_USE_OTAUPLOAD
     filename = uploadfile.filename;
     if(filename.length()==0) return;
     if(!filename.startsWith("/")) filename = "/"+filename;
@@ -732,24 +742,24 @@ void ConfigAssist::handleFileUpload(){
     if(STORAGE.exists(tmpFilename)) STORAGE.remove(tmpFilename);                         
     tmpFile = STORAGE.open(tmpFilename, "w+");    
   }else if (uploadfile.status == UPLOAD_FILE_WRITE){
-#ifdef CA_USE_OTAUPLOAD
-    if(isOta){ // flashing firmware to ESP
-			if (Update.write(uploadfile.buf, uploadfile.currentSize) != uploadfile.currentSize) {
-				LOG_E("OTA Error: %x\n", Update.getError());
-        Update.printError(Serial);        
-			}
-			// Store the next milestone to output
-			uint16_t chunk_size  = 51200;
-			static uint32_t next = 51200;
+    #ifdef CA_USE_OTAUPLOAD
+        if(isOta){ // flashing firmware to ESP
+          if (Update.write(uploadfile.buf, uploadfile.currentSize) != uploadfile.currentSize) {
+            LOG_E("OTA Error: %x\n", Update.getError());
+            Update.printError(Serial);        
+          }
+          // Store the next milestone to output
+          uint16_t chunk_size  = 51200;
+          static uint32_t next = 51200;
 
-			// Check if we need to output a milestone (100k 200k 300k)
-			if (uploadfile.totalSize >= next) {
-				Serial.printf("%dk ", next / 1024);
-				next += chunk_size;
-			}
-      return;
-    }
-#endif //CA_USE_OTAUPLOAD
+          // Check if we need to output a milestone (100k 200k 300k)
+          if (uploadfile.totalSize >= next) {
+            Serial.printf("%dk ", next / 1024);
+            next += chunk_size;
+          }
+          return;
+        }
+    #endif //CA_USE_OTAUPLOAD
     //Write the received bytes to the file
     if(tmpFile) tmpFile.write(uploadfile.buf, uploadfile.currentSize);
   }else if (uploadfile.status == UPLOAD_FILE_END){
@@ -758,25 +768,25 @@ void ConfigAssist::handleFileUpload(){
     out += CONFIGASSIST_HTML_MESSAGE;
     out.replace("{url}", "/cfg");
     out.replace("{refresh}", "9000");
-#ifdef CA_USE_OTAUPLOAD
-    if(isOta){ // flashing firmware to ESP
-      if (Update.end(true)) { //true to set the size to the current progress
-        msg = "Firmware update successful file: <font style='color: blue;'>" + uploadfile.filename + "</font>, size: " + uploadfile.totalSize + " B";
-        LOG_I("\n%s\n", msg.c_str());
-        out.replace("{reboot}", "true");
-        msg += "<br>Device now will reboot..";
-			} else {
-				msg = "Firmware update ERROR, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B" + ", error:" + Update.getError();
-        LOG_E("\n%s\n", msg.c_str());
-        Update.printError(Serial);
-        out.replace("{reboot}", "false");
-			}
-      out.replace("{title}", "Firmware upgrade");
-      out.replace("{msg}", msg.c_str());
-      this->_server->send(200,"text/html",out);
-      return;
-    }
-#endif //CA_USE_OTAUPLOAD
+    #ifdef CA_USE_OTAUPLOAD
+        if(isOta){ // flashing firmware to ESP
+          if (Update.end(true)) { //true to set the size to the current progress
+            msg = "Firmware update successful file: <font style='color: blue;'>" + uploadfile.filename + "</font>, size: " + uploadfile.totalSize + " B";
+            LOG_I("\n%s\n", msg.c_str());
+            out.replace("{reboot}", "true");
+            msg += "<br>Device now will reboot..";
+          } else {
+            msg = "Firmware update ERROR, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B" + ", error:" + Update.getError();
+            LOG_E("\n%s\n", msg.c_str());
+            Update.printError(Serial);
+            out.replace("{reboot}", "false");
+          }
+          out.replace("{title}", "Firmware upgrade");
+          out.replace("{msg}", msg.c_str());
+          this->_server->send(200,"text/html",out);
+          return;
+        }
+    #endif //CA_USE_OTAUPLOAD
     if(tmpFile){ // If the file was successfully created    
       tmpFile.close();  
       if(STORAGE.exists(filename)) STORAGE.remove(filename);
@@ -807,8 +817,8 @@ void ConfigAssist::handleFileUpload(){
 void ConfigAssist::handleFormRequest(WEB_SERVER * server){
   if(server == NULL ) server = _server;
   String reply = "";
-
   //Save config form
+  LOG_V("handleFormRequest Entering..\n");
   if (server->args() > 0) {
     //Download a file 
     if (server->hasArg(F("_DWN"))) {
@@ -854,6 +864,8 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         return;
     } 
 #endif //CA_USE_PERSIST_CON   
+
+#ifdef CA_USE_TESTWIFI
     //Test wifi?    
     if (server->hasArg(F("_TEST_WIFI"))) {
       LOG_D("Testing WIFI ST connection..\n");
@@ -865,7 +877,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       if(_apEnabled) WiFi.disconnect();
       return;
     }
-
+#endif//CA_USE_TESTWIFI 
     //Reboot esp?    
     if (server->hasArg(F("_RBT_CONFIRM"))) {
       LOG_D("Restarting..\n");
@@ -944,7 +956,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         server->send(200, "text/html", out);
         server->client().flush(); 
         return;
-    }        
+    }
     //Save config file 
     if (server->hasArg(F("_SAVE"))) {
         if(saveConfigFile()) reply = "Config saved.";
@@ -963,7 +975,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
 void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   //Load dictionary if no pressent and update info only
   if(!_jsonLoaded) loadJsonDict(_jStr, true);
-  LOG_D("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniLoaded, _jsonLoaded, _dirty);      
+  LOG_V("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniLoaded, _jsonLoaded, _dirty);      
   //Send config form data
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   String out(CONFIGASSIST_HTML_START);
@@ -987,7 +999,6 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
 #ifdef CA_USE_WIFISCAN 
   subScript += CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN;
 #endif  
-  //if(CA_USE_TESTWIFI) subScript += CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION;
 
   script.replace("/*{SUB_SCRIPT}*/", subScript);
   server->sendContent(script);
@@ -995,11 +1006,9 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   out.replace("{host_name}", getHostName());
   server->sendContent(out);
   //Render html keys
-  //sortReadOrder();      
   while(getEditHtmlChunk(out)){
     server->sendContent(out);        
   }
-  //sort();
   out = String(CONFIGASSIST_HTML_END);
   
 #ifdef CA_USE_OTAUPLOAD   
@@ -1164,19 +1173,37 @@ bool ConfigAssist::saveText(String fPath, String txt){
   file.close();
   return true;
 }
-    
+void ConfigAssist::modifySeperator(int sepNo, String &outSep){
+    switch (_display)
+    {
+      case DisplayType::AllOpen:
+        break;
+
+      case DisplayType::Accordion:
+        if(sepNo > 0)
+          outSep.replace("class=\"card\"", "class=\"card closed\"");
+        break;
+
+      case DisplayType::AllClosed:
+        outSep.replace("class=\"card\"", "class=\"card closed\"");
+        break;
+
+      default:
+        break;
+    }
+}
+
 // Render keys,values to html lines
 bool ConfigAssist::getEditHtmlChunk(String &out){      
   confPairs c;
   out="";
   if(!getNextKeyVal(c)) return false;
-  LOG_V("getEditHtmlChunk %i, %s\n", c.readNo, c.name.c_str());
   // Values added manually not editable
-  if(c.readNo<0) return true;
+  if(c.readNo < 0) return true;
 
   out = String(CONFIGASSIST_HTML_LINE);
   String elm;
-  String no;
+  String no = "";
   if(c.type == TEXT_BOX){
     elm = String(CONFIGASSIST_HTML_TEXT_BOX);    
     if(endsWith(c.name, CA_PASSWD_KEY, no)) { //Password field
@@ -1239,11 +1266,14 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
   out.replace("{key}",c.name);
   out.replace("{lbl}",c.label);
   out.replace("{val}",c.value);
+  // Check seperator for element no
   String sKey = "sep_" + String(c.readNo);
   int sepKeyPos = getSepKeyPos(sKey);
-  if(sepKeyPos>=0){
-    //Add a seperator
+  if(sepKeyPos >= 0){
+    // Build a seperator
     String outSep = String(CONFIGASSIST_HTML_SEP);
+    modifySeperator(sepKeyPos, outSep);
+    
     String sVal = _seperators[sepKeyPos].value;
     outSep.replace("{val}", sVal);
     if(sepKeyPos > 0) //Close the previous seperator
@@ -1253,9 +1283,9 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     LOG_V("SEP key[%i]: %s = %s\n", sepKeyPos, sKey.c_str(), sVal.c_str());
   }else if(c.readNo==0 && _seperators.size() < 1 ){ //No start seperator found
     LOG_W("No seperator found: %s, using default.\n", sKey.c_str());
-    //addSeperator("0","General settings");
     String outSep = String(CONFIGASSIST_HTML_SEP);
     outSep.replace("{val}", "General settings");
+    modifySeperator(0, outSep);
     out = outSep + out;
   }  
   LOG_V("HTML key[%i]: %s = %s, type: %i, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.attribs.c_str() );
