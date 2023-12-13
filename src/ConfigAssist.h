@@ -18,7 +18,7 @@
   #define LOGGER_LOG_LEVEL 3             //Set log level for this module
 #endif 
 
-#define CA_CLASS_VERSION "2.7.5"        // Class version
+#define CA_CLASS_VERSION "2.7.6"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -27,6 +27,7 @@
 #define CA_SSID_KEY     "_ssid"          // Vars ending with this key or key + Num defines a ssid field
 #define CA_PASSWD_KEY   "_pass"          // The key part that defines a password field
 #define CA_STATICIP_KEY "_ip"            // The key part that defines a static ip field
+#define CA_NTPSYNC_KEY  "ntp_server"     // The key part that defines a static ip field
 
 #define CA_HOSTNAME_KEY "host_name"      // The key that defines host name
 #define CA_TIMEZONE_KEY "time_zone"      // The key that defines time zone for setting time
@@ -93,9 +94,9 @@ class ConfigAssist{
     // Initialize with defaults
     ConfigAssist();
     // Initialize with custom ini file, default dict
-    ConfigAssist(String ini_file);
+    ConfigAssist(const String& ini_file);
     // Initialize with custom Ini file, and custom json dict
-    ConfigAssist(String ini_file, const char * jStr);
+    ConfigAssist(const String& ini_file, const char * jStr);
     ~ConfigAssist();
   public:  
     // Load configs after storage is started
@@ -104,7 +105,7 @@ class ConfigAssist{
     // Start storage if not init
     void startStorage();
     // Set ini file at run time
-    void setIniFile(String ini_file);
+    void setIniFile(const String& ini_file);
     // Set json at run time.. Must called before _init 
     void setJsonDict(const char * jStr, bool load=false);
     // Is config loaded valid ?
@@ -112,7 +113,7 @@ class ConfigAssist{
     // Is key exists in configuration
     bool exists(String key);
     // Start an AP with a web server and render config values loaded from json dictionary
-    void setup(WEB_SERVER &server, bool apEnable = false);
+    void setup(WEB_SERVER& server, bool apEnable = false);
     // Get a temponary hostname
     static String getMacID();
     // Get a temponary hostname
@@ -120,17 +121,17 @@ class ConfigAssist{
     // Implement operator [] i.e. val = config['key']    
     String operator [] (String k);
     // Return the value of a given key, Empty on not found
-    String get(String key);    
+    String get(const String key);    
     // Update the value of key = val (int)
-    bool put(String key, int val, bool force = false);
+    bool put(const String key, int val, bool force = false);
     // Update the value of key = val (string)
-    bool put(String key, String val, bool force = false);
+    bool put(const String key, String val, bool force = false);
     // Add vectors by key (name in confPairs)
-    void add(String key, String val, bool force = false);
+    void add(const String key, String val, bool force = false);
     // Add unique name vectors pairs
     void add(confPairs &c);
     // Add seperator by key
-    void addSeperator(String key, String val);
+    void addSeperator(const String key, const String val);
     // Rebuild keys indexes wher sorting by readNo
     void rebuildKeysNdx();
     // Sort keys asc by name
@@ -173,7 +174,7 @@ class ConfigAssist{
     void handleFileUpload();
     String testWiFiSTConnection(String no);    
     // Download a file in browser window
-    void handleDownloadFile(String fileName);
+    void handleDownloadFile(const String fileName);
     // Respond a not found HTTP request
     void handleNotFound();
     // Respond a HTTP request for the form use the CONF_FILE
@@ -199,9 +200,9 @@ class ConfigAssist{
     // Decode given string, replace encoded characters
     String urlDecode(String inVal);
     // Load a file into a string
-    bool loadText(String fPath, String &txt);    
+    bool loadText(const String fPath, String& txt);    
     // Write a string to a file
-    bool saveText(String fPath, String txt);
+    bool saveText(const String fPath, String& txt);
 #ifdef CA_USE_PERSIST_CON
     // Clear nvs
     bool clearPrefs();
