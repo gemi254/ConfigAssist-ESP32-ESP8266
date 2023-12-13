@@ -119,6 +119,9 @@ X2=900, Y2=3.24"}
 
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON); // Config assist class
 
+// Setup led
+bool b = (conf["led_buildin"] == "") ? conf.put("led_buildin", LED_BUILTIN) : false;
+
 // Print memory info
 void debugMemory(const char* caller) {      
   #if defined(ESP32)
@@ -188,9 +191,6 @@ void setup(void) {
   LOG_I("Starting..\n");
   debugMemory("setup");
  
-  // Setup led
-  if(conf["led_buildin"]=="") conf.put("led_buildin", LED_BUILTIN);
-
   ListDir("/");
   
   //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
