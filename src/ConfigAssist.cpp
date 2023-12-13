@@ -26,7 +26,7 @@ ConfigAssist::ConfigAssist() {
 }
 
 // Standard constructor with ini file
-ConfigAssist::ConfigAssist(String ini_file) {
+ConfigAssist::ConfigAssist(const String& ini_file) {
   _init = false;
   _jsonLoaded = false; _iniLoaded=false;  
   _dirty = false; _apEnabled=false;
@@ -38,7 +38,7 @@ ConfigAssist::ConfigAssist(String ini_file) {
 }
 
 // Standard constructor with ini file and json description
-ConfigAssist::ConfigAssist(String ini_file, const char * jStr){
+ConfigAssist::ConfigAssist(const String& ini_file, const char * jStr){
   _init = false;
   _jsonLoaded = false; _iniLoaded=false;  
   _dirty = false; _apEnabled=false;
@@ -53,7 +53,7 @@ ConfigAssist::ConfigAssist(String ini_file, const char * jStr){
 ConfigAssist::~ConfigAssist() {}
 
 // Set ini file at run time
-void ConfigAssist::setIniFile(String ini_file){
+void ConfigAssist::setIniFile(const String& ini_file){
   if (ini_file != "") _confFile = ini_file;
 }
 
@@ -151,7 +151,7 @@ String ConfigAssist::getHostName(){
 }
 
 // Return the value of a given key, Empty on not found
-String ConfigAssist::get(String key) {
+String ConfigAssist::get(const String key) {
   int keyPos = getKeyPos(key);
   if (keyPos >= 0) {
     return _configs[keyPos].value;        
@@ -160,7 +160,7 @@ String ConfigAssist::get(String key) {
 }
  
 // Update the value of key = value (string)
-bool ConfigAssist::put(String key, String val, bool force) {
+bool ConfigAssist::put(const String key, String val, bool force) {
   int keyPos = getKeyPos(key);      
   if (keyPos >= 0) {
     // Save 0,1 on booleans
@@ -186,12 +186,12 @@ bool ConfigAssist::put(String key, String val, bool force) {
 }
 
 // Update the value of key = value (int), force to add if not exists
-bool ConfigAssist::put(String key, int val, bool force) {
+bool ConfigAssist::put(const String key, int val, bool force) {
     return  put(key, String(val), force); 
 }
 
 // Add vectors by key (name in confPairs)
-void ConfigAssist::add(String key, String val, bool force){
+void ConfigAssist::add(const String key, String val, bool force){
   static int readNo = 0;
   static int forcedNo = -1;
   confPairs c;
@@ -220,7 +220,7 @@ void ConfigAssist::add(confPairs &c){
 }
 
 // Add seperator by key
-void ConfigAssist::addSeperator(String key, String val){
+void ConfigAssist::addSeperator(const String key, const String val){
   LOG_V("Adding sep key: %s=%s\n", key.c_str(), val.c_str()); 
   _seperators.push_back({key, val}) ;      
 }
@@ -644,7 +644,7 @@ String ConfigAssist::testWiFiSTConnection(String no){
 }
 
 // Download a file in browser window
-void ConfigAssist::handleDownloadFile(String fileName){
+void ConfigAssist::handleDownloadFile(const String fileName){
   File f = STORAGE.open(fileName.c_str(), "r");
   if (!f) {
     f.close();
@@ -1099,7 +1099,7 @@ String ConfigAssist::urlDecode(String inVal) {
 }
 
 // Load a file into a string
-bool ConfigAssist::loadText(String fPath, String &txt){
+bool ConfigAssist::loadText(const String fPath, String &txt){
   File file = STORAGE.open(fPath, "r");
   if (!file || !file.size()) {
     LOG_E("Failed to load: %s, sz: %u B\n", fPath.c_str(), file.size());
@@ -1161,7 +1161,7 @@ bool ConfigAssist::loadPref(String key, String &val){
 #endif    
 
 // Write a string to a file
-bool ConfigAssist::saveText(String fPath, String txt){
+bool ConfigAssist::saveText(const String fPath, String &txt){
   STORAGE.remove(fPath);
   File file = STORAGE.open(fPath, "w+");
   if(!file){
