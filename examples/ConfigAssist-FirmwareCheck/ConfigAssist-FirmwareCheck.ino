@@ -16,13 +16,17 @@
 #define APP_NAME "FirmwareCheck"      // Define application name
 #define INI_FILE "/FirmwareCheck.ini" // Define SPIFFS storage file
 
-char FIRMWARE_VERSION[] = "1.0.0";    // Firmware version to check
-
 // Config class
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
-                   
+
+// Store readonly firmware version variable
+bool b1 = conf.put("firmware_ver", "1.0.0", true);
+// Setup internal led variable
+bool b2 = (conf["led_buildin"] == "") ? conf.put("led_buildin", LED_BUILTIN, true) : false;
+
 String hostName;                      // Default Host name
 unsigned long pingMillis = millis();  // Ping 
+
 
 // Handler function for Home page
 void handleRoot() {
@@ -65,12 +69,9 @@ void setup(void) {
   Serial.print("\n\n\n\n");
   Serial.flush();
   
-  LOG_I("Starting.. ver: %s\n", FIRMWARE_VERSION);
+  LOG_I("Starting.. ver: %s\n", conf["firmware_ver"].c_str());
  
   //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
-  
-  // Store readonly firmware version
-  conf.put("firmware_ver", FIRMWARE_VERSION, true);
  
   // Register handlers for web server    
   server.on("/", handleRoot);  
@@ -81,10 +82,7 @@ void setup(void) {
 
   // Define a ConfigAssist helper
   ConfigAssistHelper confHelper(conf);
-  
-  // Setup led
-  if(conf["led_buildin"]=="") conf.put("led_buildin", LED_BUILTIN, true); 
-  
+
   // Connect to any available network  
   bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
   
