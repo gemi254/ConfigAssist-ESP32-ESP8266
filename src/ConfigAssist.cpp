@@ -22,7 +22,7 @@ ConfigAssist::ConfigAssist() {
   _dirty = false; _apEnabled=false;
   _confFile = String(CA_DEF_CONF_FILE);
   _jStr = CA_DEFAULT_DICT_JSON;
-  _display = DisplayType::AllOpen;
+  _display = ConfigAssistDisplayType::AllOpen;
 }
 
 // Standard constructor with ini file
@@ -35,6 +35,7 @@ ConfigAssist::ConfigAssist(const String& ini_file) {
   else _confFile = CA_DEF_CONF_FILE; 
 
   _jStr = CA_DEFAULT_DICT_JSON;
+  _display = ConfigAssistDisplayType::AllOpen;
 }
 
 // Standard constructor with ini file and json description
@@ -45,8 +46,8 @@ ConfigAssist::ConfigAssist(const String& ini_file, const char * jStr){
   
   if (ini_file != "") _confFile = ini_file;
   else _confFile = CA_DEF_CONF_FILE; 
-  
   _jStr = jStr;  
+  _display = ConfigAssistDisplayType::AllOpen;
 }
 
 // delete 
@@ -1176,19 +1177,28 @@ bool ConfigAssist::saveText(const String fPath, String &txt){
 void ConfigAssist::modifySeperator(int sepNo, String &outSep){
     switch (_display)
     {
-      case DisplayType::AllOpen:
+      case ConfigAssistDisplayType::AllOpen:
         break;
 
-      case DisplayType::Accordion:
-        if(sepNo > 0)
-          outSep.replace("class=\"card\"", "class=\"card closed\"");
+      case ConfigAssistDisplayType::Accordion:              //Accordion first Open
+        if(sepNo == 0)
+          outSep.replace("class=\"card\"", "class=\"card accordion\"");
+        else   
+          outSep.replace("class=\"card\"", "class=\"card accordion closed\"");
+        
         break;
 
-      case DisplayType::AllClosed:
+      case ConfigAssistDisplayType::AccordionToggleClosed:  //Accordion first Open, toggle close
+        if(sepNo == 0)
+          outSep.replace("class=\"card\"", "class=\"card accordion toggle\"");
+        else 
+          outSep.replace("class=\"card\"", "class=\"card accordion toggle closed\"");
+        break;
+
+      case ConfigAssistDisplayType::AllClosed:
         outSep.replace("class=\"card\"", "class=\"card closed\"");
         break;
-
-      default:
+      default:      
         break;
     }
 }
