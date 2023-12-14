@@ -113,7 +113,7 @@ Seperators can be opened and closed when click on their title. You can define th
  Use **AllOpen** to display opened tabs, **AllClosed** to display seperator titles only and **Accordion** to close all but not current tab.
   ```
   // Set the display type 
-  conf.setDisplayType(DisplayType::Accordion);
+  conf.setDisplayType(ConfigAssistDisplayType::Accordion);
   ```
 
 ## Sample variables definition text    
@@ -230,6 +230,21 @@ In order to simplify the proccess of connect to WiFi and set static ip address u
   ```
   // Connect to any available network  
   bool bConn = confHelper.connectToNetwork(15000 /*Timeout ms*/, "led_buildin" /*Key containig internal led*/);
+  ```
+
+## Synchronize time using **ConfigAsistHelper**
+ConfigAssist can synchronize device's time with a ntp server using **ConfigAsistHelper**.
+Just define **ntp_server1**, **ntp_server2**, **ntp_server3** and **time_zone** settings in your config all call **syncTime** with timeout ms to wait until time is synchronized.
+```
+  {
+      "name": "ntp_server1",
+      "label": "Time server to sync time1",
+    "default": "pool.ntp.org"
+  }
+    
+  // Setup time synchronization
+  // Wait max 10 sec
+  confHelper.syncTime(10000);
   ```
 
 ## Setup function
