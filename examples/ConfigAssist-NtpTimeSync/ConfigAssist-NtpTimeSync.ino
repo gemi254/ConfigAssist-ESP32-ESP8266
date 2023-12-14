@@ -19,12 +19,12 @@
 // Config class
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
 
-// Define a ConfigAssist helper
+// Define a ConfigAssist helper class
 ConfigAssistHelper confHelper(conf);
+
 // Setup internal led variable
 bool b1 = (conf["led_buildin"] == "") ? conf.put("led_buildin", LED_BUILTIN, true) : false;
 
-String hostName;                      // Default Host name
 unsigned long pingMillis = millis();  // Ping 
 
 // Handler function for Home page
@@ -71,8 +71,9 @@ void setup(void) {
   LOG_I("Starting.. \n");
  
   //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
-  //Active seperator open, All others closed
-  conf.setDisplayType(DisplayType::Accordion);
+  
+  //Active seperator open/close, All others closed
+  conf.setDisplayType(ConfigAssistDisplayType::AccordionToggleClosed);
 
   // Register handlers for web server    
   server.on("/", handleRoot);  
@@ -102,9 +103,9 @@ void setup(void) {
   LOG_I("HTTP server started\n");
   
   // Setup time synchronization
-  confHelper.setupTimeSync();
-  // Wait for time to be in sync
-  confHelper.waitTimeSync();  
+  // Wait max 10 sec
+  confHelper.syncTime(20000);
+  
 }
 
 // App main loop 
@@ -116,7 +117,8 @@ void loop(void) {
   
   // Display info
   if (millis() - pingMillis >= 5000){
-    LOG_I("Is time sync: %i\n", confHelper.isTimeSync());
+    time_t tnow = time(nullptr);
+    LOG_I("Is time sync: %i time: %s", confHelper.isTimeSync(), ctime(&tnow));
     pingMillis = millis();
   } 
   
