@@ -67,13 +67,15 @@ struct confPairs {
     byte type;
 };
 
-enum class DisplayType:uint8_t  {  
+enum class ConfigAssistDisplayType:uint8_t  {  
   // All cards open
   AllOpen = 0,
   // All cards closed
   AllClosed,
   // Open clicked and close other cards
-  Accordion
+  Accordion,
+  // Open/Close clicked and close other cards
+  AccordionToggleClosed,
 };
 
 //Seperators of config elements
@@ -101,7 +103,7 @@ class ConfigAssist{
   public:  
     // Load configs after storage is started
     void init();    
-    void setDisplayType(DisplayType display) {_display = display; }
+    void setDisplayType(ConfigAssistDisplayType display) {_display = display; }
     // Start storage if not init
     void startStorage();
     // Set ini file at run time
@@ -247,7 +249,7 @@ class ConfigAssist{
     static WEB_SERVER *_server;
     static String _jWifi;
     bool _apEnabled;
-    DisplayType _display;
+    ConfigAssistDisplayType _display;
 #ifdef CA_USE_PERSIST_CON
     static Preferences _prefs;
 #endif    
