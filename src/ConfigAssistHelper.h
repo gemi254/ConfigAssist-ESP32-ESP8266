@@ -1,5 +1,6 @@
-// Helper class allowing eazy connection to WiFi and set static ip using
-// key values contained in a config class;
+// Helper class allowing easy connection to WiFi, set static ip using and synchronize time 
+// using the key values contained in a config class;
+
 class ConfigAssistHelper 
 {    
     public:
@@ -7,41 +8,55 @@ class ConfigAssistHelper
         ~ConfigAssistHelper() {}
     public:
         // Setup ntp time synch
-        void setupTimeSync(){
+        void syncTime(uint32_t syncTimout = 20000){
+            if(_conf[CA_TIMEZONE_KEY]==""){
+                LOG_E("No time zone found in config!\n");
+                return;
+            }
+
             String ntpServers[3] = {"", "", ""};
             confPairs c;
             int i = 0;
             while(_conf.getNextKeyVal(c)){
                 String no;
-                if( _conf.endsWith(c.name, CA_NTPSYNC_KEY, no ) ){
+                if( _conf.endsWith(c.name, CA_NTPSYNC_KEY, no ) ){                    
                     ntpServers[i] = _conf[c.name];
-                    i++;
-                    if(i >= 3) break;
+                    if(i++ > 3) break;
                 }
             }
+
             // Reset
             _conf.getNextKeyVal(c, true);
+            
+            LOG_D("Set environment tz: %s\n", _conf[CA_TIMEZONE_KEY].c_str());
+            setenv("TZ", _conf[CA_TIMEZONE_KEY].c_str(), 1);
+            tzset();
+    
             configTzTime(_conf[CA_TIMEZONE_KEY].c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
-            LOG_I("setupTimeSync tz: %s, npt1: %s, ntp2:, %s ntp3: %s\n", _conf[CA_TIMEZONE_KEY].c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
+            LOG_D("syncTime tz: %s, npt1: %s, ntp2:, %s ntp3: %s\n", _conf[CA_TIMEZONE_KEY].c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
+            
+            // Wait until time is in sync or timeout
+            waitTimeSync( syncTimout );            
         }
+
+        // Is time sycnhronized ?
         bool isTimeSync(){ return time(nullptr) > 1000000000l; }
         
         // Wait for ntp time synchronization
         void waitTimeSync(const uint32_t timeout = 20000 ){
-              // Wait till time is synced
-            LOG_I("Synchronizing time.");            
-            
+            LOG_I("Synchronizing time..\n");                        
             uint32_t startAttemptTime = millis();
             while (!isTimeSync() && millis() - startAttemptTime < timeout) {
                 Serial.print(".");
                 delay(500);
             }
             Serial.println();
-
+            
             // Show time
             time_t tnow = time(nullptr);
-            LOG_I("Synchronized time: %s\n",ctime(&tnow) );
+            LOG_I("Synchronized : %i, time: %s\n", isTimeSync(), ctime(&tnow) );
         }
+        
         // Set static ip from space seperated string
         bool setStaticIP(String st_ip){
             if(st_ip.length() <= 0) return false;
@@ -93,13 +108,13 @@ class ConfigAssistHelper
                 if( _conf.endsWith(c.name, CA_SSID_KEY, no ) ){
                     // Find a ssid, pass pair in config
                     String st_ssidKey = c.name;
-                    String st_ssid = _conf[st_ssidKey];
+                    String st_ssid = c.value;
                     if(st_ssid == "") continue;
                     String st_passKey = st_ssidKey;
                     st_passKey.replace(CA_SSID_KEY, CA_PASSWD_KEY);
-                    LOG_D("Found ssid key: %s, val: %s\n", st_ssidKey.c_str(), st_ssid.c_str());
+                    LOG_V("Found ssid key: %s, val: %s\n", st_ssidKey.c_str(), st_ssid.c_str());
                     String st_pass = _conf[st_passKey];                    
-                    LOG_D("Found pass key: %s, val: %s\n", st_passKey.c_str(), st_pass.c_str());
+                    LOG_V("Found pass key: %s, val: %s\n", st_passKey.c_str(), st_pass.c_str());
 
                     //Set static ip if defined
                     String st_ipKey = st_ssidKey;
@@ -143,5 +158,4 @@ class ConfigAssistHelper
         }
     private:        
         ConfigAssist& _conf;
-
 };
