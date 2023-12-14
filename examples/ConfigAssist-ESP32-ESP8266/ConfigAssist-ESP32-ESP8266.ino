@@ -50,8 +50,8 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
   },{
       "name": "display_style",
      "label": "Choose how the config sections are displayed. Must reboot to apply",
-   "options": "'AllOpen', 'AllClosed', 'Accordion'",
-   "default": "AllOpen"
+   "options": "'AllOpen', 'AllClosed', 'Accordion', 'AccordionToggleClosed'",
+   "default": "AccordionToggleClosed"
   },{
  "seperator": "Other settings"
   },{
@@ -235,15 +235,17 @@ void setup(void) {
   conf.setup(server);
 
   // Set the display type 
-  if(conf["display_type"]=="AllOpen")
-    conf.setDisplayType(DisplayType::AllOpen);
-  else if(conf["display_type"]=="AllClosed")
-    conf.setDisplayType(DisplayType::AllClosed);
-  else if(conf["display_type"]=="Accordion")
-    conf.setDisplayType(DisplayType::Accordion);
+  if(conf["display_style"]=="AllOpen")
+    conf.setDisplayType(ConfigAssistDisplayType::AllOpen);
+  else if(conf["display_style"]=="AllClosed")
+    conf.setDisplayType(ConfigAssistDisplayType::AllClosed);
+  else if(conf["display_style"]=="Accordion")
+    conf.setDisplayType(ConfigAssistDisplayType::Accordion);
+  else if(conf["display_style"]=="AccordionToggleClosed")
+    conf.setDisplayType(ConfigAssistDisplayType::AccordionToggleClosed);
 
   server.begin();
-  LOG_I("HTTP server started\n");
+  LOG_I("HTTP server started, display type: %s\n", conf["display_style"].c_str());
   
   // On the fly generate an ini info file on SPIFFS
   {
