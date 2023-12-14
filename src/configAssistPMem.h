@@ -298,12 +298,12 @@ body {
   display: table;
   clear: both;
 }
-.column .card.closed{
+.column .card.closed {
   height: 26px;
   overflow: hidden;
 }
-.column .card.closed h3{
-  color: darkslategray;
+.column .card.closed h3 {
+  color:  darkgray;
 }
 .card {
   border: 1px solid #cbcaca;
@@ -314,9 +314,10 @@ body {
   margin-bottom: 8px;
   border-radius: 5px;
 }
-.card h3{
+.card h3,
+.card .toggle h3{
   margin:2px;
-  color: darkgray;
+  color: darkslategray
   background-color: whitesmoke;
 }
 .card h3:hover{
@@ -610,20 +611,31 @@ document.addEventListener('DOMContentLoaded', function (event) {
     rangeVal.style.left = 'calc('+position+'px)';
   }
 
-  function closeAllCards(target){
+  function closeAllCards(target, toggle=false){
     $$('.card-header').forEach(el => {
       if(el != target)        
         el.parentElement.classList.add("closed");
       else
-        el.parentElement.classList.remove("closed");
+        if(!toggle) el.parentElement.classList.remove("closed");
+          //el.parentElement.classList.toggle("closed");
+        //else 
+//          el.parentElement.classList.remove("closed");
     });  
   }
   
   // Accordion
   $$('.card-header').forEach(el => {
-     el.addEventListener("click", function (event) {
-        closeAllCards(event.target.parentElement)
-    });
+    if(el.parentElement.classList.contains("accordion")){
+      if(el.parentElement.classList.contains("toggle")){
+        el.addEventListener("click", function (event) {
+          closeAllCards(event.target.parentElement, true)
+        });    
+      }else{
+        el.addEventListener("click", function (event) {
+          closeAllCards(event.target.parentElement)
+        });
+      }
+    }
   });
 
   //Update all ranges
