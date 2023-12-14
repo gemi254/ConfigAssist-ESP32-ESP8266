@@ -19,7 +19,7 @@ PROGMEM const char VARIABLES_DEF_JSON[] = R"=====(
   },{
       "name": "app_name",
      "label": "Name your application",
-   "default": "FirmwareCheck"
+   "default": "NtpTimeSync"
   },{
       "name": "firmware_url",
      "label": "Firmware upgrade url with version and info",
