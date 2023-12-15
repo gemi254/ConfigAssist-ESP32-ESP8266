@@ -7,8 +7,8 @@
   ESP8266WebServer server(80);
 #endif
 
-#define APP_NAME "ConfigAssistTestWifi"      // Define application name
-#define INI_FILE "/ConfigAssistTestWifi.ini" // Define SPIFFS storage file
+#define APP_NAME "TestWifi"      // Define application name
+#define INI_FILE "/TestWifi.ini" // Define SPIFFS storage file
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN 22
@@ -50,7 +50,7 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
   },{
       "name": "app_name",
      "label": "Name your application",
-   "default": "ConfigAssist"
+   "default": "TestWifi"
   },{
       "name": "led_buildin",
      "label": "Enter the pin that the build in led is connected to",
@@ -79,7 +79,7 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
    "default": "30"
   },{
       "name": "time_zone",
-     "label": "Needs to be a valid time zone string",
+     "label": "label": "Needs to be a time zone string<br><small>https://raw.githubusercontent.com/nayarsystems/posix_tz_db/master/zones.csv</small>",
    "default": "EET-2EEST,M3.5.0/3,M10.5.0/4",    
   "datalist": "
 'Etc/GMT,GMT0'
