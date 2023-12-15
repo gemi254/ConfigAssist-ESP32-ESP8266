@@ -15,7 +15,7 @@
 #endif  
 
 #ifndef LOGGER_LOG_LEVEL
-  #define LOGGER_LOG_LEVEL 3             //Set log level for this module
+  #define LOGGER_LOG_LEVEL 4             //Set log level for this module
 #endif 
 
 #define CA_CLASS_VERSION "2.7.6"         // Class version
@@ -27,7 +27,7 @@
 #define CA_SSID_KEY     "_ssid"          // Vars ending with this key or key + Num defines a ssid field
 #define CA_PASSWD_KEY   "_pass"          // The key part that defines a password field
 #define CA_STATICIP_KEY "_ip"            // The key part that defines a static ip field
-#define CA_NTPSYNC_KEY  "ntp_server"     // The key part that defines a static ip field
+#define CA_NTPSYNC_KEY  "ntp_server"     // Vars ending with this key or key + Num define a ntp server
 
 #define CA_HOSTNAME_KEY "host_name"      // The key that defines host name
 #define CA_TIMEZONE_KEY "time_zone"      // The key that defines time zone for setting time
@@ -67,6 +67,7 @@ struct confPairs {
     byte type;
 };
 
+// Define display types for the portal
 enum class ConfigAssistDisplayType:uint8_t  {  
   // All cards open
   AllOpen = 0,
@@ -102,7 +103,8 @@ class ConfigAssist{
     ~ConfigAssist();
   public:  
     // Load configs after storage is started
-    void init();    
+    void init();
+    // Set the portal dislay type. See ConfigAssistDisplayType
     void setDisplayType(ConfigAssistDisplayType display) {_display = display; }
     // Start storage if not init
     void startStorage();
@@ -174,6 +176,7 @@ class ConfigAssist{
 #endif
     // Upload a file to SPIFFS
     void handleFileUpload();
+    // Test the specified connection no
     String testWiFiSTConnection(String no);    
     // Download a file in browser window
     void handleDownloadFile(const String fileName);
