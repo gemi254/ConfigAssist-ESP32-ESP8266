@@ -15,14 +15,13 @@
 #define APP_NAME "NtpTimeSync"      // Define application name
 #define INI_FILE "/NtpTimeSync.ini" // Define SPIFFS storage file
 
-
 // Config class
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
 
 // Define a ConfigAssist helper class
 ConfigAssistHelper confHelper(conf);
 
-// Setup internal led variable
+// Setup internal led variable if not set
 bool b1 = (conf["led_buildin"] == "") ? conf.put("led_buildin", LED_BUILTIN, true) : false;
 
 unsigned long pingMillis = millis();  // Ping 
@@ -82,7 +81,7 @@ void setup(void) {
   });
   server.onNotFound(handleNotFound);  // Append not found handler
  
-   // Connect to any available network  
+  // Connect to any available network  
   bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
   
   // Check connection
