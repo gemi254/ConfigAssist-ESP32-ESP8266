@@ -1,8 +1,8 @@
-PROGMEM const char VARIABLES_DEF_JSON[] = R"=====(
+const char* VARIABLES_DEF_JSON PROGMEM = R"~(
 [{
    "seperator": "Wifi settings"
   },{
-    "name": "st_ssid",
+      "name": "st_ssid",
      "label": "Name for WLAN",
    "default": ""
   },{
@@ -14,19 +14,18 @@ PROGMEM const char VARIABLES_DEF_JSON[] = R"=====(
      "label": "Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac id",
    "default": "configAssist_{mac}"
   },{
-
  "seperator": "Application settings"
   },{
       "name": "app_name",
      "label": "Name your application",
    "default": "NtpTimeSync"
   },{
-      "name": "firmware_url",
-     "label": "Firmware upgrade url with version and info",
-   "default": "https://raw.githubusercontent.com/gemi254/ConfigAssist-ESP32-ESP8266/main/examples/ConfigAssist-FirmwareCheck/firmware/ESP32/lastest.json"
+      "name": "led_buildin",
+     "label": "Enter the pin that the build in led is connected. Leave blank for auto.",
+   "default": "",
+   "attribs": "min=\"4\" max=\"23\" step=\"1\" "
   },{
-
-  "seperator": "Time settings"  
+ "seperator": "Time settings"  
   },{
       "name": "time_zone",
      "label": "Needs to be a valid time zone string",
@@ -74,5 +73,4 @@ PROGMEM const char VARIABLES_DEF_JSON[] = R"=====(
      "name": "ntp_server3",
     "label": "Time server to sync time3",
   "default": "pool.ntp.org"
-}]
-)=====";
+}])~"; 
