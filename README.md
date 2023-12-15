@@ -234,6 +234,10 @@ In order to simplify the proccess of connect to WiFi and set static ip address u
 
 ## Synchronize time using **ConfigAsistHelper**
 ConfigAssist can synchronize device's time with a ntp server using **ConfigAsistHelper**.
+Variables ending with **CA_NTPSYNC_KEY** for example  **ntp_server1**, **ntp_server2**, **ntp_server3**
+will be used as ntp servers.
+The current timezone for the device will be set automatically using **CA_TIMEZONE_KEY** for example **time_zone**
+
 Just define **ntp_server1**, **ntp_server2**, **ntp_server3** and **time_zone** settings in your config all call **syncTime** with timeout ms to wait until time is synchronized.
 ```
   {
