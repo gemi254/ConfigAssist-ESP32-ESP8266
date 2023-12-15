@@ -54,7 +54,7 @@ class ConfigAssistHelper
             
             // Show time
             time_t tnow = time(nullptr);
-            LOG_I("Synchronized : %i, time: %s\n", isTimeSync(), ctime(&tnow) );
+            LOG_I("Synchronized : %i, time: %s", isTimeSync(), ctime(&tnow) );
         }
         
         // Set static ip from space seperated string
