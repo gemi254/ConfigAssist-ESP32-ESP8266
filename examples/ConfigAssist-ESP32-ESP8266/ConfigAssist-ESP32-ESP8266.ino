@@ -39,7 +39,7 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
   },{
       "name": "app_name",
      "label": "Name your application",
-   "default": "ConfigAssist"
+   "default": "ConfigAssistDemo"
   },{
       "name": "led_buildin",
      "label": "Enter the pin that the build in led is connected. Leave blank for auto.",
