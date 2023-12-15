@@ -69,9 +69,9 @@ void ConfigAssist::setJsonDict(const char * jStr, bool load){
   _jStr = jStr;
   if(load) loadJsonDict(_jStr);  
 }
+
 // Start storage if not init
 void ConfigAssist::startStorage() {
-    // Start local storage
   #if defined(ESP32)  
     if(!STORAGE.begin(true)) LOG_E("ESP32 storage init failed!\n"); 
     else LOG_I("Storage started.\n");
@@ -80,6 +80,7 @@ void ConfigAssist::startStorage() {
     else LOG_I("Storage started.\n");
   #endif
 }
+
 // Initialize with defaults
 void ConfigAssist::init() {
   if(_init) return;
@@ -90,8 +91,7 @@ void ConfigAssist::init() {
   if(!_iniLoaded){
     _dirty = true;
     loadJsonDict(_jStr);
-  }
-  
+  }  
   LOG_V("ConfigAssist::init done ini:%i json:%i\n",_iniLoaded, _jsonLoaded);
 }
 
@@ -101,6 +101,7 @@ bool ConfigAssist::valid(){
   return (_iniLoaded || _jsonLoaded);
 }
 
+// True if key exists in conf
 bool ConfigAssist::exists(String key){ return getKeyPos(key) >= 0; }            
     
 // Start an AP with a web server and render config values loaded from json dictionary
@@ -136,7 +137,7 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
 // Implement operator [] i.e. val = config['key']    
 String ConfigAssist::operator [] (String k) { return get(k); }     
     
-// Get a temponary hostname
+// Get the device mac id
 String ConfigAssist::getMacID(){
   String mac = WiFi.macAddress();
   mac.replace(":","");
@@ -282,7 +283,7 @@ String ConfigAssist::getJsonConfig(){
   confPairs c;
   String j = "{";
   while (getNextKeyVal(c)){
-      j += "\"" + c.name + "\": \"" + c.value + "\",";          
+    j += "\"" + c.name + "\": \"" + c.value + "\",";          
   }
   if(j.length()>1) j.remove(j.length() - 1);
   j+="}";
@@ -303,22 +304,22 @@ void ConfigAssist::dump(WEB_SERVER *server){
   }
   
   while (getNextKeyVal(c)){ //List by array ndx
-      if(c.readNo >= 0){
-        len =  sprintf(outBuff, "No: %02i. key: %s, val: %s, lbl: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
-        if(server) server->sendContent(outBuff, len);
-        else LOG_I("%s", outBuff);
-      }
+    if(c.readNo >= 0){
+      len =  sprintf(outBuff, "No: %02i. key: %s, val: %s, lbl: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+      if(server) server->sendContent(outBuff, len);
+      else LOG_I("%s", outBuff);
+    }
   }
 
   strcpy(outBuff, "Dump read only keys: \n");
   if(server) server->sendContent("\n" + String(outBuff));    
   else LOG_I("%s", outBuff);  
   while (getNextKeyVal(c)){
-      if(c.readNo < 0){
-        len =  sprintf(outBuff, "No: %03i, key: %s, val: %s, lbl: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
-        if(server) server->sendContent(outBuff, len);
-        else LOG_I("%s", outBuff);
-      }
+    if(c.readNo < 0){
+      len =  sprintf(outBuff, "No: %03i, key: %s, val: %s, lbl: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+      if(server) server->sendContent(outBuff, len);
+      else LOG_I("%s", outBuff);
+    }
   }
 
   strcpy(outBuff, "Dump indexes: \n");
@@ -326,10 +327,10 @@ void ConfigAssist::dump(WEB_SERVER *server){
   else LOG_I("%s", outBuff);  
   size_t i = 0;  
   while( i < _keysNdx.size() ){
-      int len =  sprintf(outBuff, "No: %02i, ndx: %i, key: %s\n", i, _keysNdx[i].ndx, _keysNdx[i].key.c_str());      
-      if(server) server->sendContent(outBuff, len);
-      else LOG_I("%s", outBuff);
-      i++;
+    int len =  sprintf(outBuff, "No: %02i, ndx: %i, key: %s\n", i, _keysNdx[i].ndx, _keysNdx[i].key.c_str());      
+    if(server) server->sendContent(outBuff, len);
+    else LOG_I("%s", outBuff);
+    i++;
   }   
   
   strcpy(outBuff, "Dump sperators: \n");
@@ -337,10 +338,10 @@ void ConfigAssist::dump(WEB_SERVER *server){
   else LOG_I("%s", outBuff);  
   i = 0;
   while( i < _seperators.size() ){
-      int len =  sprintf(outBuff, "No: %02i, key: %s, val: %s\n", i, _seperators[i].name.c_str(), _seperators[i].value.c_str() );
-      if(server) server->sendContent(outBuff, len);
-      else LOG_I("%s", outBuff);
-      i++;
+    int len =  sprintf(outBuff, "No: %02i, key: %s, val: %s\n", i, _seperators[i].name.c_str(), _seperators[i].value.c_str() );
+    if(server) server->sendContent(outBuff, len);
+    else LOG_I("%s", outBuff);
+    i++;
   }
 }
 
@@ -724,15 +725,15 @@ void ConfigAssist::handleFileUpload(){
   #endif //CA_USE_OTAUPLOAD
   if(uploadfile.status == UPLOAD_FILE_START){
     #ifdef CA_USE_OTAUPLOAD
-        if(isOta){
-          uint32_t otaSize = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-          LOG_I("Firmware update initiated: %s\r\n", uploadfile.filename.c_str());
-          if (!Update.begin(otaSize)) { //start with max available size
-            LOG_E("OTA Error: %x\n", Update.getError());
-            Update.printError(Serial);
-          }
-          return;
+      if(isOta){
+        uint32_t otaSize = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+        LOG_I("Firmware update initiated: %s\r\n", uploadfile.filename.c_str());
+        if (!Update.begin(otaSize)) { //start with max available size
+          LOG_E("OTA Error: %x\n", Update.getError());
+          Update.printError(Serial);
         }
+        return;
+      }
     #endif //CA_USE_OTAUPLOAD
     filename = uploadfile.filename;
     if(filename.length()==0) return;
@@ -744,22 +745,22 @@ void ConfigAssist::handleFileUpload(){
     tmpFile = STORAGE.open(tmpFilename, "w+");    
   }else if (uploadfile.status == UPLOAD_FILE_WRITE){
     #ifdef CA_USE_OTAUPLOAD
-        if(isOta){ // flashing firmware to ESP
-          if (Update.write(uploadfile.buf, uploadfile.currentSize) != uploadfile.currentSize) {
-            LOG_E("OTA Error: %x\n", Update.getError());
-            Update.printError(Serial);        
-          }
-          // Store the next milestone to output
-          uint16_t chunk_size  = 51200;
-          static uint32_t next = 51200;
-
-          // Check if we need to output a milestone (100k 200k 300k)
-          if (uploadfile.totalSize >= next) {
-            Serial.printf("%dk ", next / 1024);
-            next += chunk_size;
-          }
-          return;
+      if(isOta){ // flashing firmware to ESP
+        if (Update.write(uploadfile.buf, uploadfile.currentSize) != uploadfile.currentSize) {
+          LOG_E("OTA Error: %x\n", Update.getError());
+          Update.printError(Serial);        
         }
+        // Store the next milestone to output
+        uint16_t chunk_size  = 51200;
+        static uint32_t next = 51200;
+
+        // Check if we need to output a milestone (100k 200k 300k)
+        if (uploadfile.totalSize >= next) {
+          Serial.printf("%dk ", next / 1024);
+          next += chunk_size;
+        }
+        return;
+      }
     #endif //CA_USE_OTAUPLOAD
     //Write the received bytes to the file
     if(tmpFile) tmpFile.write(uploadfile.buf, uploadfile.currentSize);
@@ -770,23 +771,23 @@ void ConfigAssist::handleFileUpload(){
     out.replace("{url}", "/cfg");
     out.replace("{refresh}", "9000");
     #ifdef CA_USE_OTAUPLOAD
-        if(isOta){ // flashing firmware to ESP
-          if (Update.end(true)) { //true to set the size to the current progress
-            msg = "Firmware update successful file: <font style='color: blue;'>" + uploadfile.filename + "</font>, size: " + uploadfile.totalSize + " B";
-            LOG_I("\n%s\n", msg.c_str());
-            out.replace("{reboot}", "true");
-            msg += "<br>Device now will reboot..";
-          } else {
-            msg = "Firmware update ERROR, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B" + ", error:" + Update.getError();
-            LOG_E("\n%s\n", msg.c_str());
-            Update.printError(Serial);
-            out.replace("{reboot}", "false");
-          }
-          out.replace("{title}", "Firmware upgrade");
-          out.replace("{msg}", msg.c_str());
-          this->_server->send(200,"text/html",out);
-          return;
+      if(isOta){ // flashing firmware to ESP
+        if (Update.end(true)) { //true to set the size to the current progress
+          msg = "Firmware update successful file: <font style='color: blue;'>" + uploadfile.filename + "</font>, size: " + uploadfile.totalSize + " B";
+          LOG_I("\n%s\n", msg.c_str());
+          out.replace("{reboot}", "true");
+          msg += "<br>Device now will reboot..";
+        } else {
+          msg = "Firmware update ERROR, file: "+ uploadfile.filename + ", size: " + uploadfile.totalSize + " B" + ", error:" + Update.getError();
+          LOG_E("\n%s\n", msg.c_str());
+          Update.printError(Serial);
+          out.replace("{reboot}", "false");
         }
+        out.replace("{title}", "Firmware upgrade");
+        out.replace("{msg}", msg.c_str());
+        this->_server->send(200,"text/html",out);
+        return;
+      }
     #endif //CA_USE_OTAUPLOAD
     if(tmpFile){ // If the file was successfully created    
       tmpFile.close();  
@@ -900,22 +901,22 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       if(key.endsWith(CA_FILENAME_IDENTIFIER)) continue;
       if(key=="clockOffs" && server->hasArg("clockUTC")) continue;
       if(key=="clockUTC"){
-          // Synchronize to browser clock if out of sync
-          String offs("0");
-          if(server->hasArg("clockOffs")){
-            offs = String(server->arg("clockOffs"));
-          }
-          checkTime(val.toInt(), offs.toInt());
-          server->send(200, "text/html", "OK");
-          server->client().flush(); 
-          return;
+        // Synchronize to browser clock if out of sync
+        String offs("0");
+        if(server->hasArg("clockOffs")){
+          offs = String(server->arg("clockOffs"));
+        }
+        checkTime(val.toInt(), offs.toInt());
+        server->send(200, "text/html", "OK");
+        server->client().flush(); 
+        return;
       }
       //Check if it is a text box with file name
       String fileNameKey = server->argName(i) + CA_FILENAME_IDENTIFIER;
       if(server->hasArg(fileNameKey)){
-          String fileName = server->arg(fileNameKey);
-          saveText(fileName, val);
-          val = fileName;
+        String fileName = server->arg(fileNameKey);
+        saveText(fileName, val);
+        val = fileName;
       }
       LOG_D("Form upd: %s = %s\n", key.c_str(), val.c_str());
       if(!put(key, val)) reply = "ERROR: " + key;
