@@ -1,3 +1,6 @@
+2.7.6 (2023-12-15)
+  * Added ntp time synchronization
+
 2.7.5 (2023-11-07)
   * Added didplay types for seperators. Fixed errors.
 
