@@ -15,10 +15,10 @@
 #endif  
 
 #ifndef LOGGER_LOG_LEVEL
-  #define LOGGER_LOG_LEVEL 4             //Set log level for this module
+  #define LOGGER_LOG_LEVEL 3             //Set log level for this module
 #endif 
 
-#define CA_CLASS_VERSION "2.7.6"         // Class version
+#define CA_CLASS_VERSION "2.7.6a"        // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
