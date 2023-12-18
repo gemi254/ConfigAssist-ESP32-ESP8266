@@ -7,6 +7,14 @@ class ConfigAssistHelper
         ConfigAssistHelper(ConfigAssist &conf): _conf(conf) { }
         ~ConfigAssistHelper() {}
     public:
+        void setEnvTimeZone(){
+            setEnvTimeZone(_conf[CA_TIMEZONE_KEY].c_str());
+        }
+        void setEnvTimeZone(const char *tz){
+            LOG_D("Set environment tz: %s\n", tz);
+            setenv("TZ", tz, 1);
+            tzset();
+        }
         // Setup ntp time synch
         void syncTime(uint32_t syncTimout = 20000){
             if(_conf[CA_TIMEZONE_KEY]==""){
@@ -28,9 +36,7 @@ class ConfigAssistHelper
             // Reset
             _conf.getNextKeyVal(c, true);
             
-            LOG_D("Set environment tz: %s\n", _conf[CA_TIMEZONE_KEY].c_str());
-            setenv("TZ", _conf[CA_TIMEZONE_KEY].c_str(), 1);
-            tzset();
+            setEnvTimeZone();
     
             configTzTime(_conf[CA_TIMEZONE_KEY].c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
             LOG_D("syncTime tz: %s, npt1: %s, ntp2:, %s ntp3: %s\n", _conf[CA_TIMEZONE_KEY].c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
