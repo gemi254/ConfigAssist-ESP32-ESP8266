@@ -95,6 +95,8 @@ In your application sketch file you must define a json dictionary that includes 
 + If you use keyword `checked` instead of `default` a Boolean value will be used that will be edited by a **check box**
 + You can combine keywords `default` with `options` in order to use a select list that will be edited by a **drop list**. 
   - The `options` field must contain a comma separated list of values and can be enclosed by single quotes.
+  - The `options` field can contains **option names**, **values pairs** delimited with ':' for example 'AllOpen':'0', 'AllClosed':'1' etc.
+
 + You can combine keywords `default` with `range` in order to use a value that will be edited by a **input range**. 
   - The `range` field must contain a comma separated list of `min, max, step` and can be enclosed by single quotes.
 + You can combine keywords `default` with `datalist` in order to use a value that will be edited by a **combo box**. 
