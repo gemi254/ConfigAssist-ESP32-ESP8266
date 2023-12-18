@@ -575,7 +575,7 @@ input:focus + .slider {
 }
 
 input:checked + .slider:before {
-  transform: translateX(calc(var(--elmSize) * 0.9));
+  transform: translateX(calc(var(--elmSize) * 0.5));
 }
 
 select {
@@ -905,7 +905,7 @@ PROGMEM const char CONFIGASSIST_HTML_SELECT_BOX[] = R"=====(
 
 // Template for one input select option
 PROGMEM const char CONFIGASSIST_HTML_SELECT_OPTION[] = 
-R"=====(            <option value="{optVal}"{sel}>{optVal}</option>
+R"=====(            <option value="{optVal}"{sel}>{optName}</option>
 )=====";
 
 // Template for one input select datalist option
