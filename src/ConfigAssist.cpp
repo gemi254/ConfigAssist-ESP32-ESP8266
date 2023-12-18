@@ -1348,9 +1348,21 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
       opt = String(CONFIGASSIST_HTML_SELECT_OPTION);
     String optVal(token);
     if(optVal=="") continue;
+    int k = optVal.indexOf(":");
+    String optName;
+    if( k > 0){
+      optName = optVal.substring(0, k-1);
+      optVal = optVal.substring(k+1, optVal.length());
+    }else{
+      optName = optVal;
+    }
     optVal.replace("'","");
     optVal.trim();
+    optName.replace("'","");
+    optName.trim();
+    
     opt.replace("{optVal}", optVal);
+    opt.replace("{optName}", optName);
     if(optVal == defVal){
       opt.replace("{sel}", " selected");
     }else{
