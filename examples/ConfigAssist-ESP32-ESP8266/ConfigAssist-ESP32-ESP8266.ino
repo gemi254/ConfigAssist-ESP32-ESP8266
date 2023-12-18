@@ -50,7 +50,7 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
   },{
       "name": "display_style",
      "label": "Choose how the config sections are displayed. Must reboot to apply",
-   "options": "'AllOpen', 'AllClosed', 'Accordion', 'AccordionToggleClosed'",
+   "options": "'AllOpen': '0', 'AllClosed': '1', 'Accordion': '2', 'AccordionToggleClosed': '3'",
    "default": "AccordionToggleClosed"
   },{
  "seperator": "Other settings"
@@ -234,15 +234,7 @@ void setup(void) {
   // Append config assist handlers to web server 
   conf.setup(server);
 
-  // Set the display type 
-  if(conf["display_style"]=="AllOpen")
-    conf.setDisplayType(ConfigAssistDisplayType::AllOpen);
-  else if(conf["display_style"]=="AllClosed")
-    conf.setDisplayType(ConfigAssistDisplayType::AllClosed);
-  else if(conf["display_style"]=="Accordion")
-    conf.setDisplayType(ConfigAssistDisplayType::Accordion);
-  else if(conf["display_style"]=="AccordionToggleClosed")
-    conf.setDisplayType(ConfigAssistDisplayType::AccordionToggleClosed);
+  conf.setDisplayType((ConfigAssistDisplayType)conf["display_style"].toInt());
 
   server.begin();
   LOG_I("HTTP server started, display type: %s\n", conf["display_style"].c_str());
