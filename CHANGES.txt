@@ -1,3 +1,6 @@
+2.7.6b 
+  * Added callback function on updates.
+
 2.7.6 (2023-12-15)
   * Added ntp time synchronization
 
