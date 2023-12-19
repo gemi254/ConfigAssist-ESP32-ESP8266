@@ -270,7 +270,22 @@ void setup()
     return;
   }
   ```
-  
+## Call back function
+You can define a call back function wich will be called when the portal changes a value.
+This function will be called each time a value is changed from the portal with the value name as a parameter. 
+```
+
+// Will be called when portal is updating a key
+void onDataChanged(String key){
+  LOG_I("Data changed, key:%s, val: %s \n", key.c_str(), conf[key].c_str());
+}
+
+// Setup call back function
+conf.setRemotUpdateCallback(onDataChanged);
+
+```
+
+## Ini files
 **ConfigAssist** can also used to quick generate and store ini files.
 Just call the class constructor with a filename to be saved and null to disable json.
 ```
@@ -281,6 +296,7 @@ and add the parameters to be stored with
 info.put("var1", "test1", true);
 info.saveConfigFile();
 ```
+
 ## Logging to a file
 **ConfigAssist** can redirect serial print functions to a file in a spiffs and a **Debug log** can be generated.
 In your application you use **LOG_E**, **LOG_W**, **LOG_I**, **LOG_D** macros instead of **Serial.prinf**
