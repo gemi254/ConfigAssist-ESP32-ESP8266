@@ -180,7 +180,12 @@ void handleNotFound() {
   }
   server.send(404, "text/plain", message);
 }
+void onDataChanged(String key){
+  LOG_I("Data changed: %s = %s \n", key.c_str(), conf[key].c_str());
+  if(key == "display_style")
+    conf.setDisplayType((ConfigAssistDisplayType)conf["display_style"].toInt());
 
+}
 // Setup function
 void setup(void) {
   
@@ -204,7 +209,10 @@ void setup(void) {
   
   debugMemory("Loaded config");
   pinMode(conf["led_buildin"].toInt(), OUTPUT);
-     
+
+  // Will be called when portal is updating a key
+  conf.setRemotUpdateCallback(onDataChanged);
+
   // Define a ConfigAssist helper
   ConfigAssistHelper confHelper(conf);
   WiFi.setAutoConnect(false);
@@ -233,9 +241,10 @@ void setup(void) {
  
   // Append config assist handlers to web server 
   conf.setup(server);
-
+  
+  // Set the defined display type
   conf.setDisplayType((ConfigAssistDisplayType)conf["display_style"].toInt());
-
+  
   server.begin();
   LOG_I("HTTP server started, display type: %s\n", conf["display_style"].c_str());
   
