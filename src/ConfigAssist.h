@@ -18,7 +18,7 @@
   #define LOGGER_LOG_LEVEL 3             //Set log level for this module
 #endif 
 
-#define CA_CLASS_VERSION "2.7.6a"        // Class version
+#define CA_CLASS_VERSION "2.7.6b"        // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -91,6 +91,9 @@ struct confNdx {
     size_t ndx;
 };
 
+// Call back function type
+typedef std::function<void(String key)> ConfigAssistEventG;
+
 // ConfigAssist class
 class ConfigAssist{ 
   public:
@@ -118,6 +121,8 @@ class ConfigAssist{
     bool exists(String key);
     // Start an AP with a web server and render config values loaded from json dictionary
     void setup(WEB_SERVER& server, bool apEnable = false);
+    // Add a global callback function to handle changes on form updates
+    void setRemotUpdateCallback(ConfigAssistEventG ev);
     // Get a temponary hostname
     static String getMacID();
     // Get a temponary hostname
@@ -253,6 +258,7 @@ class ConfigAssist{
     static String _jWifi;
     bool _apEnabled;
     ConfigAssistDisplayType _display;
+    ConfigAssistEventG _ev;
 #ifdef CA_USE_PERSIST_CON
     static Preferences _prefs;
 #endif    
