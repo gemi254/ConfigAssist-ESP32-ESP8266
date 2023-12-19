@@ -116,24 +116,27 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
     server.begin();
     _apEnabled = true;
   }
-#ifdef CA_USE_WIFISCAN 
-  startScanWifi();      
-  server.on("/scan", [this] { this->handleWifiScanRequest(); } );
-#endif  
-  server.on("/cfg",[this] { this->handleFormRequest(this->_server);  } );
-  server.on("/upl", [this] { this->sendHtmlUploadPage(); } );
-  server.on("/fupl", HTTP_POST,[this](){  },  [this](){this->handleFileUpload(); });
-#ifdef CA_USE_OTAUPLOAD  
-  server.on("/ota", [this] { this->sendHtmlOtaUploadPage(); } );
-#endif
-#ifdef CA_USE_FIMRMCHECK
-  if(get(CA_FIRMWURL_KEY) != "")
-    server.on("/fwc", [this] { this->sendHtmlFirmwareCheckPage(); } );
-#endif
+  #ifdef CA_USE_WIFISCAN 
+    startScanWifi();      
+    server.on("/scan", [this] { this->handleWifiScanRequest(); } );
+  #endif  
+    server.on("/cfg",[this] { this->handleFormRequest(this->_server);  } );
+    server.on("/upl", [this] { this->sendHtmlUploadPage(); } );
+    server.on("/fupl", HTTP_POST,[this](){  },  [this](){this->handleFileUpload(); });
+  #ifdef CA_USE_OTAUPLOAD  
+    server.on("/ota", [this] { this->sendHtmlOtaUploadPage(); } );
+  #endif
+  #ifdef CA_USE_FIMRMCHECK
+    if(get(CA_FIRMWURL_KEY) != "")
+      server.on("/fwc", [this] { this->sendHtmlFirmwareCheckPage(); } );
+  #endif
   server.onNotFound([this] { this->handleNotFound(); } );
   LOG_V("ConfigAssist setup AP & handlers done.\n");      
 }
-
+// Add a global callback function to handle changes
+void ConfigAssist::setRemotUpdateCallback(ConfigAssistEventG ev){
+  _ev = ev;
+}
 // Implement operator [] i.e. val = config['key']    
 String ConfigAssist::operator [] (String k) { return get(k); }     
     
@@ -921,6 +924,10 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       LOG_D("Form upd: %s = %s\n", key.c_str(), val.c_str());
       if(!put(key, val)) reply = "ERROR: " + key;
       else reply = "OK";
+      // Call global change handler
+      if(_ev){
+        _ev(key);
+      }
     }
     
     //Reboot esp
