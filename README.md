@@ -171,7 +171,7 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
    "file": "/calibration.ini",
 "default": "X1=222, Y1=1.22
 X2=900, Y2=3.24"
-},{
+}
 ```
 
 ## Project definitions in your main app
@@ -190,6 +190,21 @@ X2=900, Y2=3.24"
 
 + if you want to use a different external **ini file name** and **json description** disabled
   - `ConfigAssist conf(INI_FILE, NULL);  // ConfigAssist with custom ini name & dictionary disabled`
+ 
+## Call back function
+You can define a call back function wich will be called when the portal changes a value.
+This function will be called each time a value is changed from the portal with the value name as a parameter. 
+```
+
+// Will be called when portal is updating a key
+void onDataChanged(String key){
+  LOG_I("Data changed, key:%s, val: %s \n", key.c_str(), conf[key].c_str());
+}
+
+// Setup call back function
+conf.setRemotUpdateCallback(onDataChanged);
+
+```
  
 ## WIFI Access point handlers
 
@@ -270,20 +285,6 @@ void setup()
     return;
   }
   ```
-## Call back function
-You can define a call back function wich will be called when the portal changes a value.
-This function will be called each time a value is changed from the portal with the value name as a parameter. 
-```
-
-// Will be called when portal is updating a key
-void onDataChanged(String key){
-  LOG_I("Data changed, key:%s, val: %s \n", key.c_str(), conf[key].c_str());
-}
-
-// Setup call back function
-conf.setRemotUpdateCallback(onDataChanged);
-
-```
 
 ## Ini files
 **ConfigAssist** can also used to quick generate and store ini files.
