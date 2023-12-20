@@ -133,10 +133,12 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
   server.onNotFound([this] { this->handleNotFound(); } );
   LOG_V("ConfigAssist setup AP & handlers done.\n");      
 }
+
 // Add a global callback function to handle changes
 void ConfigAssist::setRemotUpdateCallback(ConfigAssistEventG ev){
   _ev = ev;
 }
+
 // Implement operator [] i.e. val = config['key']    
 String ConfigAssist::operator [] (String k) { return get(k); }     
     
@@ -460,7 +462,7 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool updateInfo) {
     }
   }
 
-  //Sort seperators vectors for binarry search
+  // Sort seperators vectors for binarry search
   sortSeperators();
   _jsonLoaded = true;
   LOG_D("Loaded json dict, keys: %i\n", i);
@@ -526,7 +528,7 @@ bool ConfigAssist::saveConfigFile(String filename) {
     _dirty = true;
   }
 
-  //Save config file with updated content
+  // Save config file with updated content
   size_t szOut=0;
   for (auto& row: _configs) {
     if(row.name==CA_HOSTNAME_KEY){
@@ -1031,7 +1033,7 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   server->sendContent(out);
 }
     
-//Get edit page html table (no form)
+// Get edit page html table (no form)
 String ConfigAssist::getEditHtml(){
   String ret = "";
   String out = "";
@@ -1078,7 +1080,7 @@ bool ConfigAssist::isNumeric(String s){ //1.0, -.232, .233, -32.32
   return true;
 }
 
-// name ends with key + number?
+// Name ends with key + number?
 bool ConfigAssist::endsWith(String name, String key, String &no) {
   int l = name.length();
   while( --l >= 0 )
@@ -1114,7 +1116,7 @@ bool ConfigAssist::loadText(const String fPath, String &txt){
     LOG_E("Failed to load: %s, sz: %u B\n", fPath.c_str(), file.size());
     return false;
   }
-  //Load text from file
+  // Load text from file
   txt = "";
   while (file.available()) {
     txt += file.readString();
@@ -1182,6 +1184,7 @@ bool ConfigAssist::saveText(const String fPath, String &txt){
   file.close();
   return true;
 }
+// Implement seperators mode
 void ConfigAssist::modifySeperator(int sepNo, String &outSep){
     switch (_display)
     {
@@ -1336,7 +1339,7 @@ String ConfigAssist::getRangeHtml(String defVal, String attribs){
   return ret;
 }
 
-//Render options list
+// Render options list
 String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDataList){
   String ret="";
   char *token = NULL;
@@ -1447,7 +1450,7 @@ void ConfigAssist::loadVectItem(String keyValPair) {
   }
 #endif
 
-  //No label added for memory issues
+  // No label added for memory issues
   add(key, val, true);
   if (_configs.size() > CA_MAX_PARAMS) 
     LOG_W("Config file entries: %u exceed max: %u\n", _configs.size(), CA_MAX_PARAMS);
