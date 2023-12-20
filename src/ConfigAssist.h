@@ -108,13 +108,13 @@ class ConfigAssist{
     // Load configs after storage is started
     void init();
     // Set the portal dislay type. See ConfigAssistDisplayType
-    void setDisplayType(ConfigAssistDisplayType display) {_display = display; }
+    void setDisplayType(ConfigAssistDisplayType display) { _display = display; }
     // Start storage if not init
     void startStorage();
     // Set ini file at run time
     void setIniFile(const String& ini_file);
     // Set json at run time.. Must called before _init 
-    void setJsonDict(const char * jStr, bool load=false);
+    void setJsonDict(const char * jStr, bool load = false);
     // Is config loaded valid ?
     bool valid();
     // Is key exists in configuration
@@ -158,11 +158,11 @@ class ConfigAssist{
     // Load json description file. On updateInfo = true update only additional pair info    
     int loadJsonDict(const char *jStr, bool updateInfo = false);
     // Load config pairs from an ini file
-    bool loadConfigFile(String filename="");
+    bool loadConfigFile(String filename = "");
     // Delete configuration files
-    bool deleteConfig(String filename="");
+    bool deleteConfig(String filename = "");
     // Save configs vectors in an ini file
-    bool saveConfigFile(String filename="");
+    bool saveConfigFile(String filename = "");
     // Get system local time
     String getLocalTime();
     // Compare browser with system time and correct if needed
@@ -189,9 +189,9 @@ class ConfigAssist{
     void handleNotFound();
     // Respond a HTTP request for the form use the CONF_FILE
     // to save. Save, Reboot ESP, Reset to defaults, cancel edits
-    void handleFormRequest(WEB_SERVER * server);
+    void handleFormRequest(WEB_SERVER* server);
     // Send edit html to client
-    void sendHtmlEditPage(WEB_SERVER * server);    
+    void sendHtmlEditPage(WEB_SERVER* server);    
     // Get edit page html table (no form)
     String getEditHtml();
     // Get page css
@@ -221,14 +221,14 @@ class ConfigAssist{
     // Load a key from nvs
     bool loadPref(String key, String &val);
 #endif
-    // Setup seperator to openClose
+    // Implement seperators mode
     void modifySeperator(int sepNo, String &outSep);
     // Render keys,values to html lines
     bool getEditHtmlChunk(String &out);
     // Render range 
     String getRangeHtml(String defVal, String attribs);
     // Render options list
-    String getOptionsListHtml(String defVal, String attribs, bool isDataList=false);
+    String getOptionsListHtml(String defVal, String attribs, bool isDataList = false);
     // Get location of given key to retrieve other elements
     int getKeyPos(String key);
     // Get seperation location of given key
