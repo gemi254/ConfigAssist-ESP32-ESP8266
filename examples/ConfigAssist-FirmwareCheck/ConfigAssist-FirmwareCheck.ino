@@ -25,8 +25,6 @@ bool b1 = conf.put("firmware_ver", "1.0.0", true);
 bool b2 = (conf["led_buildin"] == "") ? conf.put("led_buildin", LED_BUILTIN, true) : false;
 
 String hostName;                      // Default Host name
-unsigned long pingMillis = millis();  // Ping 
-
 
 // Handler function for Home page
 void handleRoot() {
@@ -111,13 +109,7 @@ void loop(void) {
   #if not defined(ESP32)
     MDNS.update();
   #endif  
-  
-  // Display info
-  if (millis() - pingMillis >= 10000){
 
-    pingMillis = millis();
-  } 
-  
   // Allow the cpu to switch to other tasks  
   delay(2);
 }
