@@ -1,5 +1,5 @@
-2.7.6b 
-  * Added callback function on updates.
+2.7.7 (2023-12-21)
+  * Added callback function on portal updates.
 
 2.7.6 (2023-12-15)
   * Added ntp time synchronization
