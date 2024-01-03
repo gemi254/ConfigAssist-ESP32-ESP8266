@@ -16,7 +16,7 @@ ConfigAssist KEYWORD1
 init KEYWORD2
 initJsonDict KEYWORD2
 handleFormRequest KEYWORD2
-loadJsonDict KEYWORD2
+loadDict KEYWORD2
 setup KEYWORD2
 loadConfigFile KEYWORD2
 get KEYWORD2
