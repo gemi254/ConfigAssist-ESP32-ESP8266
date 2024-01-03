@@ -281,13 +281,17 @@ Variables ending with **CA_NTPSYNC_KEY** for example  **ntp_server1**, **ntp_ser
 will be used as ntp servers.
 The current timezone for the device will be set automatically using **CA_TIMEZONE_KEY** for example **time_zone**
 
-Just define **ntp_server1**, **ntp_server2**, **ntp_server3** and **time_zone** settings in your config all call **syncTime** with timeout ms to wait until time is synchronized.
+Just define **ntp_server1**, **ntp_server2**, **ntp_server3** and **time_zone** settings in your config and call **syncTime** with timeout ms to wait until time is synchronized.
 ```
-  {
-      "name": "ntp_server1",
-      "label": "Time server to sync time1",
-    "default": "pool.ntp.org"
-  }
+- ntp_server1: 
+      label: Time server to sync time1
+      default: "europe.pool.ntp.org"
+  - ntp_server2: 
+      label: Time server to sync time2
+      default: "time.windows.com"
+  - ntp_server3: 
+      label: Time server to sync time3
+      default: "pool.ntp.org"
     
   // Setup time synchronization
   // Wait max 10 sec
