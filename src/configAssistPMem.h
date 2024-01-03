@@ -1,20 +1,36 @@
 // Minimal application config dictionary
+#ifdef CA_USE_YAML
+const char* CA_DEFAULT_DICT_JSON PROGMEM = R"=====(
+Wifi settings:
+  - st_ssid:
+      label: Name for WLAN
+      default: '' 
+  - st_pass:
+      label: Password for WLAN
+      default: ''  
+  - host_name: 
+      label: >-
+        Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac
+        id
+      default: configAssist_{mac}
+)=====";
+#else
 const char* CA_DEFAULT_DICT_JSON PROGMEM = R"=====(
 [ {
       "name": "st_ssid",
      "label": "Enter the name WLAN to connect",
-   "default": ""
+   "default": "mdk3"
   },{
       "name": "st_pass",
      "label": "Password for station WLAN",
-   "default": ""
+   "default": "2843028858"
   },{
       "name": "host_name",
      "label": "Enter a name for your host",
    "default": "configAssist_{mac}"
   }
 ])=====";
-
+#endif
 // Template for message page
 PROGMEM const char CONFIGASSIST_HTML_START[] = R"=====(
 <!DOCTYPE HTML>
