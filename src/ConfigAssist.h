@@ -3,7 +3,16 @@
 
 #include <vector>
 #include <regex>
-#include <ArduinoJson.h>
+
+#define CA_USE_YAML   // Comment to use JSON
+
+#ifdef CA_USE_YAML
+  #include "dYaml.h" 
+    using namespace dyml; 
+#else
+  #include <ArduinoJson.h>
+#endif
+
 #if defined(ESP32)
   #include <WebServer.h>
   #include "SPIFFS.h"
@@ -18,7 +27,7 @@
   #define LOGGER_LOG_LEVEL 3             // Set log level for this module
 #endif 
 
-#define CA_CLASS_VERSION "2.7.7"         // Class version
+#define CA_CLASS_VERSION "2.7.8"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -57,6 +66,7 @@
   #define CA_PREFERENCES_NS "ConfigAssist" // Name space for pererences
   #include <Preferences.h>  
 #endif
+
 //Structure for config elements
 struct confPairs {
     String name;
@@ -102,9 +112,9 @@ class ConfigAssist{
     // Initialize with custom ini file, default dict
     ConfigAssist(const String& ini_file);
     // Initialize with custom Ini file, and custom json dict
-    ConfigAssist(const String& ini_file, const char * jStr);
+    ConfigAssist(const String& ini_file, const char * dictStr);
     ~ConfigAssist();
-  public:  
+  public:
     // Load configs after storage is started
     void init();
     // Set the portal dislay type. See ConfigAssistDisplayType
@@ -114,7 +124,7 @@ class ConfigAssist{
     // Set ini file at run time
     void setIniFile(const String& ini_file);
     // Set json at run time.. Must called before _init 
-    void setJsonDict(const char * jStr, bool load = false);
+    void setDictStr(const char * dictStr, bool load = false);
     // Is config loaded valid ?
     bool valid();
     // Is key exists in configuration
@@ -153,10 +163,12 @@ class ConfigAssist{
     bool getNextKeyVal(confPairs &c, bool reset = false); 
     // Get the configuration in json format
     String getJsonConfig();
+    // Display config items in web server, yaml like
+    void dumpYaml(WEB_SERVER *server = NULL);
     // Display config items in web server, or on log on NULL
     void dump(WEB_SERVER *server = NULL);
-    // Load json description file. On updateInfo = true update only additional pair info    
-    int loadJsonDict(const char *jStr, bool updateInfo = false);
+    // Load a description file. On updateInfo = true update only additional pair info    
+    String loadDict(const char *dictStr, bool updateInfo = false);
     // Load config pairs from an ini file
     bool loadConfigFile(String filename = "");
     // Delete configuration files
@@ -250,9 +262,9 @@ class ConfigAssist{
     std::vector<confSeperators> _seperators;
     bool _init;
     bool _iniLoaded;
-    bool _jsonLoaded;
+    bool _dictLoaded;
     bool _dirty;
-    const char *_jStr;
+    const char *_dictStr;
     String _confFile;
     static WEB_SERVER *_server;
     static String _jWifi;
@@ -261,6 +273,6 @@ class ConfigAssist{
     ConfigAssistEventG _ev;
 #ifdef CA_USE_PERSIST_CON
     static Preferences _prefs;
-#endif    
+#endif
 };
 #endif // _CONFIG_ASSIST_H
