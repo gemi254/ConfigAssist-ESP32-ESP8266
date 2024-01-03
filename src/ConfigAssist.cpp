@@ -15,38 +15,39 @@ String ConfigAssist::_jWifi="[{}]";
  Preferences ConfigAssist::_prefs;
 #endif
 
+
 // Standard defaults constructor
 ConfigAssist::ConfigAssist() {
   _init = false;
-  _jsonLoaded = false; _iniLoaded=false;  
+  _dictLoaded = false; _iniLoaded=false;  
   _dirty = false; _apEnabled=false;
   _confFile = String(CA_DEF_CONF_FILE);
-  _jStr = CA_DEFAULT_DICT_JSON;
+  _dictStr = CA_DEFAULT_DICT_JSON;
   _display = ConfigAssistDisplayType::AllOpen;
 }
 
 // Standard constructor with ini file
 ConfigAssist::ConfigAssist(const String& ini_file) {
   _init = false;
-  _jsonLoaded = false; _iniLoaded=false;  
+  _dictLoaded = false; _iniLoaded=false;  
   _dirty = false; _apEnabled=false;
   
   if (ini_file != "") _confFile = ini_file;
   else _confFile = CA_DEF_CONF_FILE; 
 
-  _jStr = CA_DEFAULT_DICT_JSON;
+  _dictStr = CA_DEFAULT_DICT_JSON;
   _display = ConfigAssistDisplayType::AllOpen;
 }
 
 // Standard constructor with ini file and json description
-ConfigAssist::ConfigAssist(const String& ini_file, const char * jStr){
+ConfigAssist::ConfigAssist(const String& ini_file, const char * dictStr){
   _init = false;
-  _jsonLoaded = false; _iniLoaded=false;  
+  _dictLoaded = false; _iniLoaded=false;  
   _dirty = false; _apEnabled=false;
   
   if (ini_file != "") _confFile = ini_file;
   else _confFile = CA_DEF_CONF_FILE; 
-  _jStr = jStr;  
+  _dictStr = dictStr;  
   _display = ConfigAssistDisplayType::AllOpen;
 }
 
@@ -58,23 +59,23 @@ void ConfigAssist::setIniFile(const String& ini_file){
   if (ini_file != "") _confFile = ini_file;
 }
 
-// Set json at run time.. Must called before _init || _jsonLoaded
-void ConfigAssist::setJsonDict(const char * jStr, bool load){
-  if(_jsonLoaded){
+// Set json at run time.. Must called before _init || _dictLoaded
+void ConfigAssist::setDictStr(const char * dictStr, bool load){
+  if(_dictLoaded){
     LOG_E("Configuration already initialized.\n");
     return;
   }
   
-  if(jStr==NULL) return;
-  _jStr = jStr;
-  if(load) loadJsonDict(_jStr);  
+  if(dictStr==NULL) return;
+  _dictStr = dictStr;
+  if(load) loadDict(_dictStr);  
 }
 
 // Start storage if not init
 void ConfigAssist::startStorage() {
   #if defined(ESP32)  
     if(!STORAGE.begin(true)) LOG_E("ESP32 storage init failed!\n"); 
-    else LOG_I("Storage started.\n");
+    else LOG_D("Storage started.\n");
   #else
     if(!STORAGE.begin()) LOG_E("ESP8266 storage init failed!\n"); 
     else LOG_I("Storage started.\n");
@@ -90,15 +91,15 @@ void ConfigAssist::init() {
   //Failed to load ini file
   if(!_iniLoaded){
     _dirty = true;
-    loadJsonDict(_jStr);
+    loadDict(_dictStr);
   }  
-  LOG_V("ConfigAssist::init done ini:%i json:%i\n",_iniLoaded, _jsonLoaded);
+  LOG_V("ConfigAssist::init done ini:%i json:%i\n",_iniLoaded, _dictLoaded);
 }
 
 // Is configuration valid
 bool ConfigAssist::valid(){ 
   if(!_init) init();
-  return (_iniLoaded || _jsonLoaded);
+  return (_iniLoaded || _dictLoaded);
 }
 
 // True if key exists in conf
@@ -269,6 +270,7 @@ void ConfigAssist::sortSeperators(){
 // Return next key and value from configs on each call in key order
 bool ConfigAssist::getNextKeyVal(confPairs &c, bool reset ) {
   static uint8_t row = 0;
+  if(!_init) init();
   if(reset){
     row = 0;
     return false;
@@ -295,6 +297,106 @@ String ConfigAssist::getJsonConfig(){
   return j;
 }
 
+#ifdef CA_USE_YAML
+void ConfigAssist::dumpYaml(WEB_SERVER *server) {}
+#else
+inline String splitString(String s, char delim, int index){
+  if(s=="") return "\0";
+  String ret = "\0";
+  int parserIndex = index;
+  int parserCnt=0;
+  int from=0, to=-1;
+  if(s.startsWith("\n"))
+    s = s.substring(1,s.length());
+
+  while(index >= parserCnt){
+    from = to+1;
+    to = s.indexOf(delim, from);
+    if(to < 0) to = s.length();
+
+    if(index == parserCnt){
+      if(to == 0 || to == -1){
+        return "\0";
+      }
+      return s.substring(from,to);
+    }else{
+      parserCnt++;
+    }		
+  }
+  return ret;
+}
+
+#define SERVER_SEND(server, outBuff) if(server) server->sendContent(String(outBuff)); else LOG_I("%s", outBuff)
+
+void ConfigAssist::dumpYaml(WEB_SERVER *server){  
+  char outBuff[1024];
+  size_t len = 0;
+  DeserializationError error;
+  const int capacity = JSON_ARRAY_SIZE(CA_MAX_PARAMS)+ CA_MAX_PARAMS*JSON_OBJECT_SIZE(8);
+  DynamicJsonDocument doc(capacity);
+  error = deserializeJson(doc, _dictStr);
+  if(server) server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  if (error) {     
+    sprintf(outBuff, "Deserialize Json failed: %s\n", error.c_str() );    
+    if(server) server->sendContent(String(outBuff));    
+    else LOG_I("%s", outBuff);
+  }
+  //Parse json
+  JsonArray array = doc.as<JsonArray>();
+  
+  int i = 0;
+  for (JsonObject  obj  : array) {                
+    for (JsonPair kv : obj) {
+        String key = kv.key().c_str();
+        String val = kv.value().as<String>();
+        
+        if(key == "seperator"){
+          len =  sprintf(outBuff, "\n%s:\n", val.c_str() );
+          SERVER_SEND(server, outBuff);
+
+        }else if(key == "name"){
+          len = sprintf(outBuff, "  - %s:\n", val.c_str() );
+          SERVER_SEND(server, outBuff);
+       
+        }else if(key == "datalist" || key == "options"){
+          len = sprintf(outBuff, "      %s: >-\n", key.c_str() );
+          SERVER_SEND(server, outBuff);
+          char sep='\n';
+          if( key == "options") sep = ',';
+          String text = val.c_str();
+          String item = "";
+          int ln = 0;           
+          while( ( (item = splitString(text, sep, ln))  != "\0")  ){
+            item.trim();
+            item.replace("'", "");
+            if(item != "" && item != "\n" && item != " "){
+              len = sprintf(outBuff, "        - %s\n", item.c_str());
+              SERVER_SEND(server, outBuff);
+            }
+            ++ln;
+          }
+        
+        }else if(key == "default" && obj.containsKey("file")){
+           String text = key.c_str(); 
+           String item = splitString(text, '\n', 0);
+           len = sprintf(outBuff, "      %s:>-\n",  item.c_str() );
+           SERVER_SEND(server, outBuff);
+           int ln = 0;  
+           text = val.c_str();         
+           while( ( (item = splitString(text, '\n', ln))  != "\0")  ){
+             len = sprintf(outBuff, "        %s\n",  item.c_str() );
+             SERVER_SEND(server, outBuff);
+             ++ln;            
+           }           
+        
+        }else if(key != ""){
+           len = sprintf(outBuff, "      %s: %s\n",  key.c_str(), val.c_str() );
+           SERVER_SEND(server, outBuff);
+        }
+      }
+    }
+}
+#endif
 // Display config items
 void ConfigAssist::dump(WEB_SERVER *server){
   confPairs c;
@@ -349,19 +451,165 @@ void ConfigAssist::dump(WEB_SERVER *server){
     i++;
   }
 }
+// Yaml version
+#ifdef CA_USE_YAML
+inline String multiLine(dyml::Directyaml::Node &node, const String &val, bool Key = true, bool Val = false){  
+  auto nOpts = node.children();
+  if(nOpts > 0  && ( val == ">-" || val == "")){
+    String ret = "";
+    for (int m = 0; m < nOpts; ++m){
+      if(Key && Val)
+        ret += node.child(m).key() + String(":") + node.child(m).val();
+      else{
+        if(Key)
+          ret += String(node.child(m).key());
+      
+        if(Val)
+          ret += node.child(m).val();
+      }
+      ret += "\n";      
+    }
+    LOG_V("Mline default: %s, child: %i\n", ret.c_str(), nOpts);
+    return ret;
+  }
+  return val;
+}
 
-// Load json description file. On updateInfo = true update only additional pair info    
-int ConfigAssist::loadJsonDict(const char *jStr, bool updateInfo) { 
-  if(jStr==NULL) return -1; 
+// Yaml version
+String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) { 
+  if(dictStr==NULL) return String("Empty yaml string\n");
+  
+  dyml::Directyaml dyaml(strdup(dictStr), false);
+  if(dyaml.root().children()<=0){
+    LOG_E("Parse yaml failed, root children: %i err: %s\n", dyaml.root().children(), dyaml._lastError.c_str());    
+    _dictLoaded = false;   
+    return String(dyaml._lastError.c_str());
+  }
+  
+  if(false) print_yaml_rows(dyaml, 10);
+
+  auto node = dyaml.root();
+  auto noc = node.children();
+  LOG_V("Root children: %i\n", noc); 
+  String val = ""; 
+  int no = 0;   
+  for (int i = 0; i < noc; ++i){  // Seperator nodes
+    auto sep = node.child(i);
+    auto snoc = sep.children();
+    String sepNo = "sep_" + String(no);
+    addSeperator(sepNo, sep.key());   
+    LOG_D("Sep no: %s, val: %s\n",sepNo.c_str(), val.c_str());
+    for (int k = 0; k < snoc; ++k) {  // Variables nodes
+      auto var = sep.child(k);
+      auto vnoc = var.children();
+      confPairs c = {var.key(), "", "", "", 0, TEXT_BOX};      
+      LOG_D("  Var no: %i, key: %s, childs: %i\n", no, var.key(), vnoc );
+      c.readNo  = no;
+      for (int l = 0; l < vnoc; ++l){  // Atributes nodes
+        auto attr = var.child(l);        
+        LOG_D("    Att: %s, childs: %i\n", attr.key(), attr.children() );
+        //LOG_I("    Att node: %s, val: %s childs: %i\n", attr.key(), attr.val(), anoc );
+        //c.readNo  = attr.getRow();
+        String key = attr.key();
+               val = attr.val();
+        if(val.startsWith("\"")) val = val.substring(1, val.length());
+        if(val.endsWith("\"")) val = val.substring(0, val.length() - 1);
+        if( key == "options"){
+          c.type = OPTION_BOX;
+          c.attribs =  multiLine(attr, val, true, true);
+
+        }else if( key == "datalist"){   // Combo box
+          c.type = COMBO_BOX;  
+          c.attribs = multiLine(attr, val, false, true);
+               
+        }else if (key == "range"){       //Input range
+          c.type = RANGE_BOX;
+          c.attribs = val;
+        
+        }else if (key == "file"){       //Text area
+          c.type = TEXT_AREA;          
+          c.value = val;
+        
+        }else if (key == "checked"){   // Check box
+          c.type = CHECK_BOX;          
+          c.value = val;
+          
+        }else if (key == "attribs"){    //Input range attribes
+          c.attribs =  val;                 
+         
+        }else if( key == "label"){      // Label
+          c.label = multiLine(attr, val);
+
+        }else if( key == "default"){    // Default value
+          val.replace("'","");
+          if(c.type == TEXT_AREA) c.attribs = multiLine(attr, val);
+          else c.value = multiLine(attr, val);
+
+        }else{
+          LOG_E("Undefined key on param no: %i, key: %s\n", i, key.c_str());
+        }
+      } // Attr
+      if (c.type) { //Valid
+        if(c.name==CA_HOSTNAME_KEY) c.value.replace("{mac}", getMacID());
+        #ifdef CA_USE_PERSIST_CON      
+          String no;
+          if(endsWith(c.name,CA_SSID_KEY, no)){ 
+            loadPref(c.name, c.value); 
+          }else if(endsWith(c.name,CA_PASSWD_KEY, no)){
+            loadPref(c.name, c.value);
+          }
+        #endif         
+        if(updateInfo){
+          int keyPos = getKeyPos(c.name);
+          //Add a Json key if not exists in ini file
+          if (keyPos < 0) {
+            LOG_V("Yaml key: %s not found in ini file.\n", c.name.c_str());
+            add(c.name, c.value);
+            keyPos = getKeyPos(c.name);
+          }           
+          if (keyPos >= 0) { //Update all other fields but not value,key        
+            _configs[keyPos].readNo = no;
+            _configs[keyPos].label = c.label;
+            _configs[keyPos].type = c.type;
+            _configs[keyPos].attribs = c.attribs;
+            LOG_V("Yaml upd pos: %i, key: %s, type:%i, read: %i\n", keyPos, c.name.c_str(), c.type, i);
+          }else{
+            LOG_E("Undefined yaml Key: %s\n", c.name.c_str());
+          }
+        }else{
+          LOG_V("Yaml add: %s, val %s, read: %i\n", c.name.c_str(), c.value.c_str(), i);
+          add(c);
+        }
+      }
+      no++; 
+    } // Vars      
+  } // Sep
+
+   // Sort seperators vectors for binarry search
+  sortSeperators();
+  _dictLoaded = true;
+
+  LOG_D("Loaded json dict, keys: %u\n", _configs.size());
+
+  // Sort by read order if ini file was not sorted
+  sortReadOrder();  
+
+  return "";
+}
+
+#else
+// Load a JSON description file. On updateInfo = true update only additional pair info    
+String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) { 
+  if(dictStr==NULL) return String("Empty json string\n");
   DeserializationError error;
   const int capacity = JSON_ARRAY_SIZE(CA_MAX_PARAMS)+ CA_MAX_PARAMS*JSON_OBJECT_SIZE(8);
   DynamicJsonDocument doc(capacity);
-  error = deserializeJson(doc, jStr);
+  error = deserializeJson(doc, dictStr);
   
   if (error) { 
     LOG_E("Deserialize Json failed: %s\n", error.c_str());
-    _jsonLoaded = false;   
-    return -1;    
+    _dictLoaded = false;   
+    return error.c_str();
   }
   LOG_V("Load json dict\n");
   //Parse json description
@@ -464,13 +712,14 @@ int ConfigAssist::loadJsonDict(const char *jStr, bool updateInfo) {
 
   // Sort seperators vectors for binarry search
   sortSeperators();
-  _jsonLoaded = true;
+  _dictLoaded = true;
   LOG_D("Loaded json dict, keys: %i\n", i);
   // Sort by read order if ini file was not sorted
   sortReadOrder();  
-  return i;
+  return "";
 }
-     
+#endif 
+
 // Load config pairs from an ini file
 bool ConfigAssist::loadConfigFile(String filename) {
   if(filename=="") filename = _confFile;
@@ -509,6 +758,7 @@ bool ConfigAssist::loadConfigFile(String filename) {
 bool ConfigAssist::deleteConfig(String filename){
   if(!_init) init();
   if(filename=="") filename = _confFile;
+  _iniLoaded = false;
   LOG_I("Removing config: %s\n",filename.c_str());
   return STORAGE.remove(filename);
 }
@@ -580,7 +830,7 @@ void ConfigAssist::checkTime(uint32_t timeUtc, int timeOffs){
   gettimeofday(&tvLocal, NULL);
   
   long diff = (long)timeUtc - tvLocal.tv_sec;
-  LOG_D("Remote utc: %d, local: %llu\n", timeUtc, tvLocal.tv_sec);
+  LOG_D("Remote utc: %d, local: %lu\n", timeUtc, tvLocal.tv_sec);
   LOG_D("Time diff: %ld\n",diff);
   if( abs(diff) > 5L ){ //5 Secs
     LOG_D("LocalTime: %s\n", getLocalTime().c_str());          
@@ -846,7 +1096,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     if (server->hasArg(F("_RST"))) {
       deleteConfig();
       _configs.clear();
-      loadJsonDict(_jStr);
+      loadDict(_dictStr);
       saveConfigFile();
       if(_dirty){
         server->send(200, "text/html", "Failed to save config.");
@@ -985,8 +1235,15 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
 // Send edit html to client
 void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   //Load dictionary if no pressent and update info only
-  if(!_jsonLoaded) loadJsonDict(_jStr, true);
-  LOG_V("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniLoaded, _jsonLoaded, _dirty);      
+  String error = "";
+  if(!_dictLoaded) 
+    error = loadDict(_dictStr, true);
+  if(error != "" ){
+    server->send(200, "text/html", "Yaml Error: " + error);
+    return;
+  }
+
+  LOG_V("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniLoaded, _dictLoaded, _dirty);      
   //Send config form data
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   String out(CONFIGASSIST_HTML_START);
@@ -1297,7 +1554,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     
     String sVal = _seperators[sepKeyPos].value;
     outSep.replace("{val}", sVal);
-    if(sepKeyPos > 0) //Close the previous seperator
+    if(sepKeyPos > 0) // Close the previous seperator
       out = String(CONFIGASSIST_HTML_SEP_CLOSE) + outSep + out;
     else 
       out = outSep + out;
@@ -1361,11 +1618,12 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
     int k = optVal.indexOf(":");
     String optName;
     if( k > 0){
-      optName = optVal.substring(0, k-1);
+      optName = optVal.substring(0, k);
       optVal = optVal.substring(k+1, optVal.length());
     }else{
       optName = optVal;
     }
+    //LOG_I("getOptionsListHtml %s = %s\n",optName.c_str(), optVal.c_str());
     optVal.replace("'","");
     optVal.trim();
     optName.replace("'","");
@@ -1496,5 +1754,5 @@ void ConfigAssist::startScanWifi(){
   }else{
     LOG_D("Scan complete status: %i\n", n);
   }
-}  
+} 
 #endif //CA_USE_WIFISCAN
