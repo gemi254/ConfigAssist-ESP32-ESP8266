@@ -13,7 +13,44 @@
 #ifndef LED_BUILTIN
   #define LED_BUILTIN 22
 #endif
+#ifdef CA_USE_YAML
+const char* VARIABLES_DEF_JSON PROGMEM = R"~(
+Wifi settings:
+  - st_ssid1:
+      label: Name for WLAN
+      default: '' 
+  - st_pass1:
+      label: Password for WLAN
+      default: ''  
+  - st_ip1:
+      label: Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)
+      default: ''  
+  - st_ssid2:
+      label: Name for WLAN
+      default: '' 
+  - st_pass2:
+      label: Password for WLAN
+      default: ''  
+  - st_ip2:
+      label: Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)
+      default: ''  
 
+  - host_name: 
+      label: >-
+        Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac
+        id
+      default: configAssist_{mac}
+
+Application settings:
+  - app_name:
+      label: Name your application
+      default: TestWifi  
+  - led_buildin:
+      label: Enter the pin that the build in led is connected. Leave blank for auto.
+      attribs: "min='4' max='23' step='1'"
+      default: 4
+)~";
+#else // JSON
 const char* VARIABLES_DEF_JSON PROGMEM = R"~(
 [{
    "seperator": "Wifi settings"
@@ -119,11 +156,13 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
 "default": "X1=222, Y1=1.22
 X2=900, Y2=3.24"}
 ])~";
+#endif
 
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
 
 String hostName;
 unsigned long pingMillis = millis();
+
 // Print memory info
 void debugMemory(const char* caller) {
   #if defined(ESP32)
@@ -195,19 +234,14 @@ void setup(void) {
   // Connect to any available network  
   bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
   
-  // Check connection and start ap on failure  
-  if(!bConn){
-    LOG_E("Connect failed.\n");
-    conf.setup(server, true);
-    return;
-  }
+  // Append config assist handlers to web server, setup ap on no connection
+  conf.setup(server, !bConn); 
+  if(!bConn) LOG_E("Connect failed.\n");
 
   if (MDNS.begin(conf[CA_HOSTNAME_KEY].c_str())) {
     LOG_I("MDNS responder started\n");
   }
-  // Append control assist handlers
-  conf.setup(server);
-
+  
   server.begin();
   LOG_I("HTTP server started\n");
 }
