@@ -125,7 +125,13 @@ If you want to convert your existing configuration from JSON to YAML comment at 
 ```
 #define CA_USE_YAML   // Comment to use JSON
 ```
-Compile the JSON version, upload and visit ``http://ip/yaml`` to copy your configuration in yaml.
+Compile the JSON version and add a yaml dump handler.
+```
+  server.on("/yaml", []() {           // Append yaml dump handler
+    conf.dumpYaml(&server);
+  });
+```
+Upload and visit ``http://ip/yaml`` to copy your configuration in yaml format.
 
 ## Sample variables definition text    
 ```
