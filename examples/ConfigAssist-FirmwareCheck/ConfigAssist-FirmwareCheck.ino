@@ -5,7 +5,11 @@
   #include "firmCheckESP32PMem.h"
   WebServer server(80);
 #else
-  #include "firmCheckESP8266PMem.h"
+  #ifdef CA_USE_YAML  
+    #include "firmCheckESP8266PMem.y.h"
+  #else
+    #include "firmCheckESP8266PMem.h"
+  #endif
   ESP8266WebServer  server(80);
 #endif
 
@@ -59,7 +63,6 @@ void handleNotFound() {
   }
   server.send(404, "text/plain", message);  
 }
-
 // Setup function
 void setup(void) {
   
@@ -68,7 +71,7 @@ void setup(void) {
   Serial.flush();
   
   LOG_I("Starting.. ver: %s\n", conf["firmware_ver"].c_str());
- 
+
   //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
  
   // Register handlers for web server    
@@ -83,20 +86,16 @@ void setup(void) {
 
   // Connect to any available network  
   bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
-  
-  // Check connection
-  if(!bConn){
-    LOG_E("Connect failed.\n");
-    conf.setup(server, true);
-    return;
-  }
+ 
+  // Append config assist handlers to web server, setup ap on no connection
+  conf.setup(server, !bConn); 
+  if(!bConn) LOG_E("Connect failed.\n");
+ 
     
   if (MDNS.begin(conf["host_name"].c_str())) {
     LOG_I("MDNS responder started\n");
   }
 
-  // Add handlers to web server 
-  conf.setup(server);
   // Start web server
   server.begin();
   LOG_I("HTTP server started\n");
