@@ -12,23 +12,32 @@ void setup() {
 
   LOG_I("Starting..\n");
   
-  //config.deleteConfig(); // Uncomment to remove ini file and re-built   
+  config.deleteConfig(); // Uncomment to remove ini file and re-built   
   
   // Json is disabled, Ini file not found
   if(!config.valid()){
-    // Build a json description
-    String dynJson="[\n";
-    for(int i=0; i<10; ++i){
-      dynJson += "{";
-      dynJson += "\"name\" : \"var_" + String(i) + "\", ";
-      dynJson += "\"default\" : \"val_" + String(i)+ "\"";
-      if(i==9) dynJson += "}\n";
-      else dynJson += "},\n";
-    }
-    dynJson+="]";
-    LOG_I("Generated Json: %s\n",dynJson.c_str());
-    // Build ini file from json
-    config.setJsonDict(dynJson.c_str(),true);
+    #ifdef CA_USE_YAML
+      String textDict="YAML DICT: \n";
+      for(int i=0; i<10; ++i){
+        textDict += "  - var_"+ String(i) +":\n";
+        textDict += "     default: "+ String(i) +"\n";
+      }
+      LOG_I("Generated yaml: %s\n",textDict.c_str());
+    #else
+      // Build a json description
+      String textDict="[\n";
+      for(int i=0; i<10; ++i){
+        textDict += "{";
+        textDict += "\"name\" : \"var_" + String(i) + "\", ";
+        textDict += "\"default\" : \"val_" + String(i)+ "\"";
+        if(i==9) textDict += "}\n";
+        else textDict += "},\n";
+      }
+      textDict+="]";
+      LOG_I("Generated Json: %s\n",textDict.c_str());
+    #endif
+    // Build ini file from textDict
+    config.setDictStr(textDict.c_str(),true);
     LOG_I("Config valid: %i\n",config.valid());
     config.dump();
     // Save keys & values into ini file
@@ -36,7 +45,7 @@ void setup() {
   }else{ // Ini file is valid, display the values
     LOG_I("Config valid: %i\n",config.valid());
     config.dump();
-  }  
+  }
 }
 
 void loop() {
