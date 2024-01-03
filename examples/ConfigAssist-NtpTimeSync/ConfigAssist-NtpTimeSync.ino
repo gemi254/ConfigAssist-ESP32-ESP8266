@@ -1,7 +1,11 @@
 #include <ConfigAssist.h>  // Config assist class
 #include <ConfigAssistHelper.h>  // Config assist helper class
 
-#include "appPMem.h"
+#ifdef CA_USE_YAML
+  #include "appPMem.y.h"
+#else
+  #include "appPMem.h"
+#endif
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN 22
@@ -84,19 +88,14 @@ void setup(void) {
   // Connect to any available network  
   bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
   
-  // Check connection
-  if(!bConn){
-    LOG_E("Connect failed.\n");
-    conf.setup(server, true);
-    return;
-  }
+  // Append config assist handlers to web server, setup ap on no connection
+  conf.setup(server, !bConn); 
+  if(!bConn) LOG_E("Connect failed.\n");
     
   if (MDNS.begin(conf["host_name"].c_str())) {
     LOG_I("MDNS responder started\n");
   }
 
-  // Add handlers to web server 
-  conf.setup(server);
   // Start web server
   server.begin();
   LOG_I("HTTP server started\n");
