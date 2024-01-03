@@ -19,6 +19,98 @@ unsigned long pingMillis = millis();             // Ping
 // Default application config dictionary
 // Modify the file with the params for you application
 // Then you can use then then by val = config[name];
+#ifdef CA_USE_YAML
+const char* VARIABLES_DEF_JSON PROGMEM = R"~(
+Wifi settings:
+  - st_ssid:
+      label: Name for WLAN
+      default: '' 
+  - st_pass:
+      label: Password for WLAN
+      default: ''  
+  - host_name: 
+      label: >-
+        Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac
+        id
+      default: configAssist_{mac}
+
+Application settings:
+  - app_name:
+      label: Name your application
+      default: ConfigAssistDemo  
+  - led_buildin:
+      label: Enter the pin that the build in led is connected. Leave blank for auto.
+      attribs: "min='4' max='23' step='1'"
+      default: 4
+      
+ConfigAssist settings:
+  - display_style:
+      label: Choose how the config sections are displayed. Must reboot to apply
+      options: 
+        - AllOpen: 0
+        - AllClosed: 1 
+        - Accordion : 2
+        - AccordionToggleClosed : 3
+      default: AccordionToggleClosed
+
+Other settings:
+  - float_val:
+      label: Enter a float val
+      default: 3.14159
+      attribs: min="2.0" max="5" step=".001" 
+  - debug:
+      label: Check to enable debug
+      checked: False
+  - sensor_type:
+      label: Enter the sensor type
+      options: 'BMP280', 'DHT12', 'DHT21', 'DHT22'
+      default: DHT22  
+  - refresh_rate:
+      label: Enter the sensor update refresh rate
+      range: 10, 50, 1
+      default: 30
+  - time_zone:
+      label: Needs to be a valid time zone string
+      default: EET-2EEST,M3.5.0/3,M10.5.0/4 
+      datalist: 
+        - Etc/GMT,GMT0
+        - Etc/GMT-0,GMT0
+        - Etc/GMT-1,<+01>-1
+        - Etc/GMT-2,<+02>-2
+        - Etc/GMT-3,<+03>-3
+        - Etc/GMT-4,<+04>-4
+        - Etc/GMT-5,<+05>-5
+        - Etc/GMT-6,<+06>-6
+        - Etc/GMT-7,<+07>-7
+        - Etc/GMT-8,<+08>-8
+        - Etc/GMT-9,<+09>-9
+        - Etc/GMT-10,<+10>-10
+        - Etc/GMT-11,<+11>-11
+        - Etc/GMT-12,<+12>-12
+        - Etc/GMT-13,<+13>-13
+        - Etc/GMT-14,<+14>-14
+        - Etc/GMT0,GMT0
+        - Etc/GMT+0,GMT0
+        - Etc/GMT+1,<-01>1
+        - Etc/GMT+2,<-02>2
+        - Etc/GMT+3,<-03>3
+        - Etc/GMT+4,<-04>4
+        - Etc/GMT+5,<-05>5
+        - Etc/GMT+6,<-06>6
+        - Etc/GMT+7,<-07>7
+        - Etc/GMT+8,<-08>8
+        - Etc/GMT+9,<-09>9
+        - Etc/GMT+10,<-10>10
+        - Etc/GMT+11,<-11>11
+        - Etc/GMT+12,<-12>12
+  - cal_data:
+      label: Enter data for 2 Point calibration.</br>Data will be saved to /calibration.ini
+      file: "/calibration.ini"
+      default:
+        X1=222, Y1=1.22
+        X2=900, Y2=3.24
+)~"; 
+#else
 const char* VARIABLES_DEF_JSON PROGMEM = R"~(
 [{
    "seperator": "Wifi settings"
@@ -115,7 +207,7 @@ const char* VARIABLES_DEF_JSON PROGMEM = R"~(
 "default": "X1=222, Y1=1.22
 X2=900, Y2=3.24"}
 ])~"; 
-
+#endif
 
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON); // Config assist class
 
@@ -180,6 +272,8 @@ void handleNotFound() {
   }
   server.send(404, "text/plain", message);
 }
+
+// CallBack function when conf remotely changes
 void onDataChanged(String key){
   LOG_I("Data changed: %s = %s \n", key.c_str(), conf[key].c_str());
   if(key == "display_style")
@@ -205,6 +299,11 @@ void setup(void) {
   server.on("/d", []() {              // Append dump handler
     conf.dump(&server);
   });
+  #ifndef CA_USE_YAML
+  server.on("/yaml", []() {           // Append yaml dump handler
+    conf.dumpYaml(&server);
+  });
+  #endif
   server.onNotFound(handleNotFound);  // Append not found handler
   
   debugMemory("Loaded config");
@@ -217,16 +316,14 @@ void setup(void) {
   ConfigAssistHelper confHelper(conf);
   WiFi.setAutoConnect(false);
   WiFi.setAutoReconnect(false);
+  
   // Connect to any available network  
   bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
-
-  // Check connection
-  if(!bConn){
-    LOG_E("Connect failed.\n");
-    conf.setup(server, true);
-    return;
-  }
   
+  // Append config assist handlers to web server, setup ap on no connection
+  conf.setup(server, !bConn); 
+  if(!bConn) LOG_E("Connect failed.\n");
+
   if (MDNS.begin(conf[CA_HOSTNAME_KEY].c_str())) {
     LOG_I("MDNS responder started\n");
   }
@@ -239,9 +336,6 @@ void setup(void) {
   float float_value = atof(conf["float_val"].c_str());
   LOG_I("Float value: %1.5f\n", float_value);
  
-  // Append config assist handlers to web server 
-  conf.setup(server);
-  
   // Set the defined display type
   conf.setDisplayType((ConfigAssistDisplayType)conf["display_style"].toInt());
   
