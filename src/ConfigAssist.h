@@ -4,14 +4,8 @@
 #include <vector>
 #include <regex>
 
-#define CA_USE_YAML   // Comment to use JSON
-
-#ifdef CA_USE_YAML
-  #include "dYaml.h" 
+#include "dYaml.h" 
     using namespace dyml; 
-#else
-  #include <ArduinoJson.h>
-#endif
 
 #if defined(ESP32)
   #include <WebServer.h>
@@ -27,7 +21,7 @@
   #define LOGGER_LOG_LEVEL 3             // Set log level for this module
 #endif 
 
-#define CA_CLASS_VERSION "2.7.8"         // Class version
+#define CA_CLASS_VERSION "2.7.9"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -155,14 +149,12 @@ class ConfigAssist{
     void rebuildKeysNdx();
     // Sort keys asc by name
     void sortKeysNdx();
-    // Sort keys in Json definition read order
+    // Sort keys in yaml definition read order
     void sortReadOrder();
     // Sort seperator vectors by key (name in confSeperators)
     void sortSeperators();
     // Return next key and val from configs on each call in key order
     bool getNextKeyVal(confPairs &c, bool reset = false); 
-    // Get the configuration in json format
-    String getJsonConfig();
     // Display config items in web server, yaml like
     void dumpYaml(WEB_SERVER *server = NULL);
     // Display config items in web server, or on log on NULL
@@ -217,6 +209,7 @@ class ConfigAssist{
     // Name ends with key + number?
     bool endsWith(String name, String key, String& no);    
   private:
+    inline String multiLine(dyml::Directyaml::Node &node, bool addKey = true, bool addVal = false);
     // Is string numeric
     bool isNumeric(String s);
     // Decode given string, replace encoded characters
