@@ -26,7 +26,7 @@ is using github.com to host the new firmware.
         }
 
 4. Set the default value of variable ``firmware_url``.
-    * In you project at your VARIABLES_DEF_JSON (ConfigAssist-FirmwareCheck.ino line 55).
+    * In you project at your VARIABLES_DEF_YAML (ConfigAssist-FirmwareCheck.ino line 55).
 
 6. In you project, define your current firmware version. 
     *  char FIRMWARE_VERSION[] = "1.0.0";
