@@ -13,32 +13,30 @@
 #ifndef LED_BUILTIN
   #define LED_BUILTIN 22
 #endif
-#ifdef CA_USE_YAML
-const char* VARIABLES_DEF_JSON PROGMEM = R"~(
+const char* VARIABLES_DEF_YAML PROGMEM = R"~(
 Wifi settings:
   - st_ssid1:
       label: Name for WLAN
-      default: '' 
+      default:
   - st_pass1:
       label: Password for WLAN
-      default: ''  
+      default:
   - st_ip1:
       label: Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)
-      default: ''  
+      default:
   - st_ssid2:
       label: Name for WLAN
-      default: '' 
+      default:
   - st_pass2:
       label: Password for WLAN
-      default: ''  
+      default:
   - st_ip2:
       label: Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)
-      default: ''  
+      default:
 
   - host_name: 
       label: >-
-        Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac
-        id
+        Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac id
       default: configAssist_{mac}
 
 Application settings:
@@ -50,115 +48,8 @@ Application settings:
       attribs: "min='4' max='23' step='1'"
       default: 4
 )~";
-#else // JSON
-const char* VARIABLES_DEF_JSON PROGMEM = R"~(
-[{
-   "seperator": "Wifi settings"
-  },{
-    "name": "st_ssid1",
-     "label": "Name for WLAN1",
-   "default": ""
-  },{
-      "name": "st_pass1",
-     "label": "Password for WLAN1",
-   "default": ""
-  },{
-    "name": "st_ip1",
-    "label": "Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)",
-  "default": ""
-  },{
-    "name": "st_ssid2",
-     "label": "Name for WLAN2",
-   "default": ""
-  },{
-      "name": "st_pass2",
-     "label": "Password for WLAN2",
-   "default": ""
-  },{
-    "name": "st_ip2",
-    "label": "Static ip setup (ip mask gateway) (192.168.4.2 255.255.255.0 192.168.1.1)",
-  "default": ""
-  },{
-      "name": "host_name",
-     "label": "Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac id",
-   "default": "configAssist_{mac}"
-  },{
- "seperator": "Application settings"
-  },{
-      "name": "app_name",
-     "label": "Name your application",
-   "default": "TestWifi"
-  },{
-      "name": "led_buildin",
-     "label": "Enter the pin that the build in led is connected to",
-   "default": "",
-   "attribs": "min=\"2\" max=\"16\" step=\"1\" "
-  },{
- "seperator": "Other settings"
-  },{
-      "name": "float_val",
-     "label": "Enter a float val",
-   "default": "3.14159",
-   "attribs": "min=\"2.0\" max=\"5\" step=\".001\" "
-  },{
-      "name": "debug",
-     "label": "Check to enable debug",
-   "checked": "False"
-  },{
-      "name": "sensor_type",
-     "label": "Enter the sensor type",
-   "options": "'BMP280', 'DHT12', 'DHT21', 'DHT22'",
-   "default": "DHT22"
-  },{
-      "name": "refresh_rate",
-     "label": "Enter the sensor update refresh rate",
-     "range": "10, 50, 1",
-   "default": "30"
-  },{
-      "name": "time_zone",
-     "label": "label": "Needs to be a time zone string<br><small>https://raw.githubusercontent.com/nayarsystems/posix_tz_db/master/zones.csv</small>",
-   "default": "EET-2EEST,M3.5.0/3,M10.5.0/4",    
-  "datalist": "
-'Etc/GMT,GMT0'
-'Etc/GMT-0,GMT0'
-'Etc/GMT-1,<+01>-1'
-'Etc/GMT-2,<+02>-2'
-'Etc/GMT-3,<+03>-3'
-'Etc/GMT-4,<+04>-4'
-'Etc/GMT-5,<+05>-5'
-'Etc/GMT-6,<+06>-6'
-'Etc/GMT-7,<+07>-7'
-'Etc/GMT-8,<+08>-8'
-'Etc/GMT-9,<+09>-9'
-'Etc/GMT-10,<+10>-10'
-'Etc/GMT-11,<+11>-11'
-'Etc/GMT-12,<+12>-12'
-'Etc/GMT-13,<+13>-13'
-'Etc/GMT-14,<+14>-14'
-'Etc/GMT0,GMT0'
-'Etc/GMT+0,GMT0'
-'Etc/GMT+1,<-01>1'
-'Etc/GMT+2,<-02>2'
-'Etc/GMT+3,<-03>3'
-'Etc/GMT+4,<-04>4'
-'Etc/GMT+5,<-05>5'
-'Etc/GMT+6,<-06>6'
-'Etc/GMT+7,<-07>7'
-'Etc/GMT+8,<-08>8'
-'Etc/GMT+9,<-09>9'
-'Etc/GMT+10,<-10>10'
-'Etc/GMT+11,<-11>11'
-'Etc/GMT+12,<-12>12'"  
-},{
-   "name": "cal_data",
-  "label": "Enter data for 2 Point calibration.</br>Data will be saved to /calibration.ini",
-   "file": "/calibration.ini",
-"default": "X1=222, Y1=1.22
-X2=900, Y2=3.24"}
-])~";
-#endif
 
-ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
+ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML);
 
 String hostName;
 unsigned long pingMillis = millis();
