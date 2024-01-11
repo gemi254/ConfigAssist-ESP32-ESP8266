@@ -121,7 +121,12 @@ Seperators can be opened and closed when click on their title. You can define th
 Version 2.7.8 now uses yaml instead of json descriptions to save space and increase speed
 See <a href="https://github.com/powof2/direct-yaml">direct-yaml</a> for details.
 
-If you want to convert your existing configuration from JSON to YAML comment at ConfigAssist.h line 7 
+If you want to convert your existing configuration from JSON to YAML 
+download version 
+
+<a href="https://github.com/gemi254/ConfigAssist-ESP32-ESP8266/releases/tag/2.7.8">ConfigAssist v2.7.8</a>
+
+comment at ConfigAssist.h line 7 
 ```
 #define CA_USE_YAML   // Comment to use JSON
 ```
@@ -135,7 +140,7 @@ Upload and visit ``http://ip/yaml`` to copy your configuration in yaml format.
 
 ## Sample variables definition text    
 ```
-const char* VARIABLES_DEF_JSON PROGMEM = R"~(
+const char* VARIABLES_DEF_YAML PROGMEM = R"~(
 Wifi settings:
   - st_ssid:
       label: Name for WLAN
@@ -212,7 +217,7 @@ Other settings:
   - `ConfigAssist conf(INI_FILE);`
 
 + if you want to use a different external **ini file name** and **yaml description**
-  - `ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);  // ConfigAssist with custom name & dictionary`
+  - `ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML);  // ConfigAssist with custom name & dictionary`
 
 + if you want to use a different external **ini file name** and **yaml description** disabled
   - `ConfigAssist conf(INI_FILE, NULL);  // ConfigAssist with custom ini name & dictionary disabled`
@@ -358,7 +363,6 @@ Download library files and place them on ./libraries directory under ArduinoProj
 Then include the **configAssist.h** in your application and compile..
 
 + compile for arduino-esp3 or arduino-esp8266.
-+ In order to compile you must install **ArduinoJson** library.
 + To use Persistent ST connections On ESP8266 devices you must install **Preferences** library to provide ESP32-compatible Preferences API using LittleFS
 + if your variables exceed **CA_MAX_PARAMS** increase this value in class header.
 
