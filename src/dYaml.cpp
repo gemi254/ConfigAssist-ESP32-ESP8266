@@ -320,7 +320,7 @@ namespace dyml
 
 		if (!_rows.empty()) checkIndents();
 	}
-
+#if DEBUG_DYAML
 	void print_yaml_rows(Directyaml& my, int width){
 		char sn[0x20];
 		const auto& rows = my.rows();
@@ -358,8 +358,9 @@ namespace dyml
 			if (v) printf("%s\n", v);
 			else
 				printf("\n");
-		printf("\n");
+			printf("\n");
 			print_yaml_tree(ch, level + 1);
 		}
 	}
+	#endif
 }
