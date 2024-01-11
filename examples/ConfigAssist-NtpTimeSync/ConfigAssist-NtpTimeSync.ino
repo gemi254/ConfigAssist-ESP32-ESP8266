@@ -1,11 +1,7 @@
 #include <ConfigAssist.h>  // Config assist class
 #include <ConfigAssistHelper.h>  // Config assist helper class
 
-#ifdef CA_USE_YAML
-  #include "appPMem.y.h"
-#else
-  #include "appPMem.h"
-#endif
+#include "appPMem.h"
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN 22
@@ -20,7 +16,7 @@
 #define INI_FILE "/NtpTimeSync.ini" // Define SPIFFS storage file
 
 // Config class
-ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
+ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML);
 
 // Define a ConfigAssist helper class
 ConfigAssistHelper confHelper(conf);
