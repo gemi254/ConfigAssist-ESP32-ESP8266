@@ -8,7 +8,6 @@
 // Create a config class with an ini filename for storage and disabled json 
 ConfigAssist conf("/minimal.ini");
 
-
 void setup() {
   // put your setup code here, to run once:
     
