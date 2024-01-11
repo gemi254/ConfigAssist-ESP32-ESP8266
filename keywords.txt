@@ -14,7 +14,6 @@ ConfigAssist KEYWORD1
 # Methods and Functions (KEYWORD2)
 ###########################################
 init KEYWORD2
-initJsonDict KEYWORD2
 handleFormRequest KEYWORD2
 loadDict KEYWORD2
 setup KEYWORD2
@@ -24,7 +23,6 @@ put KEYWORD2
 add KEYWORD2
 getHostName KEYWORD2
 getLocalTime KEYWORD2
-getJsonConfig KEYWORD2
 getEditHtml KEYWORD2
 getCSS KEYWORD2
 getTimeSyncScript KEYWORD2
