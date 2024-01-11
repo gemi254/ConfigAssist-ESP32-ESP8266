@@ -6,7 +6,7 @@
 #include "String.h"
 #include <vector>
 #include <string>
-
+#define DEBUG_DYAML false
 using std::vector;
 using std::string;
 
@@ -154,10 +154,10 @@ namespace dyml
 	public:	
 		string _lastError;
 	};
-
+#if DEBUG_DYAML
 	void print_yaml_rows(Directyaml& my, int width);
 	void print_yaml_tree(Directyaml::Node node, int level);  
-
+#endif
 }
 
 
