@@ -1,36 +1,18 @@
 // Minimal application config dictionary
-#ifdef CA_USE_YAML
 const char* CA_DEFAULT_DICT_JSON PROGMEM = R"=====(
 Wifi settings:
   - st_ssid:
       label: Name for WLAN
-      default: '' 
+      default:
   - st_pass:
       label: Password for WLAN
-      default: ''  
+      default:
   - host_name: 
       label: >-
-        Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac
-        id
+        Host name to use for MDNS and AP
+        {mac} will be replaced with device's mac id
       default: configAssist_{mac}
 )=====";
-#else
-const char* CA_DEFAULT_DICT_JSON PROGMEM = R"=====(
-[ {
-      "name": "st_ssid",
-     "label": "Enter the name WLAN to connect",
-   "default": "mdk3"
-  },{
-      "name": "st_pass",
-     "label": "Password for station WLAN",
-   "default": "2843028858"
-  },{
-      "name": "host_name",
-     "label": "Enter a name for your host",
-   "default": "configAssist_{mac}"
-  }
-])=====";
-#endif
 // Template for message page
 PROGMEM const char CONFIGASSIST_HTML_START[] = R"=====(
 <!DOCTYPE HTML>
@@ -389,6 +371,7 @@ tbody tr:nth-of-type(2n+1) {
   text-align: left;
   font-style: italic;
   font-size: .8em;
+  max-width: 450px;
   overflow-wrap: anywhere;
 }
 button {
@@ -596,6 +579,7 @@ input:checked + .slider:before {
 
 select {
   outline: 0;
+  min-width: calc(var(--elmSize) * 11);
   border-radius: var(--elmQuart);
   height: var(--inputHeight);
   margin-top: 2px;
