@@ -285,118 +285,6 @@ bool ConfigAssist::getNextKeyVal(confPairs &c, bool reset ) {
   return false;
 }
 
-// Get the configuration in json format
-String ConfigAssist::getJsonConfig(){
-  confPairs c;
-  String j = "{";
-  while (getNextKeyVal(c)){
-    j += "\"" + c.name + "\": \"" + c.value + "\",";          
-  }
-  if(j.length()>1) j.remove(j.length() - 1);
-  j+="}";
-  return j;
-}
-
-#ifdef CA_USE_YAML
-void ConfigAssist::dumpYaml(WEB_SERVER *server) {}
-#else
-inline String splitString(String s, char delim, int index){
-  if(s=="") return "\0";
-  String ret = "\0";
-  int parserIndex = index;
-  int parserCnt=0;
-  int from=0, to=-1;
-  if(s.startsWith("\n"))
-    s = s.substring(1,s.length());
-
-  while(index >= parserCnt){
-    from = to+1;
-    to = s.indexOf(delim, from);
-    if(to < 0) to = s.length();
-
-    if(index == parserCnt){
-      if(to == 0 || to == -1){
-        return "\0";
-      }
-      return s.substring(from,to);
-    }else{
-      parserCnt++;
-    }		
-  }
-  return ret;
-}
-
-#define SERVER_SEND(server, outBuff) if(server) server->sendContent(String(outBuff)); else LOG_I("%s", outBuff)
-
-void ConfigAssist::dumpYaml(WEB_SERVER *server){  
-  char outBuff[1024];
-  size_t len = 0;
-  DeserializationError error;
-  const int capacity = JSON_ARRAY_SIZE(CA_MAX_PARAMS)+ CA_MAX_PARAMS*JSON_OBJECT_SIZE(8);
-  DynamicJsonDocument doc(capacity);
-  error = deserializeJson(doc, _dictStr);
-  if(server) server->setContentLength(CONTENT_LENGTH_UNKNOWN);
-  if (error) {     
-    sprintf(outBuff, "Deserialize Json failed: %s\n", error.c_str() );    
-    if(server) server->sendContent(String(outBuff));    
-    else LOG_I("%s", outBuff);
-  }
-  //Parse json
-  JsonArray array = doc.as<JsonArray>();
-  
-  int i = 0;
-  for (JsonObject  obj  : array) {                
-    for (JsonPair kv : obj) {
-        String key = kv.key().c_str();
-        String val = kv.value().as<String>();
-        
-        if(key == "seperator"){
-          len =  sprintf(outBuff, "\n%s:\n", val.c_str() );
-          SERVER_SEND(server, outBuff);
-
-        }else if(key == "name"){
-          len = sprintf(outBuff, "  - %s:\n", val.c_str() );
-          SERVER_SEND(server, outBuff);
-       
-        }else if(key == "datalist" || key == "options"){
-          len = sprintf(outBuff, "      %s: >-\n", key.c_str() );
-          SERVER_SEND(server, outBuff);
-          char sep='\n';
-          if( key == "options") sep = ',';
-          String text = val.c_str();
-          String item = "";
-          int ln = 0;           
-          while( ( (item = splitString(text, sep, ln))  != "\0")  ){
-            item.trim();
-            item.replace("'", "");
-            if(item != "" && item != "\n" && item != " "){
-              len = sprintf(outBuff, "        - %s\n", item.c_str());
-              SERVER_SEND(server, outBuff);
-            }
-            ++ln;
-          }
-        
-        }else if(key == "default" && obj.containsKey("file")){
-           String text = key.c_str(); 
-           String item = splitString(text, '\n', 0);
-           len = sprintf(outBuff, "      %s:>-\n",  item.c_str() );
-           SERVER_SEND(server, outBuff);
-           int ln = 0;  
-           text = val.c_str();         
-           while( ( (item = splitString(text, '\n', ln))  != "\0")  ){
-             len = sprintf(outBuff, "        %s\n",  item.c_str() );
-             SERVER_SEND(server, outBuff);
-             ++ln;            
-           }           
-        
-        }else if(key != ""){
-           len = sprintf(outBuff, "      %s: %s\n",  key.c_str(), val.c_str() );
-           SERVER_SEND(server, outBuff);
-        }
-      }
-    }
-}
-#endif
 // Display config items
 void ConfigAssist::dump(WEB_SERVER *server){
   confPairs c;
@@ -451,31 +339,39 @@ void ConfigAssist::dump(WEB_SERVER *server){
     i++;
   }
 }
-// Yaml version
-#ifdef CA_USE_YAML
-inline String multiLine(dyml::Directyaml::Node &node, const String &val, bool Key = true, bool Val = false){  
-  auto nOpts = node.children();
-  if(nOpts > 0  && ( val == ">-" || val == "")){
-    String ret = "";
-    for (int m = 0; m < nOpts; ++m){
-      if(Key && Val)
-        ret += node.child(m).key() + String(":") + node.child(m).val();
-      else{
-        if(Key)
-          ret += String(node.child(m).key());
-      
-        if(Val)
-          ret += node.child(m).val();
-      }
-      ret += "\n";      
-    }
-    LOG_V("Mline default: %s, child: %i\n", ret.c_str(), nOpts);
-    return ret;
-  }
-  return val;
-}
 
-// Yaml version
+inline String ConfigAssist::multiLine(dyml::Directyaml::Node &node, bool addKey, bool addVal){  
+  auto nOpts = node.children();  
+  String val = ( node.val() == NULL) ? "": node.val();  
+  if(val.startsWith("\"") ) val = val.substring(1, val.length() );
+  if(val.endsWith("\"") )   val = val.substring(0, val.length() - 1);
+  String ret = "";
+  bool mLineWithChilds = false;
+  //Multi line with val and child lines
+  if(val != "" && val != ">-"){
+    ret = val + "\n";
+    mLineWithChilds = true;    
+  }
+  
+  for (int m = 0; m < nOpts; ++m){
+    //LOG_I("Mline: %s == %s\n", node.child(m).val(), node.child(m).key());
+    if(addKey && addVal)
+      ret += node.child(m).key() + String(": ") + node.child(m).val();
+    else{
+      if(addKey)
+        ret += String(node.child(m).key());
+      if(mLineWithChilds) addVal = (strcmp(node.child(m).key(), node.child(m).val()) != 0);
+      if(mLineWithChilds && addVal) ret += ": ";
+      if(addVal)
+        ret += node.child(m).val();
+    }
+    ret += "\n";      
+  }
+  if(nOpts>0)
+    LOG_D("multiLine val: %s, childs: %i\n", ret.c_str(), nOpts);
+  return ret;
+}
+// Load yaml dictionary
 String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) { 
   if(dictStr==NULL) return String("Empty yaml string\n");
   
@@ -485,8 +381,9 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
     _dictLoaded = false;   
     return String(dyaml._lastError.c_str());
   }
-  
-  if(false) print_yaml_rows(dyaml, 10);
+  #if DEBUG_DYAML
+     print_yaml_rows(dyaml, 10);
+  #endif
 
   auto node = dyaml.root();
   auto noc = node.children();
@@ -498,29 +395,29 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
     auto snoc = sep.children();
     String sepNo = "sep_" + String(no);
     addSeperator(sepNo, sep.key());   
-    LOG_D("Sep no: %s, val: %s\n",sepNo.c_str(), val.c_str());
+    LOG_V("Sep no: %s, val: %s\n",sepNo.c_str(), sep.key());
     for (int k = 0; k < snoc; ++k) {  // Variables nodes
       auto var = sep.child(k);
       auto vnoc = var.children();
       confPairs c = {var.key(), "", "", "", 0, TEXT_BOX};      
-      LOG_D("  Var no: %i, key: %s, childs: %i\n", no, var.key(), vnoc );
+      LOG_V("  Var no: %i, key: %s, childs: %i\n", no, var.key(), vnoc );
       c.readNo  = no;
       for (int l = 0; l < vnoc; ++l){  // Atributes nodes
         auto attr = var.child(l);        
-        LOG_D("    Att: %s, childs: %i\n", attr.key(), attr.children() );
-        //LOG_I("    Att node: %s, val: %s childs: %i\n", attr.key(), attr.val(), anoc );
-        //c.readNo  = attr.getRow();
+
         String key = attr.key();
-               val = attr.val();
-        if(val.startsWith("\"")) val = val.substring(1, val.length());
-        if(val.endsWith("\"")) val = val.substring(0, val.length() - 1);
+               val = ( attr.val() == NULL) ? "": attr.val();
+
+        LOG_V("    Att: key: %s,  childs: %i\n", key.c_str(), attr.children() );
+        if(val.startsWith("\"")) val = val.substring(1, val.length() );
+        if(val.endsWith("\""))   val = val.substring(0, val.length() - 1);
         if( key == "options"){
           c.type = OPTION_BOX;
-          c.attribs =  multiLine(attr, val, true, true);
+          c.attribs =  multiLine(attr, true, true);
 
         }else if( key == "datalist"){   // Combo box
           c.type = COMBO_BOX;  
-          c.attribs = multiLine(attr, val, false, true);
+          c.attribs = multiLine(attr, false, true);
                
         }else if (key == "range"){       //Input range
           c.type = RANGE_BOX;
@@ -535,15 +432,15 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
           c.value = val;
           
         }else if (key == "attribs"){    //Input range attribes
-          c.attribs =  val;                 
+          c.attribs = val;                 
          
         }else if( key == "label"){      // Label
-          c.label = multiLine(attr, val);
+          c.label = multiLine(attr);
+          c.label.replace("\n", "<br>\n");
 
-        }else if( key == "default"){    // Default value
-          val.replace("'","");
-          if(c.type == TEXT_AREA) c.attribs = multiLine(attr, val);
-          else c.value = multiLine(attr, val);
+        }else if( key == "default"){    // Default value          
+          if(c.type == TEXT_AREA) c.attribs = multiLine(attr);
+          else c.value = multiLine(attr);
 
         }else{
           LOG_E("Undefined key on param no: %i, key: %s\n", i, key.c_str());
@@ -561,7 +458,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
         #endif         
         if(updateInfo){
           int keyPos = getKeyPos(c.name);
-          //Add a Json key if not exists in ini file
+          //Add a yaml key if not exists in ini file
           if (keyPos < 0) {
             LOG_V("Yaml key: %s not found in ini file.\n", c.name.c_str());
             add(c.name, c.value);
@@ -596,129 +493,6 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
 
   return "";
 }
-
-#else
-// Load a JSON description file. On updateInfo = true update only additional pair info    
-String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) { 
-  if(dictStr==NULL) return String("Empty json string\n");
-  DeserializationError error;
-  const int capacity = JSON_ARRAY_SIZE(CA_MAX_PARAMS)+ CA_MAX_PARAMS*JSON_OBJECT_SIZE(8);
-  DynamicJsonDocument doc(capacity);
-  error = deserializeJson(doc, dictStr);
-  
-  if (error) { 
-    LOG_E("Deserialize Json failed: %s\n", error.c_str());
-    _dictLoaded = false;   
-    return error.c_str();
-  }
-  LOG_V("Load json dict\n");
-  //Parse json description
-  JsonArray array = doc.as<JsonArray>();
-  int i = 0;
-  for (JsonObject  obj  : array) {                
-    confPairs c = {"", "", "", "", 0, 1};        
-    if (obj.containsKey("name")){
-      String k = obj["name"];
-      String l = obj["label"];
-      c.name = k;
-      c.label = l;
-      c.attribs ="";
-      c.readNo = i;
-      if (obj.containsKey("options")){        //Options list
-        String d = obj["default"];
-        String o = obj["options"];
-        c.value = d;
-        c.attribs = o;
-        c.type = OPTION_BOX;
-      }else if (obj.containsKey("datalist")){ //Combo box
-        String d = obj["default"];
-        String l = obj["datalist"];
-        c.value = d;
-        c.attribs = l;
-        c.type = COMBO_BOX;            
-      }else if (obj.containsKey("range")){   //Input range
-        String d = obj["default"];
-        String r = obj["range"];
-        c.value = d;
-        c.attribs = r;
-        c.type = RANGE_BOX;
-      }else if (obj.containsKey("file")){    //Text area
-        String f = obj["file"];
-        c.value = f;            
-        if(obj.containsKey("default")){
-          String d = obj["default"];
-          c.attribs = d;
-        }
-        c.type = TEXT_AREA;
-      }else if (obj.containsKey("checked")){  //Check box
-        String ck = obj["checked"];
-        c.value = ck;
-        c.type = CHECK_BOX;
-      }else if (obj.containsKey("default")){  //Edit box
-        String d = obj["default"];
-        c.value = d;
-        if(obj.containsKey("attribs")){
-          String a = obj["attribs"];
-          c.attribs = a;
-        } 
-        c.type = TEXT_BOX;
-      }else{
-        LOG_E("Undefined value on param no: %i\n", i);
-      }  
-
-      if (c.type) { //Valid
-        if(c.name==CA_HOSTNAME_KEY) c.value.replace("{mac}", getMacID());
-#ifdef CA_USE_PERSIST_CON      
-        String no;
-        if(endsWith(c.name,CA_SSID_KEY, no)){ 
-          loadPref(c.name, c.value); 
-        }else if(endsWith(c.name,CA_PASSWD_KEY, no)){
-          loadPref(c.name, c.value);
-        }
-#endif         
-        if(updateInfo){
-          int keyPos = getKeyPos(c.name);
-          //Add a Json key if not exists in ini file
-          if (keyPos < 0) {
-            LOG_V("Json key: %s not found in ini file.\n", c.name.c_str());
-            add(c.name, c.value);
-            keyPos = getKeyPos(c.name);
-          }           
-          if (keyPos >= 0) { //Update all other fields but not value,key        
-            _configs[keyPos].readNo = i;
-            _configs[keyPos].label = c.label;
-            _configs[keyPos].type = c.type;
-            _configs[keyPos].attribs = c.attribs;
-            LOG_D("Json upd pos: %i, key: %s, type:%i, read: %i\n", keyPos, c.name.c_str(), c.type, i);
-          }else{
-            LOG_E("Undefined json Key: %s\n", c.name.c_str());
-          }
-        }else{
-          LOG_D("Json add: %s, val %s, read: %i\n", c.name.c_str(), c.value.c_str(), i);
-          add(c);
-        }
-        i++;
-      }
-
-    }else if (obj.containsKey("seperator")){
-      String sepNo = "sep_" + String(i);
-      String val =  obj["seperator"];
-      addSeperator(sepNo, val);   
-      LOG_V("Json add seperator no: %s, val: %s\n",sepNo.c_str(), val.c_str());
-    }else{
-      LOG_E("Undefined key name/default on param : %i.", i);
-    }
-  }
-
-  // Sort seperators vectors for binarry search
-  sortSeperators();
-  _dictLoaded = true;
-  LOG_D("Loaded json dict, keys: %i\n", i);
-  // Sort by read order if ini file was not sorted
-  sortReadOrder();  
-  return "";
-}
-#endif 
 
 // Load config pairs from an ini file
 bool ConfigAssist::loadConfigFile(String filename) {
@@ -830,7 +604,7 @@ void ConfigAssist::checkTime(uint32_t timeUtc, int timeOffs){
   gettimeofday(&tvLocal, NULL);
   
   long diff = (long)timeUtc - tvLocal.tv_sec;
-  LOG_D("Remote utc: %d, local: %lu\n", timeUtc, tvLocal.tv_sec);
+  LOG_D("Remote utc: %d, local: %lld\n", timeUtc, tvLocal.tv_sec);
   LOG_D("Time diff: %ld\n",diff);
   if( abs(diff) > 5L ){ //5 Secs
     LOG_D("LocalTime: %s\n", getLocalTime().c_str());          
@@ -1505,7 +1279,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
 #ifdef CA_USE_TESTWIFI 
     else if(endsWith(c.name, CA_SSID_KEY, no)) {
       out.replace("<td class=\"card-lbl\">", "<td class=\"card-lbl\" id=\"st_ssid" + no + "-lbl\">");
-      c.label +="&nbsp;&nbsp;<a href=\"\" title=\"Test ST connection\" onClick=\"testWifi(" + no + "); return false;\" id=\"_TEST_WIFI" + no + "\">Test connection</a>";
+      c.label +="<a href=\"\" title=\"Test ST connection\" onClick=\"testWifi(" + no + "); return false;\" id=\"_TEST_WIFI" + no + "\">Test connection</a>";
     }
 #endif //CA_USE_TESTWIFI 
     else 
@@ -1600,13 +1374,13 @@ String ConfigAssist::getRangeHtml(String defVal, String attribs){
 String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDataList){
   String ret="";
   char *token = NULL;
-  char seps[] = ",";
+  char sep[] = ",";
   //Look for line feeds as seperators
-  LOG_N("defVal: %s attribs: %s \n",defVal.c_str(), attribs.c_str());
-  if(attribs.indexOf("\n")>=0){          
-      seps[0] = '\n';
-  }      
-  token = strtok(&attribs[0], seps);
+  int lfPos = attribs.indexOf("\n");
+  if( lfPos >=0  & lfPos != attribs.length() - 1 ) strcpy(&sep[0],"\n");
+  
+  LOG_V("getOptionsListHtml ndxLnF: %i sep: '%s', defVal: %s attribs: %s \n", attribs.indexOf("\n"), sep, defVal.c_str(), attribs.c_str());
+  token = strtok(&attribs[0],  sep);
   while( token != NULL ){
     String opt;
     if(isDataList)
@@ -1623,7 +1397,7 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
     }else{
       optName = optVal;
     }
-    //LOG_I("getOptionsListHtml %s = %s\n",optName.c_str(), optVal.c_str());
+    LOG_N("getOptionsListHtml %s = %s\n",optName.c_str(), optVal.c_str());
     optVal.replace("'","");
     optVal.trim();
     optName.replace("'","");
@@ -1637,7 +1411,7 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
       opt.replace("{sel}", "");
     }
     ret += opt;        
-    token = strtok( NULL, seps );
+    token = strtok( NULL,  sep );
   }
   return ret;
 }
