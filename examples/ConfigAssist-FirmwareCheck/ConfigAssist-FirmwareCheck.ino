@@ -5,11 +5,7 @@
   #include "firmCheckESP32PMem.h"
   WebServer server(80);
 #else
-  #ifdef CA_USE_YAML  
-    #include "firmCheckESP8266PMem.y.h"
-  #else
-    #include "firmCheckESP8266PMem.h"
-  #endif
+  #include "firmCheckESP8266PMem.h" 
   ESP8266WebServer  server(80);
 #endif
 
@@ -21,12 +17,12 @@
 #define INI_FILE "/FirmwareCheck.ini" // Define SPIFFS storage file
 
 // Config class
-ConfigAssist conf(INI_FILE, VARIABLES_DEF_JSON);
+ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML);
 
 // Store readonly firmware version variable
-bool b1 = conf.put("firmware_ver", "1.0.0", true);
+//bool b1 = conf.put("firmware_ver", "1.0.0", true);
 // Setup internal led variable
-bool b2 = (conf["led_buildin"] == "") ? conf.put("led_buildin", LED_BUILTIN, true) : false;
+//bool b2 = (conf["led_buildin"] == "") ? conf.put("led_buildin", LED_BUILTIN, true) : false;
 
 String hostName;                      // Default Host name
 
