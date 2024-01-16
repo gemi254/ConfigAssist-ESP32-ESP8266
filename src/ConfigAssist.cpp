@@ -230,7 +230,7 @@ void ConfigAssist::add(confPairs &c){
 // Add seperator by key
 void ConfigAssist::addSeperator(const String key, const String val){
   LOG_V("Adding sep key: %s=%s\n", key.c_str(), val.c_str()); 
-  _seperators.push_back({key, val}) ;      
+  _seperators.push_back({key, val});      
 }
 
 // Rebuild keys indexes wher sorting by readNo
@@ -322,7 +322,7 @@ void ConfigAssist::dump(WEB_SERVER *server){
   else LOG_I("%s", outBuff);  
   size_t i = 0;  
   while( i < _keysNdx.size() ){
-    int len =  sprintf(outBuff, "No: %02i, ndx: %i, key: %s\n", i, _keysNdx[i].ndx, _keysNdx[i].key.c_str());      
+    int len =  sprintf(outBuff, "No: %02i, ndx: %02i, key: %s\n", i, _keysNdx[i].ndx, _keysNdx[i].key.c_str());      
     if(server) server->sendContent(outBuff, len);
     else LOG_I("%s", outBuff);
     i++;
@@ -354,7 +354,6 @@ inline String ConfigAssist::multiLine(dyml::Directyaml::Node &node, bool addKey,
   }
   
   for (int m = 0; m < nOpts; ++m){
-    //LOG_I("Mline: %s == %s\n", node.child(m).val(), node.child(m).key());
     if(addKey && addVal)
       ret += node.child(m).key() + String(": ") + node.child(m).val();
     else{
@@ -367,8 +366,8 @@ inline String ConfigAssist::multiLine(dyml::Directyaml::Node &node, bool addKey,
     }
     ret += "\n";      
   }
-  if(nOpts>0)
-    LOG_D("multiLine val: %s, childs: %i\n", ret.c_str(), nOpts);
+  if(ret.endsWith("\n")) ret = ret.substring(0, ret.length() - 1);
+  if(nOpts>0) LOG_V("multiLine val: %s, childs: %i\n", ret.c_str(), nOpts);
   return ret;
 }
 // Load yaml dictionary
@@ -384,7 +383,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
   #if DEBUG_DYAML
      print_yaml_rows(dyaml, 10);
   #endif
-
+  _seperators.clear();
   auto node = dyaml.root();
   auto noc = node.children();
   LOG_V("Root children: %i\n", noc); 
@@ -395,7 +394,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
     auto snoc = sep.children();
     String sepNo = "sep_" + String(no);
     addSeperator(sepNo, sep.key());   
-    LOG_V("Sep no: %s, val: %s\n",sepNo.c_str(), sep.key());
+    LOG_D("Sep no: %s, val: %s\n",sepNo.c_str(), sep.key());
     for (int k = 0; k < snoc; ++k) {  // Variables nodes
       auto var = sep.child(k);
       auto vnoc = var.children();
@@ -1379,7 +1378,7 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
   int lfPos = attribs.indexOf("\n");
   if( lfPos >=0  & lfPos != attribs.length() - 1 ) strcpy(&sep[0],"\n");
   
-  LOG_V("getOptionsListHtml ndxLnF: %i sep: '%s', defVal: %s attribs: %s \n", attribs.indexOf("\n"), sep, defVal.c_str(), attribs.c_str());
+  LOG_N("getOptionsListHtml ndxLnF: %i sep: '%s', defVal: %s attribs: %s \n", attribs.indexOf("\n"), sep, defVal.c_str(), attribs.c_str());
   token = strtok(&attribs[0],  sep);
   while( token != NULL ){
     String opt;
@@ -1397,11 +1396,12 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
     }else{
       optName = optVal;
     }
-    LOG_N("getOptionsListHtml %s = %s\n",optName.c_str(), optVal.c_str());
     optVal.replace("'","");
+    optName.replace("\"","");
     optVal.trim();
     optName.replace("'","");
-    optName.trim();
+    optName.trim();   
+    LOG_V("getOptionsListHtml %s = %s\n",optName.c_str(), optVal.c_str()); 
     
     opt.replace("{optVal}", optVal);
     opt.replace("{optName}", optName);
