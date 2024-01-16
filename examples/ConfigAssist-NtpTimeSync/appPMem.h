@@ -16,7 +16,8 @@ Application settings:
       label: Name your application
       default: NtpTimeSync  
   - led_buildin:
-      label: Enter the pin that the build in led is connected. Leave blank for auto.
+      label: Enter the pin that the build in led is connected. 
+        Leave blank for auto.
       attribs: "min='4' max='23' step='1'"
       default: 4
 
