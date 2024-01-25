@@ -394,6 +394,30 @@ button {
 button:hover {
   background-color: #f7fafa;
 }
+
+.accordBtt {
+    background-image:url('data:image/svg+xml,\00003csvg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">\00003cpath fill="%2370757a" d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z">\00003c/path>\00003c/svg>');    
+    display: inline-block;
+    height: 28px;
+    width: 28px;
+    position: relative; 
+    float: right; 
+    margin-top: -34px;
+    margin-right: 30px;
+    cursor: pointer;
+        font-size: medium;
+    font-weight: normal;
+}
+
+.accordBtt.closed{
+    transform: rotateZ(0deg);
+    transition: transform 200ms ease-in-out;    
+}
+.accordBtt.open{
+    transform: rotateZ(180deg); 
+    transition: transform 200ms ease-in-out;    
+}
+
 /* Responsive columns */
 @media screen and (max-width: 600px) {
   .column {
@@ -601,7 +625,26 @@ document.addEventListener('DOMContentLoaded', function (event) {
   let scanTimer = null;
   let setTimeTimer = null;
   let refreshInterval = 15000;
-
+  const toggleAcord = $("#toggleAcord");
+  
+  toggleAcord.addEventListener('click', function (event) {
+    if(event.target.classList.contains("open")){
+        event.target.classList.remove("open");   
+        event.target.classList.add("closed"); 
+        $$('.card-header').forEach(el => {
+            el.parentElement.classList.remove("open");
+            el.parentElement.classList.add("closed");
+        });  
+    }else{
+        event.target.classList.remove("closed");   
+        event.target.classList.add("open");   
+        $$('.card-header').forEach(el => {
+            el.parentElement.classList.remove("closed");
+            el.parentElement.classList.add("open");
+        }); 
+    }     
+  });
+  
   function updateRange(range) {
     const rangeVal = $('#'+range.id).parentElement.children.rangeVal;
     const rangeFontSize = parseInt(window.getComputedStyle($('input[type=range]')).fontSize); 
@@ -733,9 +776,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
     const baseHost = document.location.origin;
     var url = baseHost + "/cfg?" + key + "=" + value
     
-    if(key=="_RST"){
-      document.location = url;
-    }else if (key=="_RBT"){
+    if (key=="_RBT"){
       let nowUTC = Math.floor(new Date().getTime() / 1000);
       document.location = url+"&_TS="+ nowUTC;
     }else if ( key=="_DWN" || key=="_UPG" || key=="_FWC" || key.includes('_PASS_VIEW') ){
@@ -746,7 +787,13 @@ document.addEventListener('DOMContentLoaded', function (event) {
     if (!response.ok){
       const html = await response.text();
       if(html!="") $('#msg').innerHTML = html;
-    }      
+    }else if(key=="_RST"){
+      const html = await response.text();
+      if(html.startsWith("OK:"))      
+        document.location = baseHost + "/cfg"
+      else
+        console.log(html)
+    }
   }
   /*{SUB_SCRIPT}*/   
 })
@@ -938,6 +985,7 @@ PROGMEM const char CONFIGASSIST_HTML_BODY[] = R"=====(
     <div class="column">
       <div class="card">
         <h2><font style="color: darkblue;">{host_name}</font> config</h2>
+        <div title="Colapse / Expand" id="toggleAcord" class="accordBtt open"></div>
       </div>)=====";
 
 // Template for one line
