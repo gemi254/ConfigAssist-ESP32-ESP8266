@@ -428,7 +428,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
         
         }else if (key == "checked"){   // Check box
           c.type = CHECK_BOX;          
-          c.value = val;
+          c.value = String(IS_BOOL_TRUE(val));
           
         }else if (key == "attribs"){    //Input range attribes
           c.attribs = val;                 
@@ -869,12 +869,13 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     if (server->hasArg(F("_RST"))) {
       deleteConfig();
       _configs.clear();
+      _dirty = true;
       loadDict(_dictStr);
       saveConfigFile();
       if(_dirty){
-        server->send(200, "text/html", "Failed to save config.");
+        server->send(200, "text/html", "ERROR: Failed to save config.");
       }else{
-        server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/cfg\">");
+        server->send ( 200, "text/html", "OK: Recreated config.");
       }
       server->client().flush(); 
       return;
