@@ -119,9 +119,9 @@ class ConfigAssistHelper
                     if(st_ssid == "") continue;
                     String st_passKey = st_ssidKey;
                     st_passKey.replace(CA_SSID_KEY, CA_PASSWD_KEY);
-                    LOG_D("Found ssid key: %s, val: %s\n", st_ssidKey.c_str(), st_ssid.c_str());
+                    LOG_V("Found ssid key: %s, val: %s\n", st_ssidKey.c_str(), st_ssid.c_str());
                     String st_pass = _conf[st_passKey];                    
-                    LOG_D("Found pass key: %s, val: %s\n", st_passKey.c_str(), st_pass.c_str());
+                    LOG_V("Found pass key: %s, val: %s\n", st_passKey.c_str(), st_pass.c_str());
 
                     //Set static ip if defined
                     String st_ipKey = st_ssidKey;
