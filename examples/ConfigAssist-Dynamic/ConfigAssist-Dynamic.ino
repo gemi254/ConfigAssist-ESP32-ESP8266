@@ -12,7 +12,7 @@ void setup() {
 
   LOG_I("Starting..\n");
   
-  config.deleteConfig(); // Uncomment to remove ini file and re-built   
+  //config.deleteConfig(); // Uncomment to remove ini file and re-built   
   
   // Dict is disabled, Ini file not found
   if(!config.valid()){
