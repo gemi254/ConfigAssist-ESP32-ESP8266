@@ -1279,6 +1279,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
 #ifdef CA_USE_TESTWIFI 
     else if(endsWith(c.name, CA_SSID_KEY, no)) {
       out.replace("<td class=\"card-lbl\">", "<td class=\"card-lbl\" id=\"st_ssid" + no + "-lbl\">");
+      if(!c.label.endsWith("\n") && !c.label.endsWith("<br>")) c.label += "&nbsp;";
       c.label +="<a href=\"\" title=\"Test ST connection\" onClick=\"testWifi(" + no + "); return false;\" id=\"_TEST_WIFI" + no + "\">Test connection</a>";
     }
 #endif //CA_USE_TESTWIFI 
