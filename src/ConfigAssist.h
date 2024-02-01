@@ -2,7 +2,6 @@
 #define  _CONFIG_ASSIST_H
 
 #include <vector>
-#include <regex>
 
 #include "dYaml.h" 
     using namespace dyml; 
@@ -21,7 +20,7 @@
   #define LOGGER_LOG_LEVEL 3             // Set log level for this module
 #endif 
 
-#define CA_CLASS_VERSION "2.8.0"         // Class version
+#define CA_CLASS_VERSION "2.8.1"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -96,7 +95,7 @@ struct confNdx {
 };
 
 // Call back function type
-typedef std::function<void(String key)> ConfigAssistEventG;
+typedef std::function<void(String key)> ConfigAssistChangeCbf;
 
 // ConfigAssist class
 class ConfigAssist{ 
@@ -112,7 +111,7 @@ class ConfigAssist{
     // Load configs after storage is started
     void init();
     // Set the portal dislay type. See ConfigAssistDisplayType
-    void setDisplayType(ConfigAssistDisplayType display) { _display = display; }
+    void setDisplayType(ConfigAssistDisplayType display) { _displayType = display; }
     // Start storage if not init
     void startStorage();
     // Set ini file at run time
@@ -126,7 +125,7 @@ class ConfigAssist{
     // Start an AP with a web server and render config values loaded from json dictionary
     void setup(WEB_SERVER& server, bool apEnable = false);
     // Add a global callback function to handle changes on form updates
-    void setRemotUpdateCallback(ConfigAssistEventG ev);
+    void setRemotUpdateCallback(ConfigAssistChangeCbf ev);
     // Get a temponary hostname
     static String getMacID();
     // Get a temponary hostname
@@ -197,7 +196,7 @@ class ConfigAssist{
     // Send edit html to client
     void sendHtmlEditPage(WEB_SERVER* server);    
     // Get edit page html table (no form)
-    String getEditHtml();
+    //String getEditHtml();
     // Get page css
     String getCSS();
     // Get browser time synchronization java script
@@ -209,11 +208,14 @@ class ConfigAssist{
     // Name ends with key + number?
     bool endsWith(String name, String key, String& no);    
   private:
+    // Split a String with delimeter, index -> itemNo
+    String splitString(String s, char delim, int index);
+    // Get child nodes as string
     inline String multiLine(dyml::Directyaml::Node &node, bool addKey = true, bool addVal = false);
     // Is string numeric
     bool isNumeric(String s);
     // Decode given string, replace encoded characters
-    String urlDecode(String inVal);
+    String urlDecode(const String& text);
     // Load a file into a string
     bool loadText(const String fPath, String& txt);    
     // Write a string to a file
@@ -262,8 +264,8 @@ class ConfigAssist{
     static WEB_SERVER *_server;
     static String _jWifi;
     bool _apEnabled;
-    ConfigAssistDisplayType _display;
-    ConfigAssistEventG _ev;
+    ConfigAssistDisplayType _displayType;
+    ConfigAssistChangeCbf _changeCbf;
 #ifdef CA_USE_PERSIST_CON
     static Preferences _prefs;
 #endif
