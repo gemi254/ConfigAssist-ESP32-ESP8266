@@ -52,7 +52,6 @@ ConfigAssist settings:
         - Accordion : 2
         - AccordionToggleClosed : 3
       default: AccordionToggleClosed
-
   - work_mode:
       label: Application Work mode. Must reboot to apply
       options: "'MeasureUpload': '0' ,'MeasureBatchUpload':'1', 'MeasureUploadSleep':'2', 'MeasureBatchUploadSleep':'3', 'MeasureTimeoutUploadSleep':'4'"
