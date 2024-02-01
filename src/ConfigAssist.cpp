@@ -23,32 +23,21 @@ ConfigAssist::ConfigAssist() {
   _dirty = false; _apEnabled=false;
   _confFile = String(CA_DEF_CONF_FILE);
   _dictStr = CA_DEFAULT_DICT_JSON;
-  _display = ConfigAssistDisplayType::AllOpen;
+  _displayType = ConfigAssistDisplayType::AllOpen;
 }
 
 // Standard constructor with ini file
-ConfigAssist::ConfigAssist(const String& ini_file) {
-  _init = false;
-  _dictLoaded = false; _iniLoaded=false;  
-  _dirty = false; _apEnabled=false;
-  
+ConfigAssist::ConfigAssist(const String& ini_file) : ConfigAssist()
+{
   if (ini_file != "") _confFile = ini_file;
   else _confFile = CA_DEF_CONF_FILE; 
-
-  _dictStr = CA_DEFAULT_DICT_JSON;
-  _display = ConfigAssistDisplayType::AllOpen;
 }
 
 // Standard constructor with ini file and json description
-ConfigAssist::ConfigAssist(const String& ini_file, const char * dictStr){
-  _init = false;
-  _dictLoaded = false; _iniLoaded=false;  
-  _dirty = false; _apEnabled=false;
-  
+ConfigAssist::ConfigAssist(const String& ini_file, const char * dictStr) : ConfigAssist(){
   if (ini_file != "") _confFile = ini_file;
   else _confFile = CA_DEF_CONF_FILE; 
   _dictStr = dictStr;  
-  _display = ConfigAssistDisplayType::AllOpen;
 }
 
 // delete 
@@ -136,8 +125,8 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
 }
 
 // Add a global callback function to handle changes
-void ConfigAssist::setRemotUpdateCallback(ConfigAssistEventG ev){
-  _ev = ev;
+void ConfigAssist::setRemotUpdateCallback(ConfigAssistChangeCbf ev){
+  _changeCbf = ev;
 }
 
 // Implement operator [] i.e. val = config['key']    
@@ -195,7 +184,7 @@ bool ConfigAssist::put(const String key, String val, bool force) {
 
 // Update the value of key = value (int), force to add if not exists
 bool ConfigAssist::put(const String key, int val, bool force) {
-    return  put(key, String(val), force); 
+  return put(key, String(val), force); 
 }
 
 // Add vectors by key (name in confPairs)
@@ -339,7 +328,32 @@ void ConfigAssist::dump(WEB_SERVER *server){
     i++;
   }
 }
+// Split a String with delimeter, index -> itemNo
+String ConfigAssist::splitString(String s, char delim, int index){
+  if(s=="") return "";
+  String ret = "\0";
+  //int parserIndex = index;
+  int parserCnt=0;
+  int from=0, to=-1;
 
+  while(index >= parserCnt){
+    from = to+1;
+    to = s.indexOf(delim, from);
+    if(to < 0) to = s.length();
+
+    if(index == parserCnt){
+      if(to == 0 || to == -1){
+        return "\0";
+      }
+      return s.substring(from,to);
+    }else{
+      parserCnt++;
+    }		
+  }
+  return ret;
+}
+
+// Get child nodes as string
 inline String ConfigAssist::multiLine(dyml::Directyaml::Node &node, bool addKey, bool addVal){  
   auto nOpts = node.children();  
   String val = ( node.val() == NULL) ? "": node.val();  
@@ -394,7 +408,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
     auto snoc = sep.children();
     String sepNo = "sep_" + String(no);
     addSeperator(sepNo, sep.key());   
-    LOG_D("Sep no: %s, val: %s\n",sepNo.c_str(), sep.key());
+    LOG_V("Sep no: %s, val: %s\n",sepNo.c_str(), sep.key());
     for (int k = 0; k < snoc; ++k) {  // Variables nodes
       auto var = sep.child(k);
       auto vnoc = var.children();
@@ -418,7 +432,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
           c.type = COMBO_BOX;  
           c.attribs = multiLine(attr, false, true);
                
-        }else if (key == "range"){       //Input range
+        }else if (key == "range"){      //Input range
           c.type = RANGE_BOX;
           c.attribs = val;
         
@@ -426,7 +440,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
           c.type = TEXT_AREA;          
           c.value = val;
         
-        }else if (key == "checked"){   // Check box
+        }else if (key == "checked"){    // Check box
           c.type = CHECK_BOX;          
           c.value = String(IS_BOOL_TRUE(val));
           
@@ -516,7 +530,7 @@ bool ConfigAssist::loadConfigFile(String filename) {
     // extract each config line from file
     while (file.available()) {
       String configLineStr = file.readStringUntil('\n');
-      LOG_D("Load: %s\n" , configLineStr.c_str());          
+      LOG_V("Load: %s\n" , configLineStr.c_str());          
       loadVectItem(configLineStr);
     } 
     LOG_I("Loaded config: %s, keyCnt: %i\n",filename.c_str(), _configs.size());
@@ -573,7 +587,7 @@ bool ConfigAssist::saveConfigFile(String filename) {
       char configLine[512];
       sprintf(configLine, "%s%c%s\n", row.name.c_str(), CA_INI_FILE_DELIM, row.value.c_str());   
       szOut+=file.write((uint8_t*)configLine, strlen(configLine));
-      LOG_D("Saved: %s = %s, type: %i\n", row.name.c_str(), row.value.c_str(), row.type);
+      LOG_V("Saved: %s = %s, type: %i\n", row.name.c_str(), row.value.c_str(), row.type);
     }
   }
   
@@ -848,7 +862,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
   if(server == NULL ) server = _server;
   String reply = "";
   //Save config form
-  LOG_V("handleFormRequest Entering..\n");
+  LOG_N("handleFormRequest Entering, args: %i\n",server->args());
   if (server->args() > 0) {
     //Download a file 
     if (server->hasArg(F("_DWN"))) {
@@ -951,8 +965,9 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       if(!put(key, val)) reply = "ERROR: " + key;
       else reply = "OK";
       // Call global change handler
-      if(_ev){
-        _ev(key);
+      if(_changeCbf){
+        _changeCbf(key);
+        saveConfigFile();
       }
     }
     
@@ -1004,6 +1019,8 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
   //Generate html page and send it to client
   if(server->args() < 1) sendHtmlEditPage(server);
   else server->send(200, "text/html", reply); 
+  LOG_N("handleFormRequest exiting, args: %i\n",server->args());
+  
 }
     
 // Send edit html to client
@@ -1017,7 +1034,7 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
     return;
   }
 
-  LOG_V("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniLoaded, _dictLoaded, _dirty);      
+  LOG_D("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniLoaded, _dictLoaded, _dirty);      
   //Send config form data
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   String out(CONFIGASSIST_HTML_START);
@@ -1063,8 +1080,8 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   out.replace("{appVer}", CA_CLASS_VERSION);
   server->sendContent(out);
 }
-    
-// Get edit page html table (no form)
+
+/*// Get edit page html table (no form)
 String ConfigAssist::getEditHtml(){
   String ret = "";
   String out = "";
@@ -1072,8 +1089,7 @@ String ConfigAssist::getEditHtml(){
     ret += out;
   }
   return ret;
-}
-
+}*/  
 // Get page css
 String ConfigAssist::getCSS(){
   return String(CONFIGASSIST_HTML_CSS);
@@ -1128,16 +1144,29 @@ bool ConfigAssist::endsWith(String name, String key, String &no) {
 }
 
 // Decode given string, replace encoded characters
-String ConfigAssist::urlDecode(String inVal) {
-  std::string decodeVal(inVal.c_str()); 
-  std::string replaceVal = decodeVal;
-  std::smatch match; 
-  while (regex_search(decodeVal, match, std::regex("(%)([0-9A-Fa-f]{2})"))) {
-    std::string s(1, static_cast<char>(std::strtoul(match.str(2).c_str(),nullptr,16))); // hex to ascii 
-    replaceVal = std::regex_replace(replaceVal, std::regex(match.str(0)), s);
-    decodeVal = match.suffix().str();
+String ConfigAssist::urlDecode(const String& text){
+  String decoded = "";
+  char temp[] = "0x00";
+  unsigned int len = text.length();
+  unsigned int i = 0;
+  while (i < len){
+    char decodedChar;
+    char encodedChar = text.charAt(i++);
+    if ((encodedChar == '%') && (i + 1 < len)){
+      temp[2] = text.charAt(i++);
+      temp[3] = text.charAt(i++);
+
+      decodedChar = strtol(temp, NULL, 16);
+    }else {
+      if (encodedChar == '+'){
+        decodedChar = ' ';
+      } else {
+        decodedChar = encodedChar;  // normal ascii char
+      }
+    }
+    decoded += decodedChar;
   }
-  return String(replaceVal.c_str());      
+  return decoded;
 }
 
 // Load a file into a string
@@ -1217,7 +1246,7 @@ bool ConfigAssist::saveText(const String fPath, String &txt){
 }
 // Implement seperators mode
 void ConfigAssist::modifySeperator(int sepNo, String &outSep){
-    switch (_display)
+    switch (_displayType)
     {
       case ConfigAssistDisplayType::AllOpen:
         break;
@@ -1268,7 +1297,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
       chk1.replace("{chk}","");
       c.label = chk1 + c.label;
 
-      //Don't show passwords
+      // Don't show passwords
       String ast = "";
       for(unsigned int k=0; k < c.value.length(); ++k){
         ast+='*';
@@ -1282,7 +1311,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
       if(!c.label.endsWith("\n") && !c.label.endsWith("<br>")) c.label += "&nbsp;";
       c.label +="<a href=\"\" title=\"Test ST connection\" onClick=\"testWifi(" + no + "); return false;\" id=\"_TEST_WIFI" + no + "\">Test connection</a>";
     }
-#endif //CA_USE_TESTWIFI 
+#endif // CA_USE_TESTWIFI 
     else 
       elm.replace("<input ", "<input " +c.attribs);
   }else if(c.type == TEXT_AREA){
@@ -1291,10 +1320,11 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     file.replace("{val}", c.value);
     elm = String(CONFIGASSIST_HTML_TEXT_AREA);
     String txt="";
-    //Replace loaded text
+    // Replace loaded text
+    LOG_V("Loading %s\n",c.value.c_str());
     if(loadText(c.value, txt)){ 
       elm.replace("{val}", txt); 
-    }else{ //Text not yet saved, load default text
+    }else{ // Text not yet saved, load default text
       elm.replace("{val}", c.attribs); 
     }
     elm = file + "\n" + elm;
@@ -1378,7 +1408,7 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
   char sep[] = ",";
   //Look for line feeds as seperators
   int lfPos = attribs.indexOf("\n");
-  if( lfPos >=0  & lfPos != attribs.length() - 1 ) strcpy(&sep[0],"\n");
+  if( lfPos >=0 && lfPos != (int)attribs.length() - 1 ) strcpy(&sep[0],"\n");
   
   LOG_N("getOptionsListHtml ndxLnF: %i sep: '%s', defVal: %s attribs: %s \n", attribs.indexOf("\n"), sep, defVal.c_str(), attribs.c_str());
   token = strtok(&attribs[0],  sep);
@@ -1452,29 +1482,15 @@ int ConfigAssist::getSepKeyPos(String key) {
 // Extract a config tokens from keyValPair and load it into configs vector
 void ConfigAssist::loadVectItem(String keyValPair) {  
   if (!keyValPair.length()) return;
-
-  std::string token[2];
-  int i = 0;
-  std::istringstream pair(keyValPair.c_str());
   String key,val;
-  while (std::getline(pair, token[i++], CA_INI_FILE_DELIM));
-  if (i != 3){ 
-    if (i == 2) { //Empty param
-      key = token[0].c_str(); 
-      val = "";
-    }else{
-      LOG_E("Unable to parse '%s', len %u, items: %i\n", keyValPair.c_str(), keyValPair.length(), i);
-    }
-  }else{
-    key = token[0].c_str(); 
-    val = token[1].c_str();
+  key = splitString(keyValPair,CA_INI_FILE_DELIM,0);
+  val = splitString(keyValPair,CA_INI_FILE_DELIM,1);
+  
 #if CA_DONT_ALLOW_SPACES
     val.replace(" ","");
 #endif
-  }
   val.replace("\r","");
   val.replace("\n","");
-
 #ifdef CA_USE_PERSIST_CON      
   String no;
   if(endsWith(key,CA_SSID_KEY, no)){ 
@@ -1483,7 +1499,6 @@ void ConfigAssist::loadVectItem(String keyValPair) {
     loadPref(key, val);
   }
 #endif
-
   // No label added for memory issues
   add(key, val, true);
   if (_configs.size() > CA_MAX_PARAMS) 
@@ -1503,7 +1518,7 @@ void ConfigAssist::scanComplete(int networksFound) {
       _jWifi += "\"rssi\":"+String(WiFi.RSSI(i));
       _jWifi += ",\"ssid\":\""+WiFi.SSID(i)+"\"";
       _jWifi += "}";
-      LOG_D("%i,%s\n", WiFi.RSSI(i), WiFi.SSID(i).c_str());
+      LOG_V("%i,%s\n", WiFi.RSSI(i), WiFi.SSID(i).c_str());
     }
   _jWifi += "]";
   LOG_V("Scan complete \n");    
