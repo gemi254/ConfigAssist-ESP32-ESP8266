@@ -15,28 +15,24 @@ String ConfigAssist::_jWifi="[{}]";
  Preferences ConfigAssist::_prefs;
 #endif
 
-
 // Standard defaults constructor
 ConfigAssist::ConfigAssist() {
   _init = false;
   _dictLoaded = false; _iniLoaded=false;  
   _dirty = false; _apEnabled=false;
-  _confFile = String(CA_DEF_CONF_FILE);
+  _confFile = CA_DEF_CONF_FILE;
   _dictStr = CA_DEFAULT_DICT_JSON;
   _displayType = ConfigAssistDisplayType::AllOpen;
 }
 
 // Standard constructor with ini file
-ConfigAssist::ConfigAssist(const String& ini_file) : ConfigAssist()
-{
+ConfigAssist::ConfigAssist(const String& ini_file) : ConfigAssist(){
   if (ini_file != "") _confFile = ini_file;
-  else _confFile = CA_DEF_CONF_FILE; 
+  else _confFile = CA_DEF_CONF_FILE;   
 }
 
 // Standard constructor with ini file and json description
-ConfigAssist::ConfigAssist(const String& ini_file, const char * dictStr) : ConfigAssist(){
-  if (ini_file != "") _confFile = ini_file;
-  else _confFile = CA_DEF_CONF_FILE; 
+ConfigAssist::ConfigAssist(const String& ini_file, const char * dictStr) : ConfigAssist(ini_file){
   _dictStr = dictStr;  
 }
 
@@ -45,6 +41,7 @@ ConfigAssist::~ConfigAssist() {}
 
 // Set ini file at run time
 void ConfigAssist::setIniFile(const String& ini_file){
+  // Canot change init_file from constructor
   if (ini_file != "") _confFile = ini_file;
 }
 
@@ -57,6 +54,7 @@ void ConfigAssist::setDictStr(const char * dictStr, bool load){
   
   if(dictStr==NULL) return;
   _dictStr = dictStr;
+
   if(load) loadDict(_dictStr);  
 }
 
@@ -78,10 +76,7 @@ void ConfigAssist::init() {
   startStorage();
   loadConfigFile(_confFile);
   //Failed to load ini file
-  if(!_iniLoaded){
-    _dirty = true;
-    loadDict(_dictStr);
-  }  
+  if(!_iniLoaded) _dirty = true;  
   LOG_V("ConfigAssist::init done ini:%i json:%i\n",_iniLoaded, _dictLoaded);
 }
 
@@ -515,14 +510,12 @@ bool ConfigAssist::loadConfigFile(String filename) {
   if (!file){
     LOG_E("File: %s not exists!\n", filename.c_str());
     _iniLoaded = false;       
-    _iniLoaded = false;       
-    return false;  
-    _iniLoaded = false;
     return false;  
   }else if(!file.size()) {
     LOG_E("Failed to load: %s, size: %u\n", filename.c_str(), file.size());
     //if (!file.size()) STORAGE.remove(CONFIG_FILE_PATH); 
-    _iniLoaded = false;    
+    _iniLoaded = false;
+    return false;
   }
 
   _configs.reserve(CA_MAX_PARAMS);
@@ -545,7 +538,7 @@ bool ConfigAssist::loadConfigFile(String filename) {
 bool ConfigAssist::deleteConfig(String filename){
   if(!_init) init();
   if(filename=="") filename = _confFile;
-  _iniLoaded = false;
+  _iniLoaded = false;  
   LOG_I("Removing config: %s\n",filename.c_str());
   return STORAGE.remove(filename);
 }
