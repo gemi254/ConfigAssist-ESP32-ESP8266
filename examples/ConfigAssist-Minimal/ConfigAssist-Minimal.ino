@@ -22,7 +22,7 @@ void setup() {
   #endif
   LOG_I("Starting..\n");
   
-  //info.deleteConfig(); // Uncomment to remove ini file and re-built
+  //conf.deleteConfig(); // Uncomment to remove ini file and re-built
 
   // Define a ConfigAssist helper
   ConfigAssistHelper confHelper(conf);
