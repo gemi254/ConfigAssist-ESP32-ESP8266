@@ -967,13 +967,13 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       // Call global change handler
       if(_changeCbf){
         _changeCbf(key);
-        saveConfigFile();
       }
     }
-    
+
+    saveConfigFile();
+
     //Reboot esp
     if (server->hasArg(F("_RBT"))) {
-        saveConfigFile();
         String out(CONFIGASSIST_HTML_START);
         out += CONFIGASSIST_HTML_MESSAGE;
         String timestamp = server->arg("_TS");
