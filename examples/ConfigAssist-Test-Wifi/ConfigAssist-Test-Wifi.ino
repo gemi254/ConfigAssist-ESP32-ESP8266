@@ -46,7 +46,7 @@ Application settings:
   - led_buildin:
       label: Enter the pin that the build in led is connected. Leave blank for auto.
       attribs: "min='4' max='23' step='1'"
-      default: 4
+      default:
 )~";
 
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML);
