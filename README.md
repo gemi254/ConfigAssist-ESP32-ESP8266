@@ -91,7 +91,7 @@ i.e.
 In your application sketch file you must define a yaml dictionary that includes all the information needed for the html edit form to be generated. Each variable will be displayed on edit page with the order defined in the yaml file.  See example below...
 
 
-+ If you use keywords `name, default` an **edit box** will be generated to edit the variable. You can add `attribs` keywords to specify min, max, step for a numeric field.
++ If you use keywords `name, default` an **edit box** will be generated to edit the variable. Add `attribs` keywords to specify min, max, step for a numeric field.
 + If you keyword name ends with ``_pass`` (or ``_pass`` and a number i.e``_pass1``) a **password field** will be used. See **CA_PASSWD_KEY** definition. 
 + If you use keyword `checked` instead of `default` a Boolean value will be used that will be edited by a **check box**
 + You can combine keywords `default` with `options` in order to use a select list that will be edited by a **drop list**. 
@@ -103,8 +103,12 @@ In your application sketch file you must define a yaml dictionary that includes 
 + You can combine keywords `default` with `datalist` in order to use a value that will be edited by a **combo box**. 
   - The `datalist` field must contain a comma or line feed separated list of default values for drop down list.
 + You can combine keywords `default` with `file` in order to use a small text be edited by a **text area**. 
-  - The `file` field must contain a valid file path that the text will be saved to. The `default` keyword can also be used to define a default value.
-  
+  - The `file` field must contain a valid file path that the text will be saved to. The `default` keyword can also be used to define a default value.  
++ All vars can have the keyword `attribs` to specify special attributes like javaScript, style for this field.
+  - For example `attribs: onChange = "this.style.color = 'red'"; ` 
+  - Check <a href="examples/ConfigAssist-VarAttribues/">ConfigAssist-VarAttributes</a> in ``examples/`` folder for more details.
+
+
 A **separator title** can also be used to group configuration values under a specific title.
 <p align="center">
   <img src="docs/config_colapsed.png">
