@@ -272,7 +272,7 @@ bool ConfigAssist::getNextKeyVal(confPairs &c, bool reset ) {
 // Display config items
 void ConfigAssist::dump(WEB_SERVER *server){
   confPairs c;
-  char outBuff[256];
+  char outBuff[512];
   int len = 0;
   strcpy(outBuff, "Dump editable keys: \n");
   if(server){
@@ -284,7 +284,9 @@ void ConfigAssist::dump(WEB_SERVER *server){
   
   while (getNextKeyVal(c)){ //List by array ndx
     if(c.readNo >= 0){
-      len =  sprintf(outBuff, "No: %02i. key: %s, val: %s, lbl: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+      //c.attribs may be too long to fit on outBuff
+      len =  sprintf(outBuff, "No: %02i. key: %s, val: %s, attr: %s, lbl: %s, type: %i\n", 
+                    c.readNo, c.name.c_str(), c.value.c_str(), c.attribs.substring(0, 30).c_str(),  c.label.c_str(),  c.type );
       if(server) server->sendContent(outBuff, len);
       else LOG_I("%s", outBuff);
     }
@@ -295,7 +297,7 @@ void ConfigAssist::dump(WEB_SERVER *server){
   else LOG_I("%s", outBuff);  
   while (getNextKeyVal(c)){
     if(c.readNo < 0){
-      len =  sprintf(outBuff, "No: %03i, key: %s, val: %s, lbl: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.label.c_str(), c.type );
+      len =  sprintf(outBuff, "No: %03i, key: %s, val: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type );
       if(server) server->sendContent(outBuff, len);
       else LOG_I("%s", outBuff);
     }
@@ -347,38 +349,51 @@ String ConfigAssist::splitString(String s, char delim, int index){
   }
   return ret;
 }
+// Get all child nodes as tree string, on option key add key & val
+String ConfigAssist::getChildsTree(dyml::Directyaml::Node node, bool keyVal){
+  String rs = "";
+  int noc = node.children();
+  for (int i = 0; i < noc; ++i)	{
+    auto ch = node.child(i);
+    const String k = (ch.key() == NULL) ? ""  :ch.key();
+		const String v = (ch.val() == NULL) ? ""  :ch.val();
+    if(keyVal && k!=""){ // Add key val on options
+      rs += k + ": ";
+    } 
+    
+    if(v != ""){ // Plain text on others
+      String sp = "";
+      for (int i = 0; i < (ch.getLevel() - 3) * 2; ++i) sp+=" ";      
+      rs += sp + v + "\n";
+    }else{
+      rs += "\n";
+    } 
 
-// Get child nodes as string
-inline String ConfigAssist::multiLine(dyml::Directyaml::Node &node, bool addKey, bool addVal){  
-  auto nOpts = node.children();  
-  String val = ( node.val() == NULL) ? "": node.val();  
-  if(val.startsWith("\"") ) val = val.substring(1, val.length() );
-  if(val.endsWith("\"") )   val = val.substring(0, val.length() - 1);
-  String ret = "";
-  bool mLineWithChilds = false;
-  //Multi line with val and child lines
-  if(val != "" && val != ">-"){
-    ret = val + "\n";
-    mLineWithChilds = true;    
+    rs += getChildsTree(ch, keyVal);
   }
-  
-  for (int m = 0; m < nOpts; ++m){
-    if(addKey && addVal)
-      ret += node.child(m).key() + String(": ") + node.child(m).val();
-    else{
-      if(addKey)
-        ret += String(node.child(m).key());
-      if(mLineWithChilds) addVal = (strcmp(node.child(m).key(), node.child(m).val()) != 0);
-      if(mLineWithChilds && addVal) ret += ": ";
-      if(addVal)
-        ret += node.child(m).val();
-    }
-    ret += "\n";      
-  }
-  if(ret.endsWith("\n")) ret = ret.substring(0, ret.length() - 1);
-  if(nOpts>0) LOG_V("multiLine val: %s, childs: %i\n", ret.c_str(), nOpts);
-  return ret;
+  return rs;
 }
+
+// Get all sub child nodes as string
+inline String ConfigAssist::getChilds(dyml::Directyaml::Node &node){
+  const String key = node.key();
+  String k = (node.key() == NULL) ? "" : node.key();
+  String v = (node.val() == NULL) ? "" : node.val();  
+  if(v.startsWith("\"") ) v = v.substring(1, v.length() );
+  if(v.endsWith("\"") )   v = v.substring(0, v.length() - 1);
+  String rs = "";
+  bool keyVal = false;    
+  if(k != "" && key == "options" ){
+    if(v != "" && v != ">-") rs += v + "\n";
+    keyVal = true;
+  }else{ 
+    if(v != "" && v != ">-") rs += v;
+  }
+  String chld = getChildsTree(node, keyVal);
+  if(chld != "" && !keyVal) rs += "\n";
+  return rs + chld;
+}
+
 // Load yaml dictionary
 String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) { 
   if(dictStr==NULL) return String("Empty yaml string\n");
@@ -390,7 +405,8 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
     return String(dyaml._lastError.c_str());
   }
   #if DEBUG_DYAML
-     print_yaml_rows(dyaml, 10);
+     print_yaml_rows(dyaml, 40);
+     //print_yaml_tree(dyaml.root(), -1);
   #endif
   _seperators.clear();
   auto node = dyaml.root();
@@ -407,25 +423,28 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
     for (int k = 0; k < snoc; ++k) {  // Variables nodes
       auto var = sep.child(k);
       auto vnoc = var.children();
-      confPairs c = {var.key(), "", "", "", 0, TEXT_BOX};      
+      confPairs c = {var.key(), "", "", "", 0, TEXT_BOX};
       LOG_V("  Var no: %i, key: %s, childs: %i\n", no, var.key(), vnoc );
       c.readNo  = no;
       for (int l = 0; l < vnoc; ++l){  // Atributes nodes
         auto attr = var.child(l);        
 
         String key = attr.key();
-               val = ( attr.val() == NULL) ? "": attr.val();
+               val = getChilds(attr);
 
-        LOG_V("    Att: key: %s,  childs: %i\n", key.c_str(), attr.children() );
-        if(val.startsWith("\"")) val = val.substring(1, val.length() );
-        if(val.endsWith("\""))   val = val.substring(0, val.length() - 1);
+        LOG_V("    Attr: %s, val: %s\n", key.c_str(), val.c_str() );
+        if(val.startsWith("\"") && val.endsWith("\"")){
+          val = val.substring(1, val.length() );
+          val = val.substring(0, val.length() - 1);
+        } 
+        
         if( key == "options"){
           c.type = OPTION_BOX;
-          c.attribs =  multiLine(attr, true, true);
+          c.attribs =  val;
 
         }else if( key == "datalist"){   // Combo box
           c.type = COMBO_BOX;  
-          c.attribs = multiLine(attr, false, true);
+          c.attribs = val; 
                
         }else if (key == "range"){      //Input range
           c.type = RANGE_BOX;
@@ -439,16 +458,16 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
           c.type = CHECK_BOX;          
           c.value = String(IS_BOOL_TRUE(val));
           
-        }else if (key == "attribs"){    //Input range attribes
-          c.attribs = val;                 
+        }else if (key == "attribs"){    // Input range attribes
+         c.attribs +=  val;                
          
         }else if( key == "label"){      // Label
-          c.label = multiLine(attr);
+          c.label = val;
           c.label.replace("\n", "<br>\n");
 
         }else if( key == "default"){    // Default value          
-          if(c.type == TEXT_AREA) c.attribs = multiLine(attr);
-          else c.value = multiLine(attr);
+          if(c.type == TEXT_AREA) c.attribs = val;
+          else c.value = val; 
 
         }else{
           LOG_E("Undefined key on param no: %i, key: %s\n", i, key.c_str());
@@ -494,7 +513,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
   sortSeperators();
   _dictLoaded = true;
 
-  LOG_D("Loaded json dict, keys: %u\n", _configs.size());
+  LOG_D("Loaded yaml dict, keys: %u\n", _configs.size());
 
   // Sort by read order if ini file was not sorted
   sortReadOrder();  
@@ -1306,7 +1325,9 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     }
 #endif // CA_USE_TESTWIFI 
     else 
-      elm.replace("<input ", "<input " +c.attribs);
+      elm.replace("<input ", "<input " + c.attribs);
+
+    //LOG_I("TEXT_BOX elm: %s\n", elm.c_str());  
   }else if(c.type == TEXT_AREA){
     String file = String(CONFIGASSIST_HTML_TEXT_AREA_FNAME);        
     file.replace("{key}", c.name + CA_FILENAME_IDENTIFIER);
@@ -1322,7 +1343,8 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     }
     elm = file + "\n" + elm;
   }else if(c.type == CHECK_BOX){
-    elm = String(CONFIGASSIST_HTML_CHECK_BOX);        
+    elm = String(CONFIGASSIST_HTML_CHECK_BOX);
+    elm.replace("<input ", "<input " + c.attribs + " ");
     if(IS_BOOL_TRUE(c.value)){
       elm.replace("{chk}"," checked");
     }else
@@ -1364,7 +1386,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     modifySeperator(0, outSep);
     out = outSep + out;
   }  
-  LOG_V("HTML key[%i]: %s = %s, type: %i, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.attribs.c_str() );
+  LOG_V("HTML key[%i]: %s = %s, type: %i, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.attribs.substring(0,30).c_str() );
   return true;
 }
 
