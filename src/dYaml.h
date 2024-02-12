@@ -94,6 +94,7 @@ namespace dyml
 				return row.val;
 			}
 			int getRow() const { return _row; }
+			int getLevel() const { return _level; }
 			// direct child count
 			int children() const
 			{
@@ -159,6 +160,4 @@ namespace dyml
 	void print_yaml_tree(Directyaml::Node node, int level);  
 #endif
 }
-
-
 #endif // __DIRECT_YAML_H__
