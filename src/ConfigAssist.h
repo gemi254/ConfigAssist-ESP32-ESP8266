@@ -17,10 +17,10 @@
 #endif  
 
 #ifndef LOGGER_LOG_LEVEL
-  #define LOGGER_LOG_LEVEL 3             // Set log level for this module
+  #define LOGGER_LOG_LEVEL 4             // Set log level for this module
 #endif 
 
-#define CA_CLASS_VERSION "2.8.1"         // Class version
+#define CA_CLASS_VERSION "2.8.2"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -211,7 +211,9 @@ class ConfigAssist{
     // Split a String with delimeter, index -> itemNo
     String splitString(String s, char delim, int index);
     // Get child nodes as string
-    inline String multiLine(dyml::Directyaml::Node &node, bool addKey = true, bool addVal = false);
+    inline String getChilds(dyml::Directyaml::Node &node);
+    // Get all child nodes as tree string, on option key add key & val
+    String getChildsTree(dyml::Directyaml::Node node, bool keyVal = false);
     // Is string numeric
     bool isNumeric(String s);
     // Decode given string, replace encoded characters
@@ -252,20 +254,20 @@ class ConfigAssist{
 #endif    
   private: 
     enum input_types { TEXT_BOX=1, TEXT_AREA=2, CHECK_BOX=3, OPTION_BOX=4, RANGE_BOX=5, COMBO_BOX=6};
-    std::vector<confPairs> _configs;
-    std::vector<confNdx> _keysNdx;
-    std::vector<confSeperators> _seperators;
-    bool _init;
-    bool _iniLoaded;
-    bool _dictLoaded;
-    bool _dirty;
-    const char *_dictStr;
-    String _confFile;
-    static WEB_SERVER *_server;
-    static String _jWifi;
-    bool _apEnabled;
-    ConfigAssistDisplayType _displayType;
-    ConfigAssistChangeCbf _changeCbf;
+    std::vector<confPairs>        _configs;
+    std::vector<confNdx>          _keysNdx;
+    std::vector<confSeperators>   _seperators;
+    bool                          _init;
+    bool                          _iniLoaded;
+    bool                          _dictLoaded;
+    bool                          _dirty;
+    const char *                  _dictStr;
+    String                        _confFile;
+    static WEB_SERVER *           _server;
+    static String                 _jWifi;
+    bool                          _apEnabled;
+    ConfigAssistDisplayType       _displayType;
+    ConfigAssistChangeCbf         _changeCbf;
 #ifdef CA_USE_PERSIST_CON
     static Preferences _prefs;
 #endif
