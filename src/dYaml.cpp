@@ -338,29 +338,26 @@ namespace dyml
 				;
 		}
 	}
-
+	
 	void print_yaml_tree(Directyaml::Node node, int level){
 		int noc = node.children();
 		for (int i = 0; i < noc; ++i)	{
 			// leading spaces
-			printf("%i. %s", i, string((level + 1) * 2, ' ').c_str());
+			printf("\n%s",  string((level + 1) * 2, ' ').c_str());
 
 			// key-value
 			auto ch = node.child(i);
 
-			const auto k = ch.key();
-			const auto v = ch.val();
+			const auto k = (ch.key() == NULL) ? ""  :ch.key();
+			const auto v = (ch.val() == NULL) ? ""  :ch.val();
 
-			if (k) printf("%s: ", k); // as key
+			if(strlen(k)) printf("%s: ", k); // as key
 			else
-				printf("- "); // (key is null, print as array)
+				printf("*\n"); // (key is null, print as array)
 
-			if (v) printf("%s\n", v);
-			else
-				printf("\n");
-			printf("\n");
+			if(strlen(v) && strcmp(k,v)!=0) printf("%s", v);
 			print_yaml_tree(ch, level + 1);
 		}
 	}
-	#endif
+#endif
 }
