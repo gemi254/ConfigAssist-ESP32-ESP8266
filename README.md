@@ -106,7 +106,7 @@ In your application sketch file you must define a yaml dictionary that includes 
   - The `file` field must contain a valid file path that the text will be saved to. The `default` keyword can also be used to define a default value.  
 + All vars can have the keyword `attribs` to specify special attributes like javaScript, style for this field.
   - For example `attribs: onChange = "this.style.color = 'red'"; ` 
-  - Check <a href="examples/ConfigAssist-VarAttribues/">ConfigAssist-VarAttributes</a> in ``examples/`` folder for more details.
+  - Check <a href="examples/ConfigAssist-VarAttributes/">ConfigAssist-VarAttributes</a> in ``examples/`` folder for more details.
 
 
 A **separator title** can also be used to group configuration values under a specific title.
