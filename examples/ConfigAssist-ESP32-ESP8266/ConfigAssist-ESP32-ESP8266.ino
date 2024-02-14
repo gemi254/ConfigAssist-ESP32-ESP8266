@@ -28,8 +28,7 @@ Wifi settings:
       label: Password for WLAN
       default:
   - host_name: 
-      label: >-
-        Host name to use for MDNS and AP
+      label: Host name to use for MDNS and AP
         {mac} will be replaced with device's mac id
       default: configAssist_{mac}
 
@@ -38,9 +37,10 @@ Application settings:
       label: Name your application
       default: ConfigAssistDemo  
   - led_buildin:
-      label: Enter the pin that the build in led is connected. Leave blank for auto.
-      attribs: "min='4' max='23' step='1'"
-      default: 4
+      label: Enter the pin that the build in led is connected. 
+        Leave blank for auto.
+      attribs: "min='2' max='23' step='1'"
+      default:
       
 ConfigAssist settings:
   - display_style:
