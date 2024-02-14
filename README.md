@@ -104,9 +104,12 @@ In your application sketch file you must define a yaml dictionary that includes 
   - The `datalist` field must contain a comma or line feed separated list of default values for drop down list.
 + You can combine keywords `default` with `file` in order to use a small text be edited by a **text area**. 
   - The `file` field must contain a valid file path that the text will be saved to. The `default` keyword can also be used to define a default value.  
+
 + All vars can have the keyword `attribs` to specify special attributes like javaScript, style for this field.
   - For example `attribs: onChange = "this.style.color = 'red'"; ` 
-  - Check <a href="examples/ConfigAssist-VarAttributes/">ConfigAssist-VarAttributes</a> in ``examples/`` folder for more details.
+  - You can use `setSubScript` function to add an init java script to main page.
+  
+  Check <a href="examples/ConfigAssist-VarAttributes/">ConfigAssist-VarAttributes</a> in ``examples/`` folder for more details.
 
 
 A **separator title** can also be used to group configuration values under a specific title.
@@ -164,8 +167,8 @@ Application settings:
       default: ConfigAssistDemo  
   - led_buildin:
       label: Enter the pin that the build in led is connected. Leave blank for auto.
-      attribs: "min='4' max='23' step='1'"
-      default: 4
+      attribs: "min='2' max='23' step='1'"
+      default: 2
       
 ConfigAssist settings:
   - display_style:
