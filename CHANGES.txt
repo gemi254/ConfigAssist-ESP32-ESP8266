@@ -1,5 +1,6 @@
-2.8.2 (2024-02-012)
-  * Added attributes to variables (javascript, style, e.t.c.) 
+2.8.2 (2024-02-014)
+  * Added attributes to variables (javascript, style, etc.).
+  * Added a function to append a javascript to main page
 
 2.8.1 (2024-02-01)
   * Removed regex to reduce size.
