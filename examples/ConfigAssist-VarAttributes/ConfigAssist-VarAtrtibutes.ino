@@ -71,7 +71,8 @@ void setup(void) {
   
   //Active seperator open/close, All others closed
   conf.setDisplayType(ConfigAssistDisplayType::AllOpen);
-
+  // Set a javascript on main page
+  conf.setSubScript(INIT_SCRIPT);
   // Register handlers for web server    
   server.on("/", handleRoot);  
   server.on("/d", []() {              // Append dump handler
