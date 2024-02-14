@@ -17,7 +17,7 @@
 #endif  
 
 #ifndef LOGGER_LOG_LEVEL
-  #define LOGGER_LOG_LEVEL 4             // Set log level for this module
+  #define LOGGER_LOG_LEVEL 3             // Set log level for this module
 #endif 
 
 #define CA_CLASS_VERSION "2.8.2"         // Class version
@@ -118,6 +118,8 @@ class ConfigAssist{
     void setIniFile(const String& ini_file);
     // Set json at run time.. Must called before _init 
     void setDictStr(const char * dictStr, bool load = false);
+    // Add a script to main page
+    void setSubScript(const char * initScript){ _subScript = initScript; }
     // Is config loaded valid ?
     bool valid();
     // Is key exists in configuration
@@ -262,6 +264,7 @@ class ConfigAssist{
     bool                          _dictLoaded;
     bool                          _dirty;
     const char *                  _dictStr;
+    const char *                  _subScript;
     String                        _confFile;
     static WEB_SERVER *           _server;
     static String                 _jWifi;
