@@ -624,24 +624,24 @@ const $$ = document.querySelectorAll.bind(document);
 document.addEventListener('DOMContentLoaded', function (event) {
   let scanTimer = null;
   let setTimeTimer = null;
-  let refreshInterval = 15000;
+  let refreshInterval = 20000;
   const toggleAcord = $("#toggleAcord");
   
   toggleAcord.addEventListener('click', function (event) {
     if(event.target.classList.contains("open")){
-        event.target.classList.remove("open");   
-        event.target.classList.add("closed"); 
-        $$('.card-header').forEach(el => {
-            el.parentElement.classList.remove("open");
-            el.parentElement.classList.add("closed");
-        });  
+      event.target.classList.remove("open");   
+      event.target.classList.add("closed"); 
+      $$('.card-header').forEach(el => {
+        el.parentElement.classList.remove("closed");
+        el.parentElement.classList.add("open");
+      });  
     }else{
-        event.target.classList.remove("closed");   
-        event.target.classList.add("open");   
-        $$('.card-header').forEach(el => {
-            el.parentElement.classList.remove("closed");
-            el.parentElement.classList.add("open");
-        }); 
+      event.target.classList.remove("closed");   
+      event.target.classList.add("open");   
+      $$('.card-header').forEach(el => {
+        el.parentElement.classList.remove("open");
+        el.parentElement.classList.add("closed");
+      }); 
     }     
   });
   
@@ -660,9 +660,6 @@ document.addEventListener('DOMContentLoaded', function (event) {
         el.parentElement.classList.add("closed");
       else
         if(!toggle) el.parentElement.classList.remove("closed");
-          //el.parentElement.classList.toggle("closed");
-        //else 
-//          el.parentElement.classList.remove("closed");
     });  
   }
   
@@ -697,27 +694,27 @@ document.addEventListener('DOMContentLoaded', function (event) {
   // Add button handlers
   $$('button[type=button]').forEach(el => {    
     el.addEventListener('click', function (event) {    
-       if(event.returnValue) updateKey(event.target.name, 1);
+      if(event.returnValue) updateKey(event.target.name, 1);
     });
   });
 
   // Add password view handlers
   $$('input[type=password]').forEach(el => {    
     el.addEventListener('keyup', function (event) {    
-       var no = getKeyNo(event.target.name);
-       const passV = $('#_PASS_VIEW' + no + "_GRP");
-       if(passV)
-          passV.style.display = "block";
+      var no = getKeyNo(event.target.name);
+      const passV = $('#_PASS_VIEW' + no + "_GRP");
+      if(passV)
+        passV.style.display = "block";
     });
     el.addEventListener('focus', function (event) {    
-       this.select();
+      this.select();
     });
   });
 
   // Add dblClick handlers
   $$('input').forEach(el => {    
     el.addEventListener('dblclick', function (event) {    
-       updateKey(event.target.name, event.target.value);
+      updateKey(event.target.name, event.target.value);
     });
   });
  
@@ -795,8 +792,9 @@ document.addEventListener('DOMContentLoaded', function (event) {
         console.log(html)
     }
   }
-  /*{SUB_SCRIPT}*/   
+  /*{SUB_SCRIPT_ONLOADED}*/
 })
+/*{SUB_SCRIPT}*/   
 </script>)=====";
 
 #ifdef CA_USE_TIMESYNC 
@@ -814,61 +812,64 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
     }
   }
   
-  setTimeTimer = setTimeout(sendTime, 500);  
-)=====";
+  setTimeTimer = setTimeout(sendTime, 500);)=====";
 #endif
 
-#ifdef CA_USE_TESTWIFI 
+#ifdef CA_USE_TESTWIFI
+// Test wifi
+PROGMEM const char HTML_TEST_ST_CONNECTION_LINK[] = 
+R"=====(<a href="#" title="Test ST connection" onClick="testWifi('{wifi_no}'); return false;" id="_TEST_WIFI{wifi_no}">Test connection</a>)=====";
+
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION[] = R"=====(
-  async function testWifi(no="") {
-    const baseHost = document.location.origin;
-    const url = encodeURI( baseHost + "/cfg?_TEST_WIFI="+no )      
-    document.body.style.cursor  = 'wait';
-    const ed = "st_ssid" + no;
-    const lbl = ed + "-lbl"
-    const res = ed + "_res"
-    const res_link = ed + "_res_link"
-    if($("#_TEST_WIFI"+no).innerHTML == "Testing..") return;
-    $("#_TEST_WIFI"+no).innerHTML = "Testing.."
-    if($("#"+res)) $("#"+res).innerHTML = ""
-    if($("#"+res_link)) $("#"+res_link).style.display = "none";
-    try {
-      const response = await fetch(url);
-      if (response.ok){
-        var j = await response.json(); 
-        if(!$("#"+res)){
-            $("#"+lbl).innerHTML += "<br><span id=\"" + res + "\"></span>&nbsp;"
-            $("#"+lbl).innerHTML += "<a target=\"_blank\" style=\"display: none\" id=\"" + res_link + "\" href=\"\">" + "</a>"
-        }
-      
-        if(j.status=="Success"){
-          $("#"+res).innerHTML = "<font color='Green'><b>" + j.status + "</b></font>";
-          $("#"+res).innerHTML +="&nbsp;Rssi: " + j.rssi
-          $("#"+res).innerHTML += "&nbsp;IP: "
-          $("#"+res_link).innerHTML = j.ip
-          $("#"+res_link).href = "http://" + j.ip;
-          $("#"+res_link).style.display = "";
-        }else{
-          $("#"+res).innerHTML = "<font color='red'><b>" + j.status + "</b></font>";
-          $("#"+res).innerHTML += "&nbsp;Code: " + j.code;
-          $("#"+res_link).style.display = "none;";
-        }        
-      }else{
-        alert("Fail: " + response.text());        
+async function testWifi(no="") {
+  const baseHost = document.location.origin;
+  const url = encodeURI( baseHost + "/cfg?_TEST_WIFI="+no )      
+  document.body.style.cursor  = 'wait';
+  const ed = "st_ssid" + no;
+  const lbl = ed + "-lbl"
+  const res = ed + "_res"
+  const res_link = ed + "_res_link"
+  if($("#_TEST_WIFI"+no).innerHTML == "Testing..") return;
+  $("#_TEST_WIFI"+no).innerHTML = "Testing.."
+  if($("#"+res)) $("#"+res).innerHTML = ""
+  if($("#"+res_link)) $("#"+res_link).style.display = "none";
+  try {
+    const response = await fetch(url);
+    if (response.ok){
+      var j = await response.json(); 
+      if(!$("#"+res)){
+        $("#"+lbl).innerHTML += "<br><span id=\"" + res + "\"></span>&nbsp;"
+        $("#"+lbl).innerHTML += "<a target=\"_blank\" style=\"display: none\" id=\"" + res_link + "\" href=\"\">" + "</a>"
       }
-    } catch(e) {
-      alert(e + "\n" + url)
+    
+      if(j.status=="Success"){
+        $("#"+res).innerHTML = "<font color='Green'><b>" + j.status + "</b></font>";
+        $("#"+res).innerHTML +="&nbsp;Rssi: " + j.rssi
+        $("#"+res).innerHTML += "&nbsp;IP: "
+        $("#"+res_link).innerHTML = j.ip
+        $("#"+res_link).href = "http://" + j.ip;
+        $("#"+res_link).style.display = "";
+      }else{
+        $("#"+res).innerHTML = "<font color='red'><b>" + j.status + "</b></font>";
+        $("#"+res).innerHTML += "&nbsp;Code: " + j.code;
+        $("#"+res_link).style.display = "none;";
+      }        
+    }else{
+      alert("Fail: " + response.text());        
     }
-    $("#_TEST_WIFI"+no).innerHTML = "Test connection"
-    document.body.style.cursor  = 'default';
-    //if($('#msg')) $('#msg').innerHTML = JSON.stringify(j);
+  } catch(e) {
+    alert(e + "\n" + url)
   }
+  $("#_TEST_WIFI"+no).innerHTML = "Test connection"
+  document.body.style.cursor  = 'default';
+  //if($('#msg')) $('#msg').innerHTML = JSON.stringify(j);
+}
 )=====";
 #endif
 
 #ifdef CA_USE_WIFISCAN 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN[] = R"=====(
-async function getWifiScan() {      
+  async function getWifiScan() {      
     const baseHost = document.location.origin;
     const url = baseHost + "/scan"
     try{
@@ -912,16 +913,14 @@ async function getWifiScan() {
     scanTimer = setTimeout(getWifiScan, refreshInterval);
   }
   
-  scanTimer = setTimeout(getWifiScan, 2000); 
-)=====";
+  scanTimer = setTimeout(getWifiScan, 3000);)=====";
 #endif
 
 // Template for password view check group
 PROGMEM const char CONFIGASSIST_HTML_CHECK_VIEW_PASS[] = 
 R"=====(<span id="{key}_GRP" style="display: none;">
-<input type="checkbox" style="height:auto; min-width:auto; width:auto;" id="{key}" name="{key}" {chk}/>
-<label for="{key}">{label}</label></span>
-)=====";
+            <input type="checkbox" style="height:auto; min-width:auto; width:auto;" id="{key}" name="{key}" {chk}/>
+            <label for="{key}">{label}</label></span>)=====";
 
 // Template for one input text box
 PROGMEM const char CONFIGASSIST_HTML_TEXT_BOX[] = 
@@ -947,24 +946,22 @@ PROGMEM const char CONFIGASSIST_HTML_CHECK_BOX[] = R"=====(
 // Template for one input select box
 PROGMEM const char CONFIGASSIST_HTML_SELECT_BOX[] = R"=====(
             <select id="{key}" name="{key}" style="width:100%">
-              {opt}
+{opt}
             </select>)=====";
 
 // Template for one input select option
 PROGMEM const char CONFIGASSIST_HTML_SELECT_OPTION[] = 
-R"=====(            <option value="{optVal}"{sel}>{optName}</option>
-)=====";
+R"=====(               <option value="{optVal}"{sel}>{optName}</option>)=====";
 
 // Template for one input select datalist option
 PROGMEM const char CONFIGASSIST_HTML_SELECT_DATALIST_OPTION[] = 
-R"=====(            <option value="{optVal}"></option>
-)=====";
+R"=====(               <option value="{optVal}"></option>)=====";
 
 // Template for one input select datalist
 PROGMEM const char CONFIGASSIST_HTML_DATA_LIST[] = 
 R"=====(<input type="text" id="{key}" name="{key}" list="{key}_list" value="{val}"/>
           <datalist id="{key}_list">
-              {opt}
+{opt}
           </datalist>)=====";
 
 // Template for one input select range <label for="{key}">{key}</label>
@@ -985,7 +982,7 @@ PROGMEM const char CONFIGASSIST_HTML_BODY[] = R"=====(
     <div class="column">
       <div class="card">
         <h2><font style="color: darkblue;">{host_name}</font> config</h2>
-        <div title="Colapse / Expand" id="toggleAcord" class="accordBtt open"></div>
+        <div title="Colapse / Expand" id="toggleAcord" class="accordBtt closed"></div>
       </div>)=====";
 
 // Template for one line
@@ -1035,11 +1032,9 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
 )=====";
 
 // OTA Upload button
-PROGMEM const char HTML_UPGRADE_BUTTON[] = R"~(
-  <button type="button" title="Upload firmware to upgrade" onClick="window.location.href = '/ota'" name="_UPG">Upgrade</button>
-)~";
+PROGMEM const char HTML_UPGRADE_BUTTON[] = 
+R"=====(<button type="button" title="Upload firmware to upgrade" onClick="window.location.href = '/ota'" name="_UPG">Upgrade</button>)=====";
 
 // Firmware check from url button
-PROGMEM const char HTML_FIRMWCHECK_BUTTON[] = R"~(
-  <button type="button" title="Online firmware check" onClick="window.location.href = '/fwc'" name="_FWC">Firmware</button>
-)~";
+PROGMEM const char HTML_FIRMWCHECK_BUTTON[] =  
+R"=====(<button type="button" title="Online firmware check" onClick="window.location.href = '/fwc'" name="_FWC">Firmware</button>)=====";
