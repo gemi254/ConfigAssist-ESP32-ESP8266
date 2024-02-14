@@ -22,6 +22,7 @@ ConfigAssist::ConfigAssist() {
   _dirty = false; _apEnabled=false;
   _confFile = CA_DEF_CONF_FILE;
   _dictStr = CA_DEFAULT_DICT_JSON;
+  _subScript = NULL;
   _displayType = ConfigAssistDisplayType::AllOpen;
 }
 
@@ -65,7 +66,7 @@ void ConfigAssist::startStorage() {
     else LOG_D("Storage started.\n");
   #else
     if(!STORAGE.begin()) LOG_E("ESP8266 storage init failed!\n"); 
-    else LOG_I("Storage started.\n");
+    else LOG_D("Storage started.\n");
   #endif
 }
 
@@ -379,8 +380,10 @@ inline String ConfigAssist::getChilds(dyml::Directyaml::Node &node){
   const String key = node.key();
   String k = (node.key() == NULL) ? "" : node.key();
   String v = (node.val() == NULL) ? "" : node.val();  
-  if(v.startsWith("\"") ) v = v.substring(1, v.length() );
-  if(v.endsWith("\"") )   v = v.substring(0, v.length() - 1);
+  if( v.startsWith("\"") && v.endsWith("\"") ){
+    v = v.substring(1, v.length() );
+    v = v.substring(0, v.length() - 1);
+  }   
   String rs = "";
   bool keyVal = false;    
   if(k != "" && key == "options" ){
@@ -405,8 +408,8 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
     return String(dyaml._lastError.c_str());
   }
   #if DEBUG_DYAML
-     print_yaml_rows(dyaml, 40);
-     //print_yaml_tree(dyaml.root(), -1);
+     //print_yaml_rows(dyaml, 40);
+     print_yaml_tree(dyaml.root(), -1);
   #endif
   _seperators.clear();
   auto node = dyaml.root();
@@ -1054,27 +1057,32 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   server->sendContent(out);
   server->sendContent(CONFIGASSIST_HTML_CSS);
   server->sendContent(CONFIGASSIST_HTML_CSS_CTRLS);      
+  
   String script(CONFIGASSIST_HTML_SCRIPT);
   script.replace("{CA_FILENAME_IDENTIFIER}",CA_FILENAME_IDENTIFIER);
   script.replace("{CA_PASSWD_KEY}",CA_PASSWD_KEY);
   
-#ifdef CA_USE_TESTWIFI 
-    out = String("<script>") + CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION + String("</script>");
-    server->sendContent(out);
-#endif
-
-  String subScript = "";
+  String subScript = "";  
 #ifdef CA_USE_TIMESYNC 
   subScript += CONFIGASSIST_HTML_SCRIPT_TIME_SYNC;  
+  subScript += "\n";
 #endif
 #ifdef CA_USE_WIFISCAN 
   subScript += CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN;
+  subScript += "\n";
 #endif  
+  script.replace("/*{SUB_SCRIPT_ONLOADED}*/", subScript);
 
-  script.replace("/*{SUB_SCRIPT}*/", subScript);
+#ifdef CA_USE_TESTWIFI
+  script.replace("/*{SUB_SCRIPT}*/", CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION + String("/*{SUB_SCRIPT}*/"));
+#endif
+  
+  if(_subScript) script.replace("/*{SUB_SCRIPT}*/", _subScript);
   server->sendContent(script);
   out = String(CONFIGASSIST_HTML_BODY);
   out.replace("{host_name}", getHostName());
+  if(_displayType == ConfigAssistDisplayType::AllClosed)
+    out.replace("accordBtt closed", "accordBtt open");
   server->sendContent(out);
   //Render html keys
   while(getEditHtmlChunk(out)){
@@ -1083,11 +1091,11 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   out = String(CONFIGASSIST_HTML_END);
   
 #ifdef CA_USE_OTAUPLOAD   
-  out.replace("<!--extraButtons-->", String(HTML_UPGRADE_BUTTON) +"\n<!--extraButtons-->");
+  out.replace("<!--extraButtons-->", String(HTML_UPGRADE_BUTTON) +"\n        <!--extraButtons-->");
 #endif
 #ifdef CA_USE_FIMRMCHECK
   if(get(CA_FIRMWURL_KEY) != "")
-    out.replace("<!--extraButtons-->", String(HTML_FIRMWCHECK_BUTTON) +"\n<!--extraButtons-->");
+    out.replace("<!--extraButtons-->", String(HTML_FIRMWCHECK_BUTTON) +"\n        <!--extraButtons-->");
 #endif
   out.replace("{appVer}", CA_CLASS_VERSION);
   server->sendContent(out);
@@ -1321,7 +1329,11 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     else if(endsWith(c.name, CA_SSID_KEY, no)) {
       out.replace("<td class=\"card-lbl\">", "<td class=\"card-lbl\" id=\"st_ssid" + no + "-lbl\">");
       if(!c.label.endsWith("\n") && !c.label.endsWith("<br>")) c.label += "&nbsp;";
-      c.label +="<a href=\"\" title=\"Test ST connection\" onClick=\"testWifi(" + no + "); return false;\" id=\"_TEST_WIFI" + no + "\">Test connection</a>";
+   
+      String testWifiLink(HTML_TEST_ST_CONNECTION_LINK);
+      testWifiLink.replace("{wifi_no}",no);
+      c.label += testWifiLink;
+     //c.label +="<a href=\"#\" title=\"Test ST connection\" onClick=\"testWifi(" + no + "); return false;\" id=\"_TEST_WIFI" + no + "\">Test connection</a>";
     }
 #endif // CA_USE_TESTWIFI 
     else 
@@ -1428,7 +1440,7 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
   LOG_N("getOptionsListHtml ndxLnF: %i sep: '%s', defVal: %s attribs: %s \n", attribs.indexOf("\n"), sep, defVal.c_str(), attribs.c_str());
   token = strtok(&attribs[0],  sep);
   while( token != NULL ){
-    String opt;
+    String opt;    
     if(isDataList)
       opt = String(CONFIGASSIST_HTML_SELECT_DATALIST_OPTION);
     else
@@ -1457,6 +1469,7 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
     }else{
       opt.replace("{sel}", "");
     }
+    if(ret != "") ret += "\n";
     ret += opt;        
     token = strtok( NULL,  sep );
   }
@@ -1523,7 +1536,7 @@ void ConfigAssist::loadVectItem(String keyValPair) {
 #ifdef CA_USE_WIFISCAN     
 // Build json on Wifi scan complete     
 void ConfigAssist::scanComplete(int networksFound) {
-  LOG_V("%d network(s) found\n", networksFound);      
+  LOG_D("%d network(s) found\n", networksFound);      
   if( networksFound <= 0 ) return;
   
   _jWifi = "[";
@@ -1536,7 +1549,7 @@ void ConfigAssist::scanComplete(int networksFound) {
       LOG_V("%i,%s\n", WiFi.RSSI(i), WiFi.SSID(i).c_str());
     }
   _jWifi += "]";
-  LOG_V("Scan complete \n");    
+  LOG_D("Scan complete \n");    
 }
 
 // Send wifi scan results to client
