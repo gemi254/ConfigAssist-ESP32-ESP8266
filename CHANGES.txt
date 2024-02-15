@@ -62,9 +62,9 @@
   * Allow application to logging into a file with logLevel 
   
 2.6.1 (2023-05-11)
-  * Added function getCSS() to get configAssist css on application main page
-  * Added function getTimeSyncScript() to get configAssist time sync script
-  * Added function getMessageHtml() to get configAssist simple message page
+  * Added function getCSS() to get ConfigAssist css on application main page
+  * Added function getTimeSyncScript() to get ConfigAssist time sync script
+  * Added function getMessageHtml() to get ConfigAssist simple message page
 
 2.6.0 (2023-05-10)
-  * Created configAssist library
+  * Created ConfigAssist library

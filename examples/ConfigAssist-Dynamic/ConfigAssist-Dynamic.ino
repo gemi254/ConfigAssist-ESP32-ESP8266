@@ -1,4 +1,4 @@
-#include <configAssist.h>  // Config assist class definition
+#include <ConfigAssist.h>  // Config assist class definition
 
 // Create a config class with an ini filename for storage 
 ConfigAssist config("/info1.ini");

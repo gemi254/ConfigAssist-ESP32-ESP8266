@@ -36,6 +36,6 @@ is using github.com to host the new firmware.
 
 8. Upload the firmware to github at url defined in latest.json
 
-9. By pressing `Firmware` button in config page, configAssist will compare current version with the version stored in github.com
+9. By pressing `Firmware` button in config page, ConfigAssist will compare current version with the version stored in github.com
 If newer version exists it will show a button `Upgrade Firmware` that will automatically perform a firmware upgrade with 
 the latest firmware stored in github.com

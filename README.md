@@ -45,7 +45,7 @@ Uncomment **CA_USE_PERSIST_CON** in ``ConfigAssist.h`` to use this feature.
 
 Check the <a href="/examples/ConfigAssist-FirmwareCheck/README.txt">FirmwareCheck</a>  example for more details.
 
-These features can be disabled to save memory by commenting the lines **CA_USE_WIFISCAN**, **CA_USE_TESTWIFI**, **CA_USE_TIMESYNC**, **CA_USE_OTAUPLOAD**, and **CA_USE_FIMRMCHECK** in ``configAssist.h``.
+These features can be disabled to save memory by commenting the lines **CA_USE_WIFISCAN**, **CA_USE_TESTWIFI**, **CA_USE_TIMESYNC**, **CA_USE_OTAUPLOAD**, and **CA_USE_FIMRMCHECK** in ``ConfigAssist.h``.
 
 Device's configuration ``(*.ini files)`` can be downloaded with the **Backup** button and can be restored later with the **Restore** button.
 
@@ -76,7 +76,7 @@ ConfigAssist uses **c++ vectors** to dynamically allocate and store variables an
 
 ## How to use variables
 
-**ConfigAssist** consists of single file "configAssist.h" that must be included in your application 
+**ConfigAssist** consists of single file "ConfigAssist.h" that must be included in your application 
 The application variables can be used directly by accessing the **class** itself by operator **[]**
 i.e.
 
@@ -214,8 +214,8 @@ Other settings:
 
 ## Project definitions in your main app
 
-+ include the **configAssist**  class
-  - `#include <configAssist.h>  //ConfigAssist class`
++ include the **ConfigAssist**  class
+  - `#include <ConfigAssist.h>  //ConfigAssist class`
 
 + Define your static instance with **defaults**
   - `ConfigAssist conf;`        
@@ -351,7 +351,7 @@ to print your messages. **ConfigAssist** can record these messages with **timest
 
 + if you want to enable serial print to a log file use..
   ```
-  //Enable configAssist logging to file
+  //Enable ConfigAssist logging to file
   #define LOGGER_LOG_MODE  2 // Log to file
 
   //Define the log filename
@@ -367,7 +367,7 @@ to print your messages. **ConfigAssist** can record these messages with **timest
 
 ## Compile
 Download library files and place them on ./libraries directory under ArduinoProjects
-Then include the **configAssist.h** in your application and compile..
+Then include the **ConfigAssist.h** in your application and compile..
 
 + compile for arduino-esp3 or arduino-esp8266.
 + To use Persistent ST connections On ESP8266 devices you must install **Preferences** library to provide ESP32-compatible Preferences API using LittleFS
