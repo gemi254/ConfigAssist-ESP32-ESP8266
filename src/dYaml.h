@@ -3,7 +3,9 @@
 
 #ifndef __DIRECT_YAML_H__
 #define __DIRECT_YAML_H__
+#if !defined(ESP32)
 #include "String.h"
+#endif
 #include <vector>
 #include <string>
 #define DEBUG_DYAML false
