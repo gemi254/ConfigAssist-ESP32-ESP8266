@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include "dYaml.h" 
-    using namespace dyml; 
+#include "dYaml.h"
+    using namespace dyml;
 
 #if defined(ESP32)
   #include <WebServer.h>
@@ -13,12 +13,12 @@
 #else
   #include <ESP8266WebServer.h>
   #include <LittleFS.h>
-  #include <ESP8266mDNS.h>  
-#endif  
+  #include <ESP8266mDNS.h>
+#endif
 
 #ifndef LOGGER_LOG_LEVEL
   #define LOGGER_LOG_LEVEL 3             // Set log level for this module
-#endif 
+#endif
 
 #define CA_CLASS_VERSION "2.8.2"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
@@ -39,16 +39,16 @@
 #define CA_USE_TESTWIFI                  // Comment to disable test wifi st connection
 #define CA_USE_TIMESYNC                  // Comment to disable sync esp with browser if out of sync
 #define CA_USE_OTAUPLOAD                 // Comment to disable ota and reduce memory
-#define CA_USE_FIMRMCHECK                // Comment to disable firmware check and upgrade from url 
+#define CA_USE_FIMRMCHECK                // Comment to disable firmware check and upgrade from url
 //#define CA_USE_PERSIST_CON             // Comment to disable saving wifi credentials to nvs
 
 // Define Platform libs
 #if defined(ESP32)
   #define WEB_SERVER WebServer
-  #define STORAGE SPIFFS // one of: SPIFFS LittleFS SD_MMC 
+  #define STORAGE SPIFFS // one of: SPIFFS LittleFS SD_MMC
 #else
   #define WEB_SERVER ESP8266WebServer
-  #define STORAGE LittleFS // one of: SPIFFS LittleFS SD_MMC 
+  #define STORAGE LittleFS // one of: SPIFFS LittleFS SD_MMC
 #endif
 
 #include "espLogger.h"
@@ -57,7 +57,7 @@
 
 #ifdef CA_USE_PERSIST_CON
   #define CA_PREFERENCES_NS "ConfigAssist" // Name space for pererences
-  #include <Preferences.h>  
+  #include <Preferences.h>
 #endif
 
 //Structure for config elements
@@ -71,7 +71,7 @@ struct confPairs {
 };
 
 // Define display types for the portal
-enum class ConfigAssistDisplayType:uint8_t  {  
+enum class ConfigAssistDisplayType:uint8_t  {
   // All cards open
   AllOpen = 0,
   // All cards closed
@@ -98,7 +98,7 @@ struct confNdx {
 typedef std::function<void(String key)> ConfigAssistChangeCbf;
 
 // ConfigAssist class
-class ConfigAssist{ 
+class ConfigAssist{
   public:
     // Initialize with defaults
     ConfigAssist();
@@ -116,7 +116,7 @@ class ConfigAssist{
     void startStorage();
     // Set ini file at run time
     void setIniFile(const String& ini_file);
-    // Set json at run time.. Must called before _init 
+    // Set json at run time.. Must called before _init
     void setDictStr(const char * dictStr, bool load = false);
     // Add a script to main page
     void setSubScript(const char * initScript){ _subScript = initScript; }
@@ -131,11 +131,11 @@ class ConfigAssist{
     // Get a temponary hostname
     static String getMacID();
     // Get a temponary hostname
-    String getHostName();    
-    // Implement operator [] i.e. val = config['key']    
+    String getHostName();
+    // Implement operator [] i.e. val = config['key']
     String operator [] (String k);
     // Return the value of a given key, Empty on not found
-    String get(const String key);    
+    String get(const String key);
     // Update the value of key = val (int)
     bool put(const String key, int val, bool force = false);
     // Update the value of key = val (string)
@@ -155,12 +155,12 @@ class ConfigAssist{
     // Sort seperator vectors by key (name in confSeperators)
     void sortSeperators();
     // Return next key and val from configs on each call in key order
-    bool getNextKeyVal(confPairs &c, bool reset = false); 
+    bool getNextKeyVal(confPairs &c, bool reset = false);
     // Display config items in web server, yaml like
     void dumpYaml(WEB_SERVER *server = NULL);
     // Display config items in web server, or on log on NULL
     void dump(WEB_SERVER *server = NULL);
-    // Load a description file. On updateInfo = true update only additional pair info    
+    // Load a description file. On updateInfo = true update only additional pair info
     String loadDict(const char *dictStr, bool updateInfo = false);
     // Load config pairs from an ini file
     bool loadConfigFile(String filename = "");
@@ -187,7 +187,7 @@ class ConfigAssist{
     // Upload a file to SPIFFS
     void handleFileUpload();
     // Test the specified connection no
-    String testWiFiSTConnection(String no);    
+    String testWiFiSTConnection(String no);
     // Download a file in browser window
     void handleDownloadFile(const String fileName);
     // Respond a not found HTTP request
@@ -196,19 +196,19 @@ class ConfigAssist{
     // to save. Save, Reboot ESP, Reset to defaults, cancel edits
     void handleFormRequest(WEB_SERVER* server);
     // Send edit html to client
-    void sendHtmlEditPage(WEB_SERVER* server);    
+    void sendHtmlEditPage(WEB_SERVER* server);
     // Get edit page html table (no form)
     //String getEditHtml();
     // Get page css
     String getCSS();
     // Get browser time synchronization java script
-#ifdef CA_USE_TIMESYNC 
+#ifdef CA_USE_TIMESYNC
     String getTimeSyncScript();
-#endif    
+#endif
     // Get html custom message page
     String getMessageHtml();
     // Name ends with key + number?
-    bool endsWith(String name, String key, String& no);    
+    bool endsWith(String name, String key, String& no);
   private:
     // Split a String with delimeter, index -> itemNo
     String splitString(String s, char delim, int index);
@@ -221,7 +221,7 @@ class ConfigAssist{
     // Decode given string, replace encoded characters
     String urlDecode(const String& text);
     // Load a file into a string
-    bool loadText(const String fPath, String& txt);    
+    bool loadText(const String fPath, String& txt);
     // Write a string to a file
     bool saveText(const String fPath, String& txt);
 #ifdef CA_USE_PERSIST_CON
@@ -236,7 +236,7 @@ class ConfigAssist{
     void modifySeperator(int sepNo, String &outSep);
     // Render keys,values to html lines
     bool getEditHtmlChunk(String &out);
-    // Render range 
+    // Render range
     String getRangeHtml(String defVal, String attribs);
     // Render options list
     String getOptionsListHtml(String defVal, String attribs, bool isDataList = false);
@@ -245,16 +245,16 @@ class ConfigAssist{
     // Get seperation location of given key
     int getSepKeyPos(String key);
     // Extract a config tokens from keyValPair and load it into configs vector
-    void loadVectItem(String keyValPair);    
-    // Build json on Wifi scan complete     
+    void loadVectItem(String keyValPair);
+    // Build json on Wifi scan complete
 #ifdef CA_USE_WIFISCAN
     static void scanComplete(int networksFound);
     // Send wifi scan results to client
     static void checkScanRes();
     // Start async wifi scan
     static void startScanWifi();
-#endif    
-  private: 
+#endif
+  private:
     enum input_types { TEXT_BOX=1, TEXT_AREA=2, CHECK_BOX=3, OPTION_BOX=4, RANGE_BOX=5, COMBO_BOX=6};
     std::vector<confPairs>        _configs;
     std::vector<confNdx>          _keysNdx;

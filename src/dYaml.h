@@ -152,12 +152,12 @@ namespace dyml
 		vector<Row> _rows;
 		vector<int> _topLevels;
 		string _data;
-	public:	
+	public:
 		string _lastError;
 	};
 #if DEBUG_DYAML
 	void print_yaml_rows(Directyaml& my, int width);
-	void print_yaml_tree(Directyaml::Node node, int level);  
+	void print_yaml_tree(Directyaml::Node node, int level);
 #endif
 }
 #endif // __DIRECT_YAML_H__
