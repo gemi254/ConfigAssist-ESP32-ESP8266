@@ -28,19 +28,19 @@
     #define _DEBUG_PORT Serial
 #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE
     static File log_file;
-    #define _DEBUG_PORT log_file 
+    #define _DEBUG_PORT log_file
     #define _CHK_LOG_FILE if(!log_file) log_file = STORAGE.open(LOGGER_LOG_FILENAME, "a+")
     #define LOGGER_CLOSE_LOG() log_file.close();
 #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
     #ifndef _log_printf
-    #endif 
-#else 
-    #define _DEBUG_PORT Serial    
+    #endif
+#else
+    #define _DEBUG_PORT Serial
 #endif
 
 #if LOGGER_LOG_MODE != LOGGER_LOG_MODE_EXTERNAL
 #define _log_printf(...) _DEBUG_PORT.printf(__VA_ARGS__)
-#endif 
+#endif
 
 #ifndef _LOG_FORMAT
     #ifdef ESP32
@@ -51,7 +51,7 @@
 #endif
 
 #if LOGGER_LOG_LEVEL >= _LOG_LEVEL_VERBOSE
-    #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE  
+    #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE
         #define LOG_V(format, ...) { _CHK_LOG_FILE;  _log_printf(_LOG_FORMAT(V, format), ##__VA_ARGS__); }
     #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
         #define LOG_V(format, ...) { _log_printf(_LOG_FORMAT(V, format), ##__VA_ARGS__); }
@@ -63,7 +63,7 @@
 #endif
 
 #if LOGGER_LOG_LEVEL >= _LOG_LEVEL_DEBUG
-    #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE  
+    #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE
         #define LOG_D(format, ...) { _CHK_LOG_FILE;  _log_printf(_LOG_FORMAT(E, format), ##__VA_ARGS__); }
     #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
         #define LOG_D(format, ...) { _log_printf(_LOG_FORMAT(D, format), ##__VA_ARGS__); }
@@ -75,7 +75,7 @@
 #endif
 
 #if LOGGER_LOG_LEVEL >= _LOG_LEVEL_INFO
-    #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE   
+    #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE
         #define LOG_I(format, ...) { _CHK_LOG_FILE;  _log_printf(_LOG_FORMAT(E, format), ##__VA_ARGS__); }
     #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
         #define LOG_I(format, ...) { _log_printf(_LOG_FORMAT(I, format), ##__VA_ARGS__); }
@@ -87,7 +87,7 @@
 #endif
 
 #if LOGGER_LOG_LEVEL >= _LOG_LEVEL_WARN
-    #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE  
+    #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE
         #define LOG_W(format, ...) { _CHK_LOG_FILE;  _log_printf(_LOG_FORMAT(E, format), ##__VA_ARGS__); }
     #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
         #define LOG_W(format, ...) { _log_printf(_LOG_FORMAT(W, format), ##__VA_ARGS__); }

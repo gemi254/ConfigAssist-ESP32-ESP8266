@@ -225,7 +225,7 @@ namespace dyml
 
 		if( startwith(yml_st, "[") || startwith(yml_st, "{") ){
 			_lastError = "Invalid yaml starting with '[ or {' at line: " + std::to_string(0);
-			return;	
+			return;
 		}
 		if (managed)
 		{
@@ -271,17 +271,17 @@ namespace dyml
 				key = sp;
 				level += 2;
 			}
-			
-			auto sep = strchr(sp, ':');					
+
+			auto sep = strchr(sp, ':');
 			// Seperation found and no next char or space
 			if (sep && (!sep[1] || sep[1] == ' ')) {
 				*((char*)sep) = 0;
 				sp = sep + 1; // skip ':'
-			}else if (!sep && startWithSingleDash && level==4){	// No ending :				
+			}else if (!sep && startWithSingleDash && level==4){	// No ending :
 				_lastError = "Missing ending ':' at line: " + std::to_string(ln-1) + ", node: " + std::string(sp);
 				return;
 			}else if (startWithSingleDash){	// Multi-elements array?
-				key = nullptr;				
+				key = nullptr;
 			}
 
 #ifdef __DYML_ALLOW_LINE_END_COMMENT__
@@ -295,7 +295,7 @@ namespace dyml
 				((char*)sp)[be.start + be.count] = 0;
 				val = sp + be.start;
 			}
-	
+
 			level /= 2;
 
 			lvMin = dyml_min(lvMin, level);
@@ -338,7 +338,7 @@ namespace dyml
 				;
 		}
 	}
-	
+
 	void print_yaml_tree(Directyaml::Node node, int level){
 		int noc = node.children();
 		for (int i = 0; i < noc; ++i)	{

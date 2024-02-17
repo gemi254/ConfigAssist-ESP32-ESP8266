@@ -7,7 +7,7 @@ Wifi settings:
   - st_pass:
       label: Password for WLAN
       default:
-  - host_name: 
+  - host_name:
       label: >-
         Host name to use for MDNS and AP
         {mac} will be replaced with device's mac id
@@ -22,7 +22,7 @@ PROGMEM const char CONFIGASSIST_HTML_START[] = R"=====(
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
   <link rel="shortcut icon" href="#" />
-  <title>{title}</title>                        
+  <title>{title}</title>
 </head>
 )=====";
 
@@ -33,8 +33,8 @@ PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
       setTimeout(function() {
                 location.href = '{url}';
             }, {refresh});
-      
-      if({reboot}){      
+
+      if({reboot}){
         const baseHost = document.location.origin;
         const url = baseHost + "/cfg?_RBT_CONFIRM=1";
         try{
@@ -45,7 +45,7 @@ PROGMEM const char CONFIGASSIST_HTML_MESSAGE[] = R"=====(
         }
       }
   });
-  </script>                  
+  </script>
 </head>
 <body>
 <div style="text-align:center;"><h3>{msg}</h3></div>
@@ -69,10 +69,10 @@ PROGMEM const char CONFIGASSIST_HTML_UPLOAD[] = R"=====(
 // Template for uploading a ota file
 const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
 <script>
-  const port = !window.location.port ? "80" : window.location.port;    
+  const port = !window.location.port ? "80" : window.location.port;
   const otaServer = 'http://' + document.location.hostname + ':' + port;
   const $ = document.querySelector.bind(document);
-  
+
   async function uploadFile() {
     // submit file for uploading
     let file = $("#fupload").files[0];
@@ -107,12 +107,12 @@ const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
       }
     }
     ,500);
-    
+
     setTimeout(()=> {
       location.href =  document.location.origin + "/cfg";
     }
     ,8000);
-    
+
   }
 
   function errorHandler(event) {
@@ -134,7 +134,7 @@ const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
       <p id="bytes_uploaded"></p>
       [&nbsp;<a href='/cfg'>Back</a>&nbsp;]<br><br>
     </form>
-  </div>  
+  </div>
 </body>
 </html>
 )=====";
@@ -144,13 +144,13 @@ const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
 // Template for checking firmware
 PROGMEM const char CONFIGASSIST_HTML_FIRMW_CHECK[] = R"=====(
 <script>
-const port = !window.location.port ? "80" : window.location.port;    
+const port = !window.location.port ? "80" : window.location.port;
   const otaServer = 'http://' + document.location.hostname + ':' + port;
   const $ = document.querySelector.bind(document);
   var otaUrl = "";
 
   async function uploadFileFromUrl() {
-    // submit file for uploading    
+    // submit file for uploading
     if(otaUrl == "" ) return;
     fetch(otaUrl)
         .then(r => r.blob())
@@ -170,7 +170,7 @@ const port = !window.location.port ? "80" : window.location.port;
             ajax.open("POST", otaServer + '/fupl?ota=1');
             ajax.send(formdata);
         })
-    
+
   }
 
   function progressHandler(event) {
@@ -193,12 +193,12 @@ const port = !window.location.port ? "80" : window.location.port;
       }
     }
     ,500);
-    
+
     setTimeout(()=> {
       location.href =  document.location.origin + "/cfg";
     }
     ,8000);
-    
+
   }
 
   function errorHandler(event) {
@@ -211,9 +211,9 @@ const port = !window.location.port ? "80" : window.location.port;
 
   function checKFirmware(url){
     if(url==""){
-      $("#firmwareInfo").innerHTML += "No firmware OTA url defined in configs"      
+      $("#firmwareInfo").innerHTML += "No firmware OTA url defined in configs"
       return;
-    } 
+    }
     fetch(url).then((r) => {
         if (r.ok) {
             return r.json();
@@ -222,12 +222,12 @@ const port = !window.location.port ? "80" : window.location.port;
             $("#firmwareLink").innerHTML = "Url: " + url;
         }else{
             console.log(r.statusText);
-        }        
+        }
     })
     .then(r => {
       console.log(r)
-      if(r=="") return;      
-      
+      if(r=="") return;
+
       otaUrl = r.url;
       var filename = r.url.replace(/^.*[\\/]/, '')
       if(r.ver!="" && $("#fwv").innerHTML != r.ver){
@@ -243,7 +243,7 @@ const port = !window.location.port ? "80" : window.location.port;
       }
     })
     .catch(e => {
-      console.log('Url error', e)  
+      console.log('Url error', e)
     })
   }
 // Firmware check
@@ -256,15 +256,15 @@ checKFirmware("{FIRMWARE_URL}")
   <div style="text-align:center;">
       <h3 id="firmwareInfo"></h3>
       <h4 id="firmwareLink"></h4>
-      <h4 id="firmwareDescr"></h4>  
+      <h4 id="firmwareDescr"></h4>
       <button style="display:none;" name='fupload' id='upgrade' onclick="uploadFileFromUrl()">Upgrade firmware</button>
       <br><br>
       <progress id="progressBar" style="display:none;" value="0" max="100" style="width:300px; height:25px;"></progress>
-      <h4 id="upl_status"></h4>      
+      <h4 id="upl_status"></h4>
       <p id="bytes_uploaded"></p>
       <br>
       [&nbsp;<a href='/cfg'>Back</a>&nbsp;]<br><br>
-  </div>  
+  </div>
 </body>
 </html>
 )=====";
@@ -276,7 +276,7 @@ PROGMEM const char CONFIGASSIST_HTML_CSS[] =R"=====(
 :root {
   --bg-table-stripe: #f6f6f5;
   --b-table: #999a9b47;
-  --caption: darkgray;  
+  --caption: darkgray;
 }
 body {
   font-family: Arial, Helvetica, sans-serif;
@@ -349,7 +349,7 @@ tbody tr:nth-of-type(2n+1) {
 .card-header:hover {
   background-color: #f7fafa;
 }
-.card-body {  
+.card-body {
 }
 .card-key {
   text-align: right;
@@ -396,12 +396,12 @@ button:hover {
 }
 
 .accordBtt {
-    background-image:url('data:image/svg+xml,\00003csvg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">\00003cpath fill="%2370757a" d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z">\00003c/path>\00003c/svg>');    
+    background-image:url('data:image/svg+xml,\00003csvg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">\00003cpath fill="%2370757a" d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z">\00003c/path>\00003c/svg>');
     display: inline-block;
     height: 28px;
     width: 28px;
-    position: relative; 
-    float: right; 
+    position: relative;
+    float: right;
     margin-top: -34px;
     margin-right: 30px;
     cursor: pointer;
@@ -411,11 +411,11 @@ button:hover {
 
 .accordBtt.closed{
     transform: rotateZ(0deg);
-    transition: transform 200ms ease-in-out;    
+    transition: transform 200ms ease-in-out;
 }
 .accordBtt.open{
-    transform: rotateZ(180deg); 
-    transition: transform 200ms ease-in-out;    
+    transform: rotateZ(180deg);
+    transition: transform 200ms ease-in-out;
 }
 
 /* Responsive columns */
@@ -440,13 +440,13 @@ button:hover {
   }
   table td:last-child {
     border-bottom: 0;
-  }  
+  }
   .card-key{
     text-align: left;
-    width:auto; 
-  }  
+    width:auto;
+  }
   .card-val{
-    width:auto; 
+    width:auto;
   }
 }
 </style>)=====";
@@ -460,7 +460,7 @@ PROGMEM const char CONFIGASSIST_HTML_CSS_CTRLS[] = R"=====(
 --sliderBodyBackground: darkgray;
 --sliderText: black;
 --sliderThumb: lightgray;
---sliderBackground: WhiteSmoke; 
+--sliderBackground: WhiteSmoke;
 
 /* element sizes, 1rem represents the font size of the root element */
 --elmSize: 1rem;
@@ -478,8 +478,8 @@ input {
 }
 
 textarea {
-  min-width: calc(var(--elmSize) * 11);      
-  border-radius: var(--elmQuart);        
+  min-width: calc(var(--elmSize) * 11);
+  border-radius: var(--elmQuart);
   border: 1px solid gray;
   width: 99%
 }
@@ -504,22 +504,22 @@ input[type=range]::-webkit-slider-runnable-track {
   width: 99%;
   height: 2px;
   cursor: pointer;
-  background: var(--sliderBackground); 
+  background: var(--sliderBackground);
   border-radius: var(--elmHalf);
 }
 
 input[type=range]::-webkit-slider-thumb {
   height: calc(var(--elmSize) * 1.1);
-  width: calc(var(--elmSize) * 1.1);     
+  width: calc(var(--elmSize) * 1.1);
   border-radius: 50%;
-  background: var(--sliderThumb); 
+  background: var(--sliderThumb);
   cursor: pointer;
   -webkit-appearance: none;
   margin-top: calc(-1.1 * var(--elmHalf));
 }
 
 input[type=range]:focus::-webkit-slider-runnable-track {
-  background: var(--sliderBackground); 
+  background: var(--sliderBackground);
 }
 
 .range-value{
@@ -532,8 +532,8 @@ input[type=range]:focus::-webkit-slider-runnable-track {
   height: var(--elmSize);
   line-height: var(--elmSize);
   text-align: center;
-  background: var(--sliderThumb); 
-  color: var(--sliderText); 
+  background: var(--sliderThumb);
+  color: var(--sliderText);
   font-size: calc(var(--elmSize) * 0.9);
   font-weight: bold;
   display: block;
@@ -541,7 +541,7 @@ input[type=range]:focus::-webkit-slider-runnable-track {
   left: 50%;
   transform: translate(-50%, 0);
   border-radius: var(--elmQuart);
-  top: var(--elmHalf);            
+  top: var(--elmHalf);
 }
 
 .range-max,.range-min {
@@ -549,7 +549,7 @@ input[type=range]:focus::-webkit-slider-runnable-track {
   padding: 0 var(--elmQuart);
 }
 
-/* checkbox toggle switch slider */            
+/* checkbox toggle switch slider */
 .switch {
   position: relative;
   display: inline-block;
@@ -573,7 +573,7 @@ input[type=range]:focus::-webkit-slider-runnable-track {
   right: 0;
   bottom: 0;
   background: var(--toggleInactive);
-  width: calc(var(--elmSize) * 2.3);                      
+  width: calc(var(--elmSize) * 2.3);
   transition: .4s;
   width: 100%
 }
@@ -626,28 +626,28 @@ document.addEventListener('DOMContentLoaded', function (event) {
   let setTimeTimer = null;
   let refreshInterval = 20000;
   const toggleAcord = $("#toggleAcord");
-  
+
   toggleAcord.addEventListener('click', function (event) {
     if(event.target.classList.contains("open")){
-      event.target.classList.remove("open");   
-      event.target.classList.add("closed"); 
+      event.target.classList.remove("open");
+      event.target.classList.add("closed");
       $$('.card-header').forEach(el => {
         el.parentElement.classList.remove("closed");
         el.parentElement.classList.add("open");
-      });  
+      });
     }else{
-      event.target.classList.remove("closed");   
-      event.target.classList.add("open");   
+      event.target.classList.remove("closed");
+      event.target.classList.add("open");
       $$('.card-header').forEach(el => {
         el.parentElement.classList.remove("open");
         el.parentElement.classList.add("closed");
-      }); 
-    }     
+      });
+    }
   });
-  
+
   function updateRange(range) {
     const rangeVal = $('#'+range.id).parentElement.children.rangeVal;
-    const rangeFontSize = parseInt(window.getComputedStyle($('input[type=range]')).fontSize); 
+    const rangeFontSize = parseInt(window.getComputedStyle($('input[type=range]')).fontSize);
     let position = (range.clientWidth - rangeFontSize) * (range.value - range.min) / (range.max - range.min);
     position += range.offsetLeft + (rangeFontSize / 2);
     rangeVal.innerHTML = '<span>'+range.value+'</span>';
@@ -656,20 +656,20 @@ document.addEventListener('DOMContentLoaded', function (event) {
 
   function closeAllCards(target, toggle=false){
     $$('.card-header').forEach(el => {
-      if(el != target)        
+      if(el != target)
         el.parentElement.classList.add("closed");
       else
         if(!toggle) el.parentElement.classList.remove("closed");
-    });  
+    });
   }
-  
+
   // Accordion
   $$('.card-header').forEach(el => {
     if(el.parentElement.classList.contains("accordion")){
       if(el.parentElement.classList.contains("toggle")){
         el.addEventListener("click", function (event) {
           closeAllCards(event.target.parentElement, true)
-        });    
+        });
       }else{
         el.addEventListener("click", function (event) {
           closeAllCards(event.target.parentElement)
@@ -686,44 +686,44 @@ document.addEventListener('DOMContentLoaded', function (event) {
     if (event.target.type === 'range') updateRange(event.target);
   });
 
-  // recalc range markers positions 
+  // recalc range markers positions
   window.addEventListener('resize', function (event) {
     $$('input[type=range]').forEach(el => {updateRange(el);});
   });
-  
+
   // Add button handlers
-  $$('button[type=button]').forEach(el => {    
-    el.addEventListener('click', function (event) {    
+  $$('button[type=button]').forEach(el => {
+    el.addEventListener('click', function (event) {
       if(event.returnValue) updateKey(event.target.name, 1);
     });
   });
 
   // Add password view handlers
-  $$('input[type=password]').forEach(el => {    
-    el.addEventListener('keyup', function (event) {    
+  $$('input[type=password]').forEach(el => {
+    el.addEventListener('keyup', function (event) {
       var no = getKeyNo(event.target.name);
       const passV = $('#_PASS_VIEW' + no + "_GRP");
       if(passV)
         passV.style.display = "block";
     });
-    el.addEventListener('focus', function (event) {    
+    el.addEventListener('focus', function (event) {
       this.select();
     });
   });
 
   // Add dblClick handlers
-  $$('input').forEach(el => {    
-    el.addEventListener('dblclick', function (event) {    
+  $$('input').forEach(el => {
+    el.addEventListener('dblclick', function (event) {
       updateKey(event.target.name, event.target.value);
     });
   });
- 
+
    // onChange events
   document.addEventListener("change", function (event) {
     const e = event.target;
     var value = e.value.trim();
     const et = event.target.type;
-    
+
     if( e.name.includes("_PASS_VIEW") ){
       var no = getKeyNo(e.name);
       const p = e.parentElement.parentElement.parentElement.children[1].children[0]
@@ -731,7 +731,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
       else p.type = "password";
       return;
     }
-    
+
     if( e.name.includes("{CA_PASSWD_KEY}") ){
       const no = getKeyNo(e.name);
       const passV = $('#_PASS_VIEW' + no + "_GRP");
@@ -739,7 +739,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
         passV.style.display = "block";
     }
 
-    if (e.nodeName == 'INPUT' || e.nodeName == 'SELECT') {  
+    if (e.nodeName == 'INPUT' || e.nodeName == 'SELECT') {
       if (e.type === 'checkbox') updateKey(e.id, e.checked ? 1 : 0);
       else updateKey(e.id, value);
     }else if(e.nodeName == 'TEXTAREA'){
@@ -753,10 +753,10 @@ document.addEventListener('DOMContentLoaded', function (event) {
     var start = new Date().getTime();
     while (new Date().getTime() < start + delay);
   }
-  
+
   // Save config before unload
   window.addEventListener('beforeunload', function (event) {
-    updateKey("_SAVE", 1);    
+    updateKey("_SAVE", 1);
     console.log("Unload.. Saved ini");
     sleep(500);
   });
@@ -768,11 +768,11 @@ document.addEventListener('DOMContentLoaded', function (event) {
     return no;
   }
 
-  async function updateKey(key, value) {      
-    if(value == null ) return;      
+  async function updateKey(key, value) {
+    if(value == null ) return;
     const baseHost = document.location.origin;
     var url = baseHost + "/cfg?" + key + "=" + value
-    
+
     if (key=="_RBT"){
       let nowUTC = Math.floor(new Date().getTime() / 1000);
       document.location = url+"&_TS="+ nowUTC;
@@ -786,7 +786,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
       if(html!="") $('#msg').innerHTML = html;
     }else if(key=="_RST"){
       const html = await response.text();
-      if(html.startsWith("OK:"))      
+      if(html.startsWith("OK:"))
         document.location = baseHost + "/cfg"
       else
         console.log(html)
@@ -794,10 +794,10 @@ document.addEventListener('DOMContentLoaded', function (event) {
   }
   /*{SUB_SCRIPT_ONLOADED}*/
 })
-/*{SUB_SCRIPT}*/   
+/*{SUB_SCRIPT}*/
 </script>)=====";
 
-#ifdef CA_USE_TIMESYNC 
+#ifdef CA_USE_TIMESYNC
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
   async function sendTime() {
     let now = new Date();
@@ -811,19 +811,19 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
       if(html!="" && $('#msg')) $('#msg').innerHTML = html;
     }
   }
-  
+
   setTimeTimer = setTimeout(sendTime, 500);)=====";
 #endif
 
 #ifdef CA_USE_TESTWIFI
 // Test wifi
-PROGMEM const char HTML_TEST_ST_CONNECTION_LINK[] = 
+PROGMEM const char HTML_TEST_ST_CONNECTION_LINK[] =
 R"=====(<a href="#" title="Test ST connection" onClick="testWifi('{wifi_no}'); return false;" id="_TEST_WIFI{wifi_no}">Test connection</a>)=====";
 
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION[] = R"=====(
 async function testWifi(no="") {
   const baseHost = document.location.origin;
-  const url = encodeURI( baseHost + "/cfg?_TEST_WIFI="+no )      
+  const url = encodeURI( baseHost + "/cfg?_TEST_WIFI="+no )
   document.body.style.cursor  = 'wait';
   const ed = "st_ssid" + no;
   const lbl = ed + "-lbl"
@@ -836,12 +836,12 @@ async function testWifi(no="") {
   try {
     const response = await fetch(url);
     if (response.ok){
-      var j = await response.json(); 
+      var j = await response.json();
       if(!$("#"+res)){
         $("#"+lbl).innerHTML += "<br><span id=\"" + res + "\"></span>&nbsp;"
         $("#"+lbl).innerHTML += "<a target=\"_blank\" style=\"display: none\" id=\"" + res_link + "\" href=\"\">" + "</a>"
       }
-    
+
       if(j.status=="Success"){
         $("#"+res).innerHTML = "<font color='Green'><b>" + j.status + "</b></font>";
         $("#"+res).innerHTML +="&nbsp;Rssi: " + j.rssi
@@ -853,9 +853,9 @@ async function testWifi(no="") {
         $("#"+res).innerHTML = "<font color='red'><b>" + j.status + "</b></font>";
         $("#"+res).innerHTML += "&nbsp;Code: " + j.code;
         $("#"+res_link).style.display = "none;";
-      }        
+      }
     }else{
-      alert("Fail: " + response.text());        
+      alert("Fail: " + response.text());
     }
   } catch(e) {
     alert(e + "\n" + url)
@@ -867,15 +867,15 @@ async function testWifi(no="") {
 )=====";
 #endif
 
-#ifdef CA_USE_WIFISCAN 
+#ifdef CA_USE_WIFISCAN
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN[] = R"=====(
-  async function getWifiScan() {      
+  async function getWifiScan() {
     const baseHost = document.location.origin;
     const url = baseHost + "/scan"
     try{
       const response = await fetch(encodeURI(url));
-      var json = await response.json();       
-      if (!response.ok){        
+      var json = await response.json();
+      if (!response.ok){
         console.log('Error:', json)
       }else{
         if(json.length == 1 && Object.keys(json[0]).length < 2 ) return;
@@ -888,13 +888,13 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN[] = R"=====(
         for(n in json){
           options  += '<option value="' + json[n].ssid + '"></option>\n'
         }
-        
-        eds = document.querySelectorAll("input[id*='st_ssid']")        
+
+        eds = document.querySelectorAll("input[id*='st_ssid']")
         for (i = 0; i < eds.length; ++i) {
           ed = eds[i]
           id = ed.id.replace("st_ssid","")
           const td = ed.parentElement
-        
+
           if(!ed.getAttribute('list')){
             list = document.createElement('datalist')
             list.id = 'st_wifi_list'+id
@@ -908,35 +908,35 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN[] = R"=====(
       }
     } catch(e) {
       console.log(e)
-    } 
+    }
     clearTimeout(scanTimer);
     scanTimer = setTimeout(getWifiScan, refreshInterval);
   }
-  
+
   scanTimer = setTimeout(getWifiScan, 3000);)=====";
 #endif
 
 // Template for password view check group
-PROGMEM const char CONFIGASSIST_HTML_CHECK_VIEW_PASS[] = 
+PROGMEM const char CONFIGASSIST_HTML_CHECK_VIEW_PASS[] =
 R"=====(<span id="{key}_GRP" style="display: none;">
             <input type="checkbox" style="height:auto; min-width:auto; width:auto;" id="{key}" name="{key}" {chk}/>
             <label for="{key}">{label}</label></span>)=====";
 
 // Template for one input text box
-PROGMEM const char CONFIGASSIST_HTML_TEXT_BOX[] = 
+PROGMEM const char CONFIGASSIST_HTML_TEXT_BOX[] =
 R"=====(<input id="{key}" name="{key}" length="64" value="{val}">)=====";
 
 // Template for one input text area
-PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA[] = 
+PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA[] =
 R"=====(<textarea id="{key}" name="{key}" rows="auto" cols="auto">{val}</textarea>)=====";
 
 // Template for one input text area file name
-PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA_FNAME[] = 
+PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA_FNAME[] =
 R"=====(<input type="hidden" id="{key}" name="{key}" value="{val}">)=====";
 
-// Template for one input check box 
+// Template for one input check box
 PROGMEM const char CONFIGASSIST_HTML_CHECK_BOX[] = R"=====(
-            <div class="card-val-ctrl">              
+            <div class="card-val-ctrl">
               <div class="switch">
                   <input id="{key}" name="{key}" type="checkbox"{chk}>
                   <label class="slider" for="{key}"></label>
@@ -950,15 +950,15 @@ PROGMEM const char CONFIGASSIST_HTML_SELECT_BOX[] = R"=====(
             </select>)=====";
 
 // Template for one input select option
-PROGMEM const char CONFIGASSIST_HTML_SELECT_OPTION[] = 
+PROGMEM const char CONFIGASSIST_HTML_SELECT_OPTION[] =
 R"=====(               <option value="{optVal}"{sel}>{optName}</option>)=====";
 
 // Template for one input select datalist option
-PROGMEM const char CONFIGASSIST_HTML_SELECT_DATALIST_OPTION[] = 
+PROGMEM const char CONFIGASSIST_HTML_SELECT_DATALIST_OPTION[] =
 R"=====(               <option value="{optVal}"></option>)=====";
 
 // Template for one input select datalist
-PROGMEM const char CONFIGASSIST_HTML_DATA_LIST[] = 
+PROGMEM const char CONFIGASSIST_HTML_DATA_LIST[] =
 R"=====(<input type="text" id="{key}" name="{key}" list="{key}_list" value="{val}"/>
           <datalist id="{key}_list">
 {opt}
@@ -966,16 +966,16 @@ R"=====(<input type="text" id="{key}" name="{key}" list="{key}_list" value="{val
 
 // Template for one input select range <label for="{key}">{key}</label>
 PROGMEM const char CONFIGASSIST_HTML_INPUT_RANGE[] = R"=====(
-            <div class="card-val-ctrl">              
+            <div class="card-val-ctrl">
               <div class="range-min">{min}</div>
               <input title="{lbl}" type="range" id="{key}" name="{key}" min="{min}" max="{max}" value="{val}">
               <div class="range-value" name="rangeVal"></div>
-              <div class="range-max">{max}</div>            
+              <div class="range-max">{max}</div>
             </div>)=====";
 
 // Template html body
 PROGMEM const char CONFIGASSIST_HTML_BODY[] = R"=====(
-</head> 
+</head>
 <body>
 <div class="container">
   <div class="row">
@@ -1032,9 +1032,9 @@ PROGMEM const char CONFIGASSIST_HTML_END[] = R"=====(
 )=====";
 
 // OTA Upload button
-PROGMEM const char HTML_UPGRADE_BUTTON[] = 
+PROGMEM const char HTML_UPGRADE_BUTTON[] =
 R"=====(<button type="button" title="Upload firmware to upgrade" onClick="window.location.href = '/ota'" name="_UPG">Upgrade</button>)=====";
 
 // Firmware check from url button
-PROGMEM const char HTML_FIRMWCHECK_BUTTON[] =  
+PROGMEM const char HTML_FIRMWCHECK_BUTTON[] =
 R"=====(<button type="button" title="Online firmware check" onClick="window.location.href = '/fwc'" name="_FWC">Firmware</button>)=====";
