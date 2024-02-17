@@ -4,7 +4,7 @@
 #if defined(ESP32)
   #ifdef CA_USE_OTAUPLOAD
       #include "Update.h"
-  #endif  
+  #endif
 #endif
 
 // Class static members
@@ -18,7 +18,7 @@ String ConfigAssist::_jWifi="[{}]";
 // Standard defaults constructor
 ConfigAssist::ConfigAssist() {
   _init = false;
-  _dictLoaded = false; _iniLoaded=false;  
+  _dictLoaded = false; _iniLoaded=false;
   _dirty = false; _apEnabled=false;
   _confFile = CA_DEF_CONF_FILE;
   _dictStr = CA_DEFAULT_DICT_JSON;
@@ -29,15 +29,15 @@ ConfigAssist::ConfigAssist() {
 // Standard constructor with ini file
 ConfigAssist::ConfigAssist(const String& ini_file) : ConfigAssist(){
   if (ini_file != "") _confFile = ini_file;
-  else _confFile = CA_DEF_CONF_FILE;   
+  else _confFile = CA_DEF_CONF_FILE;
 }
 
 // Standard constructor with ini file and json description
 ConfigAssist::ConfigAssist(const String& ini_file, const char * dictStr) : ConfigAssist(ini_file){
-  _dictStr = dictStr;  
+  _dictStr = dictStr;
 }
 
-// delete 
+// delete
 ConfigAssist::~ConfigAssist() {}
 
 // Set ini file at run time
@@ -52,20 +52,20 @@ void ConfigAssist::setDictStr(const char * dictStr, bool load){
     LOG_E("Configuration already initialized.\n");
     return;
   }
-  
+
   if(dictStr==NULL) return;
   _dictStr = dictStr;
 
-  if(load) loadDict(_dictStr);  
+  if(load) loadDict(_dictStr);
 }
 
 // Start storage if not init
 void ConfigAssist::startStorage() {
-  #if defined(ESP32)  
-    if(!STORAGE.begin(true)) LOG_E("ESP32 storage init failed!\n"); 
+  #if defined(ESP32)
+    if(!STORAGE.begin(true)) LOG_E("ESP32 storage init failed!\n");
     else LOG_D("Storage started.\n");
   #else
-    if(!STORAGE.begin()) LOG_E("ESP8266 storage init failed!\n"); 
+    if(!STORAGE.begin()) LOG_E("ESP8266 storage init failed!\n");
     else LOG_D("Storage started.\n");
   #endif
 }
@@ -77,39 +77,39 @@ void ConfigAssist::init() {
   startStorage();
   loadConfigFile(_confFile);
   //Failed to load ini file
-  if(!_iniLoaded) _dirty = true;  
+  if(!_iniLoaded) _dirty = true;
   LOG_V("ConfigAssist::init done ini:%i json:%i\n",_iniLoaded, _dictLoaded);
 }
 
 // Is configuration valid
-bool ConfigAssist::valid(){ 
+bool ConfigAssist::valid(){
   if(!_init) init();
   return (_iniLoaded || _dictLoaded);
 }
 
 // True if key exists in conf
-bool ConfigAssist::exists(String key){ return getKeyPos(key) >= 0; }            
-    
+bool ConfigAssist::exists(String key){ return getKeyPos(key) >= 0; }
+
 // Start an AP with a web server and render config values loaded from json dictionary
 void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
-  String hostName = getHostName();      
+  String hostName = getHostName();
   _server = &server;
   if(apEnable){
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(hostName.c_str(),"",1);
-    LOG_I("Wifi AP SSID: %s started, use 'http://%s' to connect\n", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());      
-    if (MDNS.begin(hostName.c_str()))  LOG_V("AP MDNS responder Started\n");  
+    LOG_I("Wifi AP SSID: %s started, use 'http://%s' to connect\n", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());
+    if (MDNS.begin(hostName.c_str()))  LOG_V("AP MDNS responder Started\n");
     server.begin();
     _apEnabled = true;
   }
-  #ifdef CA_USE_WIFISCAN 
-    startScanWifi();      
+  #ifdef CA_USE_WIFISCAN
+    startScanWifi();
     server.on("/scan", [this] { this->handleWifiScanRequest(); } );
-  #endif  
+  #endif
     server.on("/cfg",[this] { this->handleFormRequest(this->_server);  } );
     server.on("/upl", [this] { this->sendHtmlUploadPage(); } );
     server.on("/fupl", HTTP_POST,[this](){  },  [this](){this->handleFileUpload(); });
-  #ifdef CA_USE_OTAUPLOAD  
+  #ifdef CA_USE_OTAUPLOAD
     server.on("/ota", [this] { this->sendHtmlOtaUploadPage(); } );
   #endif
   #ifdef CA_USE_FIMRMCHECK
@@ -117,7 +117,7 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
       server.on("/fwc", [this] { this->sendHtmlFirmwareCheckPage(); } );
   #endif
   server.onNotFound([this] { this->handleNotFound(); } );
-  LOG_V("ConfigAssist setup AP & handlers done.\n");      
+  LOG_V("ConfigAssist setup AP & handlers done.\n");
 }
 
 // Add a global callback function to handle changes
@@ -125,9 +125,9 @@ void ConfigAssist::setRemotUpdateCallback(ConfigAssistChangeCbf ev){
   _changeCbf = ev;
 }
 
-// Implement operator [] i.e. val = config['key']    
-String ConfigAssist::operator [] (String k) { return get(k); }     
-    
+// Implement operator [] i.e. val = config['key']
+String ConfigAssist::operator [] (String k) { return get(k); }
+
 // Get the device mac id
 String ConfigAssist::getMacID(){
   String mac = WiFi.macAddress();
@@ -147,14 +147,14 @@ String ConfigAssist::getHostName(){
 String ConfigAssist::get(const String key) {
   int keyPos = getKeyPos(key);
   if (keyPos >= 0) {
-    return _configs[keyPos].value;        
+    return _configs[keyPos].value;
   }
-  return String(""); 
+  return String("");
 }
- 
+
 // Update the value of key = value (string)
 bool ConfigAssist::put(const String key, String val, bool force) {
-  int keyPos = getKeyPos(key);      
+  int keyPos = getKeyPos(key);
   if (keyPos >= 0) {
     // Save 0,1 on booleans
     if(_configs[keyPos].type == CHECK_BOX){
@@ -162,25 +162,25 @@ bool ConfigAssist::put(const String key, String val, bool force) {
     }
     LOG_N("Check : %s, %s\n", _configs[keyPos].value.c_str(), value.c_str());
     if(_configs[keyPos].value != val){
-      LOG_D("Put %s=%s\n", key.c_str(), val.c_str()); 
+      LOG_D("Put %s=%s\n", key.c_str(), val.c_str());
       _configs[keyPos].value = val;
       _dirty = true;
     }
     return true;
   }else if(force) {
       add(key, val, force);
-      _dirty = true; 
+      _dirty = true;
       return true;
   }else{
     LOG_E("Put failed, key: %s, val: %s\n", key.c_str(), val.c_str());
-  } 
-  LOG_D("Put key: %s. val: %s\n", key.c_str(), val.c_str()); 
-  return false;    
+  }
+  LOG_D("Put key: %s. val: %s\n", key.c_str(), val.c_str());
+  return false;
 }
 
 // Update the value of key = value (int), force to add if not exists
 bool ConfigAssist::put(const String key, int val, bool force) {
-  return put(key, String(val), force); 
+  return put(key, String(val), force);
 }
 
 // Add vectors by key (name in confPairs)
@@ -209,18 +209,18 @@ void ConfigAssist::add(confPairs &c){
   _configs.push_back({c});
   _keysNdx.push_back( {c.name, _configs.size() - 1} );
   sortKeysNdx();
-  LOG_V("Add key no: %i, key: %s, val: %s\n", c.readNo, c.name.c_str(), c.value.c_str()); 
+  LOG_V("Add key no: %i, key: %s, val: %s\n", c.readNo, c.name.c_str(), c.value.c_str());
 }
 
 // Add seperator by key
 void ConfigAssist::addSeperator(const String key, const String val){
-  LOG_V("Adding sep key: %s=%s\n", key.c_str(), val.c_str()); 
-  _seperators.push_back({key, val});      
+  LOG_V("Adding sep key: %s=%s\n", key.c_str(), val.c_str());
+  _seperators.push_back({key, val});
 }
 
 // Rebuild keys indexes wher sorting by readNo
 void ConfigAssist::rebuildKeysNdx(){
-  _keysNdx.clear();  
+  _keysNdx.clear();
   for(size_t i = 0; i < _configs.size(); ++i){
     _keysNdx.push_back( {_configs[i].name, i} );
   }
@@ -232,7 +232,7 @@ void ConfigAssist::sortReadOrder(){
   std::sort(_configs.begin(), _configs.end(), [] (
     const confPairs &a, const confPairs &b) {
     return a.readNo < b.readNo;}
-  );  
+  );
   rebuildKeysNdx();
 }
 
@@ -259,9 +259,9 @@ bool ConfigAssist::getNextKeyVal(confPairs &c, bool reset ) {
   if(reset){
     row = 0;
     return false;
-  } 
+  }
 
-  if (row++ < _configs.size()) { 
+  if (row++ < _configs.size()) {
       c = _configs[row - 1];
       return true;
   }
@@ -278,15 +278,15 @@ void ConfigAssist::dump(WEB_SERVER *server){
   strcpy(outBuff, "Dump editable keys: \n");
   if(server){
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);
-    server->sendContent(String(outBuff));    
+    server->sendContent(String(outBuff));
   }else{
     LOG_I("%s", outBuff);
   }
-  
+
   while (getNextKeyVal(c)){ //List by array ndx
     if(c.readNo >= 0){
       //c.attribs may be too long to fit on outBuff
-      len =  sprintf(outBuff, "No: %02i. key: %s, val: %s, attr: %s, lbl: %s, type: %i\n", 
+      len =  sprintf(outBuff, "No: %02i. key: %s, val: %s, attr: %s, lbl: %s, type: %i\n",
                     c.readNo, c.name.c_str(), c.value.c_str(), c.attribs.substring(0, 30).c_str(),  c.label.c_str(),  c.type );
       if(server) server->sendContent(outBuff, len);
       else LOG_I("%s", outBuff);
@@ -294,8 +294,8 @@ void ConfigAssist::dump(WEB_SERVER *server){
   }
 
   strcpy(outBuff, "Dump read only keys: \n");
-  if(server) server->sendContent("\n" + String(outBuff));    
-  else LOG_I("%s", outBuff);  
+  if(server) server->sendContent("\n" + String(outBuff));
+  else LOG_I("%s", outBuff);
   while (getNextKeyVal(c)){
     if(c.readNo < 0){
       len =  sprintf(outBuff, "No: %03i, key: %s, val: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type );
@@ -305,19 +305,19 @@ void ConfigAssist::dump(WEB_SERVER *server){
   }
 
   strcpy(outBuff, "Dump indexes: \n");
-  if(server) server->sendContent("\n" + String(outBuff));    
-  else LOG_I("%s", outBuff);  
-  size_t i = 0;  
+  if(server) server->sendContent("\n" + String(outBuff));
+  else LOG_I("%s", outBuff);
+  size_t i = 0;
   while( i < _keysNdx.size() ){
-    int len =  sprintf(outBuff, "No: %02i, ndx: %02i, key: %s\n", i, _keysNdx[i].ndx, _keysNdx[i].key.c_str());      
+    int len =  sprintf(outBuff, "No: %02i, ndx: %02i, key: %s\n", i, _keysNdx[i].ndx, _keysNdx[i].key.c_str());
     if(server) server->sendContent(outBuff, len);
     else LOG_I("%s", outBuff);
     i++;
-  }   
-  
+  }
+
   strcpy(outBuff, "Dump sperators: \n");
-  if(server) server->sendContent("\n" + String(outBuff));    
-  else LOG_I("%s", outBuff);  
+  if(server) server->sendContent("\n" + String(outBuff));
+  else LOG_I("%s", outBuff);
   i = 0;
   while( i < _seperators.size() ){
     int len =  sprintf(outBuff, "No: %02i, key: %s, val: %s\n", i, _seperators[i].name.c_str(), _seperators[i].value.c_str() );
@@ -346,7 +346,7 @@ String ConfigAssist::splitString(String s, char delim, int index){
       return s.substring(from,to);
     }else{
       parserCnt++;
-    }		
+    }
   }
   return ret;
 }
@@ -360,15 +360,15 @@ String ConfigAssist::getChildsTree(dyml::Directyaml::Node node, bool keyVal){
 		const String v = (ch.val() == NULL) ? ""  :ch.val();
     if(keyVal && k!=""){ // Add key val on options
       rs += k + ": ";
-    } 
-    
+    }
+
     if(v != ""){ // Plain text on others
       String sp = "";
-      for (int i = 0; i < (ch.getLevel() - 3) * 2; ++i) sp+=" ";      
+      for (int i = 0; i < (ch.getLevel() - 3) * 2; ++i) sp+=" ";
       rs += sp + v + "\n";
     }else{
       rs += "\n";
-    } 
+    }
 
     rs += getChildsTree(ch, keyVal);
   }
@@ -379,17 +379,17 @@ String ConfigAssist::getChildsTree(dyml::Directyaml::Node node, bool keyVal){
 inline String ConfigAssist::getChilds(dyml::Directyaml::Node &node){
   const String key = node.key();
   String k = (node.key() == NULL) ? "" : node.key();
-  String v = (node.val() == NULL) ? "" : node.val();  
+  String v = (node.val() == NULL) ? "" : node.val();
   if( v.startsWith("\"") && v.endsWith("\"") ){
     v = v.substring(1, v.length() );
     v = v.substring(0, v.length() - 1);
-  }   
+  }
   String rs = "";
-  bool keyVal = false;    
+  bool keyVal = false;
   if(k != "" && key == "options" ){
     if(v != "" && v != ">-") rs += v + "\n";
     keyVal = true;
-  }else{ 
+  }else{
     if(v != "" && v != ">-") rs += v;
   }
   String chld = getChildsTree(node, keyVal);
@@ -398,13 +398,13 @@ inline String ConfigAssist::getChilds(dyml::Directyaml::Node &node){
 }
 
 // Load yaml dictionary
-String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) { 
+String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
   if(dictStr==NULL) return String("Empty yaml string\n");
-  
+
   dyml::Directyaml dyaml(strdup(dictStr), false);
   if(dyaml.root().children()<=0){
-    LOG_E("Parse yaml failed, root children: %i err: %s\n", dyaml.root().children(), dyaml._lastError.c_str());    
-    _dictLoaded = false;   
+    LOG_E("Parse yaml failed, root children: %i err: %s\n", dyaml.root().children(), dyaml._lastError.c_str());
+    _dictLoaded = false;
     return String(dyaml._lastError.c_str());
   }
   #if DEBUG_DYAML
@@ -414,14 +414,14 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
   _seperators.clear();
   auto node = dyaml.root();
   auto noc = node.children();
-  LOG_V("Root children: %i\n", noc); 
-  String val = ""; 
-  int no = 0;   
+  LOG_V("Root children: %i\n", noc);
+  String val = "";
+  int no = 0;
   for (int i = 0; i < noc; ++i){  // Seperator nodes
     auto sep = node.child(i);
     auto snoc = sep.children();
     String sepNo = "sep_" + String(no);
-    addSeperator(sepNo, sep.key());   
+    addSeperator(sepNo, sep.key());
     LOG_V("Sep no: %s, val: %s\n",sepNo.c_str(), sep.key());
     for (int k = 0; k < snoc; ++k) {  // Variables nodes
       auto var = sep.child(k);
@@ -430,7 +430,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
       LOG_V("  Var no: %i, key: %s, childs: %i\n", no, var.key(), vnoc );
       c.readNo  = no;
       for (int l = 0; l < vnoc; ++l){  // Atributes nodes
-        auto attr = var.child(l);        
+        auto attr = var.child(l);
 
         String key = attr.key();
                val = getChilds(attr);
@@ -439,38 +439,38 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
         if(val.startsWith("\"") && val.endsWith("\"")){
           val = val.substring(1, val.length() );
           val = val.substring(0, val.length() - 1);
-        } 
-        
+        }
+
         if( key == "options"){
           c.type = OPTION_BOX;
           c.attribs =  val;
 
         }else if( key == "datalist"){   // Combo box
-          c.type = COMBO_BOX;  
-          c.attribs = val; 
-               
+          c.type = COMBO_BOX;
+          c.attribs = val;
+
         }else if (key == "range"){      //Input range
           c.type = RANGE_BOX;
           c.attribs = val;
-        
+
         }else if (key == "file"){       //Text area
-          c.type = TEXT_AREA;          
+          c.type = TEXT_AREA;
           c.value = val;
-        
+
         }else if (key == "checked"){    // Check box
-          c.type = CHECK_BOX;          
+          c.type = CHECK_BOX;
           c.value = String(IS_BOOL_TRUE(val));
-          
+
         }else if (key == "attribs"){    // Input range attribes
-         c.attribs +=  val;                
-         
+         c.attribs +=  val;
+
         }else if( key == "label"){      // Label
           c.label = val;
           c.label.replace("\n", "<br>\n");
 
-        }else if( key == "default"){    // Default value          
+        }else if( key == "default"){    // Default value
           if(c.type == TEXT_AREA) c.attribs = val;
-          else c.value = val; 
+          else c.value = val;
 
         }else{
           LOG_E("Undefined key on param no: %i, key: %s\n", i, key.c_str());
@@ -478,14 +478,14 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
       } // Attr
       if (c.type) { //Valid
         if(c.name==CA_HOSTNAME_KEY) c.value.replace("{mac}", getMacID());
-        #ifdef CA_USE_PERSIST_CON      
+        #ifdef CA_USE_PERSIST_CON
           String no;
-          if(endsWith(c.name,CA_SSID_KEY, no)){ 
-            loadPref(c.name, c.value); 
+          if(endsWith(c.name,CA_SSID_KEY, no)){
+            loadPref(c.name, c.value);
           }else if(endsWith(c.name,CA_PASSWD_KEY, no)){
             loadPref(c.name, c.value);
           }
-        #endif         
+        #endif
         if(updateInfo){
           int keyPos = getKeyPos(c.name);
           //Add a yaml key if not exists in ini file
@@ -493,8 +493,8 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
             LOG_V("Yaml key: %s not found in ini file.\n", c.name.c_str());
             add(c.name, c.value);
             keyPos = getKeyPos(c.name);
-          }           
-          if (keyPos >= 0) { //Update all other fields but not value,key        
+          }
+          if (keyPos >= 0) { //Update all other fields but not value,key
             _configs[keyPos].readNo = no;
             _configs[keyPos].label = c.label;
             _configs[keyPos].type = c.type;
@@ -508,8 +508,8 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
           add(c);
         }
       }
-      no++; 
-    } // Vars      
+      no++;
+    } // Vars
   } // Sep
 
    // Sort seperators vectors for binarry search
@@ -519,7 +519,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
   LOG_D("Loaded yaml dict, keys: %u\n", _configs.size());
 
   // Sort by read order if ini file was not sorted
-  sortReadOrder();  
+  sortReadOrder();
 
   return "";
 }
@@ -531,11 +531,11 @@ bool ConfigAssist::loadConfigFile(String filename) {
   File file = STORAGE.open(filename, "r");
   if (!file){
     LOG_E("File: %s not exists!\n", filename.c_str());
-    _iniLoaded = false;       
-    return false;  
+    _iniLoaded = false;
+    return false;
   }else if(!file.size()) {
     LOG_E("Failed to load: %s, size: %u\n", filename.c_str(), file.size());
-    //if (!file.size()) STORAGE.remove(CONFIG_FILE_PATH); 
+    //if (!file.size()) STORAGE.remove(CONFIG_FILE_PATH);
     _iniLoaded = false;
     return false;
   }
@@ -545,9 +545,9 @@ bool ConfigAssist::loadConfigFile(String filename) {
     // extract each config line from file
     while (file.available()) {
       String configLineStr = file.readStringUntil('\n');
-      LOG_V("Load: %s\n" , configLineStr.c_str());          
+      LOG_V("Load: %s\n" , configLineStr.c_str());
       loadVectItem(configLineStr);
-    } 
+    }
     LOG_I("Loaded config: %s, keyCnt: %i\n",filename.c_str(), _configs.size());
     _iniLoaded = true;
     file.close();
@@ -560,7 +560,7 @@ bool ConfigAssist::loadConfigFile(String filename) {
 bool ConfigAssist::deleteConfig(String filename){
   if(!_init) init();
   if(filename=="") filename = _confFile;
-  _iniLoaded = false;  
+  _iniLoaded = false;
   LOG_I("Removing config: %s\n",filename.c_str());
   return STORAGE.remove(filename);
 }
@@ -572,7 +572,7 @@ bool ConfigAssist::saveConfigFile(String filename) {
   if(!_dirty){
     LOG_V("Alread saved: %s\n", filename.c_str() );
     return true;
-  } 
+  }
 
   File file = STORAGE.open(filename, "w+");
   if (!file){
@@ -587,7 +587,7 @@ bool ConfigAssist::saveConfigFile(String filename) {
       row.value.replace("{mac}", getMacID());
     }
 
-#ifdef CA_USE_PERSIST_CON        
+#ifdef CA_USE_PERSIST_CON
     String no;
     if(endsWith(row.name, CA_SSID_KEY, no)){
       savePref(row.name, row.value);
@@ -596,28 +596,28 @@ bool ConfigAssist::saveConfigFile(String filename) {
       savePref(row.name, row.value);
       row.value = "";
     }
-#endif 
+#endif
 
     if(file){
       char configLine[512];
-      sprintf(configLine, "%s%c%s\n", row.name.c_str(), CA_INI_FILE_DELIM, row.value.c_str());   
+      sprintf(configLine, "%s%c%s\n", row.name.c_str(), CA_INI_FILE_DELIM, row.value.c_str());
       szOut+=file.write((uint8_t*)configLine, strlen(configLine));
       LOG_V("Saved: %s = %s, type: %i\n", row.name.c_str(), row.value.c_str(), row.type);
     }
   }
-  
+
   if(szOut>0){
     file.close();
-    LOG_I("File saved: %s, keys: %i, sz: %u B\n", filename.c_str(), _configs.size(), szOut);  
+    LOG_I("File saved: %s, keys: %i, sz: %u B\n", filename.c_str(), _configs.size(), szOut);
     _dirty = false;
   }
-  
+
   if(file) file.close();
   return true;
 }
 
 // Get system local time
-String ConfigAssist::getLocalTime() {      
+String ConfigAssist::getLocalTime() {
   struct timeval tv;
   gettimeofday(&tv, NULL);
   time_t currEpoch = tv.tv_sec;
@@ -625,17 +625,17 @@ String ConfigAssist::getLocalTime() {
   strftime(timeFormat, sizeof(timeFormat), "%d/%m/%Y %H:%M:%S", localtime(&currEpoch));
   return String(timeFormat);
 }
-    
+
 // Compare browser with system time and correct if needed
 void ConfigAssist::checkTime(uint32_t timeUtc, int timeOffs){
   struct timeval tvLocal;
   gettimeofday(&tvLocal, NULL);
-  
+
   long diff = (long)timeUtc - tvLocal.tv_sec;
   LOG_D("Remote utc: %d, local: %lld\n", timeUtc, tvLocal.tv_sec);
   LOG_D("Time diff: %ld\n",diff);
   if( abs(diff) > 5L ){ //5 Secs
-    LOG_D("LocalTime: %s\n", getLocalTime().c_str());          
+    LOG_D("LocalTime: %s\n", getLocalTime().c_str());
     struct timeval tvRemote;
     tvRemote.tv_usec = 0;
     tvRemote.tv_sec = timeUtc;
@@ -646,18 +646,18 @@ void ConfigAssist::checkTime(uint32_t timeUtc, int timeOffs){
       String tmz = "GMT";
       if(timeOffs >= 0) tmz += "+" + String(timeOffs);
       else tmz += String(timeOffs);
-    } 
+    }
     setenv("TZ", tmz.c_str(), 1);
     tzset();
     LOG_I("LocalTime after sync: %s, tmz=%s\n", getLocalTime().c_str(), tmz.c_str());
-    
-  }      
+
+  }
 }
 
 #ifdef CA_USE_WIFISCAN
 // Respond a HTTP request for /scan results
 void ConfigAssist::handleWifiScanRequest(){
-  checkScanRes();   _server->sendContent(_jWifi); 
+  checkScanRes();   _server->sendContent(_jWifi);
 }
 #endif
 
@@ -672,14 +672,14 @@ String ConfigAssist::testWiFiSTConnection(String no){
     if(WiFi.getMode()!=WIFI_AP_STA) WiFi.mode(WIFI_AP_STA);
     LOG_D("Wifi Station testing, no: %s, ssid: %s\n", (no != "") ? no.c_str():"0", ssid.c_str());
     LOG_N("Wifi Station testing, no: %s, ssid: %s, pass: %s\n", (no != "") ? no.c_str():"0", ssid.c_str(), pass.c_str());
-    
+
     WiFi.begin(ssid.c_str(), pass.c_str());
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000)  {
       Serial.print(".");
       delay(500);
       Serial.flush();
-    }  
-    Serial.println();    
+    }
+    Serial.println();
   }
   msg = "{";
   if(WiFi.status() != WL_CONNECTED){
@@ -689,15 +689,15 @@ String ConfigAssist::testWiFiSTConnection(String no){
   }else if(ssid != WiFi.SSID()){ //Connected and test other ssid
     msg += "\"status\": \"Failed\", ";
     msg += "\"ssid\": \"" + ssid + "\", ";
-    msg += "\"code\": \"" + String("Already in a ST connection") + "\"";  
+    msg += "\"code\": \"" + String("Already in a ST connection") + "\"";
   }else{
     msg += "\"status\": \"Success\", ";
     msg += "\"ip\": \"" + WiFi.localIP().toString()+ "\", ";
     msg += "\"ssid\": \"" + WiFi.SSID() + "\", ";
     msg += "\"rssi\": \"" + String(WiFi.RSSI()) + " db\"";
   }
-  
-  msg += "}"; 
+
+  msg += "}";
   LOG_D("Wifi Station testing: %s\n", msg.c_str() );
   return msg;
 }
@@ -710,8 +710,8 @@ void ConfigAssist::handleDownloadFile(const String fileName){
     const char* resp_str = "File does not exist or cannot be opened";
     LOG_E("%s: %s", resp_str, fileName.c_str());
     _server->send(200, "text/html", resp_str);
-    _server->client().flush(); 
-    return;  
+    _server->client().flush();
+    return;
   }
   uint32_t config_len = f.size();
   // download file as attachment, required file name in inFileName
@@ -726,8 +726,8 @@ void ConfigAssist::handleDownloadFile(const String fileName){
   _server->sendHeader("Connection", "close");
   size_t sz = _server->streamFile(f, "application/octet-stream");
   if (sz != f.size()) {
-    LOG_E("File: %s, Sent %zu, expected: %zu!\n", fileName.c_str(), sz, f.size()); 
-  } 
+    LOG_E("File: %s, Sent %zu, expected: %zu!\n", fileName.c_str(), sz, f.size());
+  }
   f.close();
 }
 
@@ -761,13 +761,13 @@ void ConfigAssist::sendHtmlOtaUploadPage(){
 // Send html OTA upload page to client
 void ConfigAssist::sendHtmlFirmwareCheckPage(){
   String out(CONFIGASSIST_HTML_START);
-  out.replace("{title}", "Check firmware");  
+  out.replace("{title}", "Check firmware");
   _server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   _server->sendContent(out);
   out = "";
   out += CONFIGASSIST_HTML_FIRMW_CHECK;
   out.replace("{FIRMWARE_VERSION}", get(CA_FIRMWVER_KEY));
-  out.replace("{FIRMWARE_URL}", get(CA_FIRMWURL_KEY));  
+  out.replace("{FIRMWARE_URL}", get(CA_FIRMWURL_KEY));
   _server->sendContent(out);
 }
 #endif //CA_USE_FIMRMCHECK
@@ -776,9 +776,9 @@ void ConfigAssist::sendHtmlFirmwareCheckPage(){
 void ConfigAssist::handleFileUpload(){
   static File tmpFile;
   static String filename,tmpFilename;
-  HTTPUpload& uploadfile = _server->upload(); 
+  HTTPUpload& uploadfile = _server->upload();
   #ifdef CA_USE_OTAUPLOAD
-    bool isOta = _server->hasArg("ota");  
+    bool isOta = _server->hasArg("ota");
   #endif //CA_USE_OTAUPLOAD
   if(uploadfile.status == UPLOAD_FILE_START){
     #ifdef CA_USE_OTAUPLOAD
@@ -798,14 +798,14 @@ void ConfigAssist::handleFileUpload(){
     tmpFilename = filename + ".tmp";
     LOG_I("Upload started, name: %s\n", tmpFilename.c_str());
     //Remove the previous tmp version
-    if(STORAGE.exists(tmpFilename)) STORAGE.remove(tmpFilename);                         
-    tmpFile = STORAGE.open(tmpFilename, "w+");    
+    if(STORAGE.exists(tmpFilename)) STORAGE.remove(tmpFilename);
+    tmpFile = STORAGE.open(tmpFilename, "w+");
   }else if (uploadfile.status == UPLOAD_FILE_WRITE){
     #ifdef CA_USE_OTAUPLOAD
       if(isOta){ // flashing firmware to ESP
         if (Update.write(uploadfile.buf, uploadfile.currentSize) != uploadfile.currentSize) {
           LOG_E("OTA Error: %x\n", Update.getError());
-          Update.printError(Serial);        
+          Update.printError(Serial);
         }
         // Store the next milestone to output
         uint16_t chunk_size  = 51200;
@@ -846,8 +846,8 @@ void ConfigAssist::handleFileUpload(){
         return;
       }
     #endif //CA_USE_OTAUPLOAD
-    if(tmpFile){ // If the file was successfully created    
-      tmpFile.close();  
+    if(tmpFile){ // If the file was successfully created
+      tmpFile.close();
       if(STORAGE.exists(filename)) STORAGE.remove(filename);
       //Uploaded a temp file, rename it on success
       LOG_D("Rename temp name: %s to: %s\n", tmpFilename.c_str(), filename.c_str() );
@@ -866,7 +866,7 @@ void ConfigAssist::handleFileUpload(){
       out.replace("{title}", "Restore config");
       out.replace("{reboot}", "false");
       out.replace("{msg}", msg.c_str());
-      this->_server->send(200,"text/html",out);      
+      this->_server->send(200,"text/html",out);
     }
   }
 }
@@ -879,13 +879,13 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
   //Save config form
   LOG_N("handleFormRequest Entering, args: %i\n",server->args());
   if (server->args() > 0) {
-    //Download a file 
+    //Download a file
     if (server->hasArg(F("_DWN"))) {
       if(server->hasArg(F("_F"))){
-        LOG_I("Download file:%s\n",server->arg(F("_F")).c_str());      
+        LOG_I("Download file:%s\n",server->arg(F("_F")).c_str());
         handleDownloadFile(server->arg(F("_F")));
       }else{ //Download default config
-        LOG_I("Download def:%s\n",_confFile.c_str());      
+        LOG_I("Download def:%s\n",_confFile.c_str());
         handleDownloadFile(_confFile);
       }
       return;
@@ -893,7 +893,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     if( server->hasArg(F("_UPL")) || server->hasArg(F("_UPG")) || server->hasArg(F("_FWC")) ){
       return;
     }
-    server->setContentLength(CONTENT_LENGTH_UNKNOWN);        
+    server->setContentLength(CONTENT_LENGTH_UNKNOWN);
     //Discard edits and load json defaults;
     if (server->hasArg(F("_RST"))) {
       deleteConfig();
@@ -906,9 +906,9 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       }else{
         server->send ( 200, "text/html", "OK: Recreated config.");
       }
-      server->client().flush(); 
+      server->client().flush();
       return;
-    }      
+    }
     //Reload and loose changes
     if (server->hasArg(F("_CANCEL"))) {
       server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/\">");
@@ -919,35 +919,35 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     if (server->hasArg(F("_CLEAR"))) {
         if(clearPrefs()) reply = "Cleared preferences.";
         else reply = "ERROR: Failed to clear preferences.";
-        server->send(200, "text/html", reply); 
+        server->send(200, "text/html", reply);
         server->client().flush();
         return;
-    } 
-#endif //CA_USE_PERSIST_CON   
+    }
+#endif //CA_USE_PERSIST_CON
 
 #ifdef CA_USE_TESTWIFI
-    //Test wifi?    
+    //Test wifi?
     if (server->hasArg(F("_TEST_WIFI"))) {
       LOG_D("Testing WIFI ST connection..\n");
       String no = server->arg(F("_TEST_WIFI"));
       String msg = testWiFiSTConnection(no);
       server->send(200, "text/json", msg.c_str());
-      server->client().flush(); 
+      server->client().flush();
       LOG_D("Testing WIFI ST connection..Done\n");
       if(_apEnabled) WiFi.disconnect();
       return;
     }
-#endif//CA_USE_TESTWIFI 
-    //Reboot esp?    
+#endif//CA_USE_TESTWIFI
+    //Reboot esp?
     if (server->hasArg(F("_RBT_CONFIRM"))) {
       LOG_D("Restarting..\n");
       server->send(200, "text/html", "OK");
-      server->client().flush(); 
+      server->client().flush();
       delay(1000);
       ESP.restart();
       return;
     }
-    
+
     //Update configs from form post vals
     for(uint8_t i=0; i<server->args(); ++i ){
       String key(server->argName(i));
@@ -966,7 +966,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         }
         checkTime(val.toInt(), offs.toInt());
         server->send(200, "text/html", "OK");
-        server->client().flush(); 
+        server->client().flush();
         return;
       }
       //Check if it is a text box with file name
@@ -995,23 +995,23 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         bool reboot = true;
         if(timestamp != ""){
           struct timeval tvLocal;
-          gettimeofday(&tvLocal, NULL);        
+          gettimeofday(&tvLocal, NULL);
           //Is time in sync?
-          if (tvLocal.tv_sec > 10000){            
+          if (tvLocal.tv_sec > 10000){
             long timeUtc = timestamp.toInt();
             long diff = tvLocal.tv_sec - timeUtc;
             if( diff > 5L ) reboot = false;
             LOG_D("Check device reboot: %i, timeDif: %lu\n", reboot, diff );
           }else{
             LOG_D("Check device reboot: Time is not synchronized.\n");
-          }          
+          }
         }
         if(!reboot){
           out.replace("{reboot}", "false");
           out.replace("{msg}", "Already restarted, Redirecting to home");
           out.replace("{refresh}", "3000");
         }else{
-          out.replace("{reboot}", "true");          
+          out.replace("{reboot}", "true");
           out.replace("{msg}", "Configuration saved.<br>Device will be restarted in a few seconds");
           out.replace("{refresh}", "10000");
         }
@@ -1019,64 +1019,64 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         out.replace("{url}", "/cfg");
         out.replace("{refresh}", "10000");
         server->send(200, "text/html", out);
-        server->client().flush(); 
+        server->client().flush();
         return;
     }
-    //Save config file 
+    //Save config file
     if (server->hasArg(F("_SAVE"))) {
         if(saveConfigFile()) reply = "Config saved.";
         else reply = "ERROR: Failed to save config.";
-        server->send(200, "text/html", reply); 
+        server->send(200, "text/html", reply);
         server->client().flush();
         return;
-    }  
+    }
   }
   //Generate html page and send it to client
   if(server->args() < 1) sendHtmlEditPage(server);
-  else server->send(200, "text/html", reply); 
+  else server->send(200, "text/html", reply);
   LOG_N("handleFormRequest exiting, args: %i\n",server->args());
-  
+
 }
-    
+
 // Send edit html to client
 void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   //Load dictionary if no pressent and update info only
   String error = "";
-  if(!_dictLoaded) 
+  if(!_dictLoaded)
     error = loadDict(_dictStr, true);
   if(error != "" ){
     server->send(200, "text/html", "Yaml Error: " + error);
     return;
   }
 
-  LOG_D("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniLoaded, _dictLoaded, _dirty);      
+  LOG_D("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniLoaded, _dictLoaded, _dirty);
   //Send config form data
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   String out(CONFIGASSIST_HTML_START);
   out.replace("{title}", "Configuration for " + getHostName());
   server->sendContent(out);
   server->sendContent(CONFIGASSIST_HTML_CSS);
-  server->sendContent(CONFIGASSIST_HTML_CSS_CTRLS);      
-  
+  server->sendContent(CONFIGASSIST_HTML_CSS_CTRLS);
+
   String script(CONFIGASSIST_HTML_SCRIPT);
   script.replace("{CA_FILENAME_IDENTIFIER}",CA_FILENAME_IDENTIFIER);
   script.replace("{CA_PASSWD_KEY}",CA_PASSWD_KEY);
-  
-  String subScript = "";  
-#ifdef CA_USE_TIMESYNC 
-  subScript += CONFIGASSIST_HTML_SCRIPT_TIME_SYNC;  
+
+  String subScript = "";
+#ifdef CA_USE_TIMESYNC
+  subScript += CONFIGASSIST_HTML_SCRIPT_TIME_SYNC;
   subScript += "\n";
 #endif
-#ifdef CA_USE_WIFISCAN 
+#ifdef CA_USE_WIFISCAN
   subScript += CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN;
   subScript += "\n";
-#endif  
+#endif
   script.replace("/*{SUB_SCRIPT_ONLOADED}*/", subScript);
 
 #ifdef CA_USE_TESTWIFI
   script.replace("/*{SUB_SCRIPT}*/", CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION + String("/*{SUB_SCRIPT}*/"));
 #endif
-  
+
   if(_subScript) script.replace("/*{SUB_SCRIPT}*/", _subScript);
   server->sendContent(script);
   out = String(CONFIGASSIST_HTML_BODY);
@@ -1086,11 +1086,11 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   server->sendContent(out);
   //Render html keys
   while(getEditHtmlChunk(out)){
-    server->sendContent(out);        
+    server->sendContent(out);
   }
   out = String(CONFIGASSIST_HTML_END);
-  
-#ifdef CA_USE_OTAUPLOAD   
+
+#ifdef CA_USE_OTAUPLOAD
   out.replace("<!--extraButtons-->", String(HTML_UPGRADE_BUTTON) +"\n        <!--extraButtons-->");
 #endif
 #ifdef CA_USE_FIMRMCHECK
@@ -1109,7 +1109,7 @@ String ConfigAssist::getEditHtml(){
     ret += out;
   }
   return ret;
-}*/  
+}*/
 // Get page css
 String ConfigAssist::getCSS(){
   return String(CONFIGASSIST_HTML_CSS);
@@ -1120,7 +1120,7 @@ String ConfigAssist::getCSS(){
 String ConfigAssist::getTimeSyncScript(){
   return String(CONFIGASSIST_HTML_SCRIPT_TIME_SYNC);
 }
-#endif //CA_USE_TIMESYNC 
+#endif //CA_USE_TIMESYNC
 
 // Get html custom message page
 String ConfigAssist::getMessageHtml(){
@@ -1152,7 +1152,7 @@ bool ConfigAssist::endsWith(String name, String key, String &no) {
   int l = name.length();
   while( --l >= 0 )
     if( !isDigit(name.charAt(l)) ) break;
-  
+
   String sKey = name.substring(0, l + 1);
   no = name.substring(l + 1, name.length());
 
@@ -1160,7 +1160,7 @@ bool ConfigAssist::endsWith(String name, String key, String &no) {
     return true;
   }
   LOG_N("Not endsWith name: %s, key: %s, sKey: %s no: %s\n", name.c_str(), key.c_str(), sKey.c_str(), no.c_str());
-  return false;  
+  return false;
 }
 
 // Decode given string, replace encoded characters
@@ -1200,8 +1200,8 @@ bool ConfigAssist::loadText(const String fPath, String &txt){
   txt = "";
   while (file.available()) {
     txt += file.readString();
-  } 
-  LOG_D("Loaded: %s, sz: %u B\n" , fPath.c_str(), txt.length() );          
+  }
+  LOG_D("Loaded: %s, sz: %u B\n" , fPath.c_str(), txt.length() );
   file.close();
   return true;
 }
@@ -1209,7 +1209,7 @@ bool ConfigAssist::loadText(const String fPath, String &txt){
 #ifdef CA_USE_PERSIST_CON
 // Clear nvs
 bool ConfigAssist::clearPrefs(){
-  if (!_prefs.begin(CA_PREFERENCES_NS, false)) {  
+  if (!_prefs.begin(CA_PREFERENCES_NS, false)) {
     LOG_E("Failed to begin prefs\n");
     return false;
   }
@@ -1221,7 +1221,7 @@ bool ConfigAssist::clearPrefs(){
 
 // Save a key to nvs
 bool ConfigAssist::savePref(String key, String val){
-  if (!_prefs.begin(CA_PREFERENCES_NS, false)) {  
+  if (!_prefs.begin(CA_PREFERENCES_NS, false)) {
     LOG_E("Failed to begin prefs\n");
     return false;
   }
@@ -1233,7 +1233,7 @@ bool ConfigAssist::savePref(String key, String val){
 
 // Load a key from nvs
 bool ConfigAssist::loadPref(String key, String &val){
-  if (!_prefs.begin(CA_PREFERENCES_NS, false)) {  
+  if (!_prefs.begin(CA_PREFERENCES_NS, false)) {
     LOG_E("Failed to begin prefs\n");
     return false;
   }
@@ -1249,7 +1249,7 @@ bool ConfigAssist::loadPref(String key, String &val){
   _prefs.end();
   return true;
 }
-#endif    
+#endif
 
 // Write a string to a file
 bool ConfigAssist::saveText(const String fPath, String &txt){
@@ -1258,9 +1258,9 @@ bool ConfigAssist::saveText(const String fPath, String &txt){
   if(!file){
     LOG_E("Failed to save: %s, sz: %u B\n", fPath.c_str(), txt.length());
     return false;
-  } 
+  }
   file.print(txt);
-  LOG_D("Saved: %s, sz: %u B\n" , fPath.c_str(), txt.length() ); 
+  LOG_D("Saved: %s, sz: %u B\n" , fPath.c_str(), txt.length() );
   file.close();
   return true;
 }
@@ -1274,28 +1274,28 @@ void ConfigAssist::modifySeperator(int sepNo, String &outSep){
       case ConfigAssistDisplayType::Accordion:              //Accordion first Open
         if(sepNo == 0)
           outSep.replace("class=\"card\"", "class=\"card accordion\"");
-        else   
+        else
           outSep.replace("class=\"card\"", "class=\"card accordion closed\"");
-        
+
         break;
 
       case ConfigAssistDisplayType::AccordionToggleClosed:  //Accordion first Open, toggle close
         if(sepNo == 0)
           outSep.replace("class=\"card\"", "class=\"card accordion toggle\"");
-        else 
+        else
           outSep.replace("class=\"card\"", "class=\"card accordion toggle closed\"");
         break;
 
       case ConfigAssistDisplayType::AllClosed:
         outSep.replace("class=\"card\"", "class=\"card closed\"");
         break;
-      default:      
+      default:
         break;
     }
 }
 
 // Render keys,values to html lines
-bool ConfigAssist::getEditHtmlChunk(String &out){      
+bool ConfigAssist::getEditHtmlChunk(String &out){
   confPairs c;
   out="";
   if(!getNextKeyVal(c)) return false;
@@ -1306,7 +1306,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
   String elm;
   String no = "";
   if(c.type == TEXT_BOX){
-    elm = String(CONFIGASSIST_HTML_TEXT_BOX);    
+    elm = String(CONFIGASSIST_HTML_TEXT_BOX);
     if(endsWith(c.name, CA_PASSWD_KEY, no)) { //Password field
       elm.replace("<input ", "<input type=\"password\" " +c.attribs);
       //Generate pass view checkbox
@@ -1325,33 +1325,33 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
       c.value = ast;
     }else if(isNumeric(c.value))
       elm.replace("<input ", "<input type=\"number\" " +c.attribs);
-#ifdef CA_USE_TESTWIFI 
+#ifdef CA_USE_TESTWIFI
     else if(endsWith(c.name, CA_SSID_KEY, no)) {
       out.replace("<td class=\"card-lbl\">", "<td class=\"card-lbl\" id=\"st_ssid" + no + "-lbl\">");
       if(!c.label.endsWith("\n") && !c.label.endsWith("<br>")) c.label += "&nbsp;";
-   
+
       String testWifiLink(HTML_TEST_ST_CONNECTION_LINK);
       testWifiLink.replace("{wifi_no}",no);
       c.label += testWifiLink;
      //c.label +="<a href=\"#\" title=\"Test ST connection\" onClick=\"testWifi(" + no + "); return false;\" id=\"_TEST_WIFI" + no + "\">Test connection</a>";
     }
-#endif // CA_USE_TESTWIFI 
-    else 
+#endif // CA_USE_TESTWIFI
+    else
       elm.replace("<input ", "<input " + c.attribs);
 
-    //LOG_I("TEXT_BOX elm: %s\n", elm.c_str());  
+    //LOG_I("TEXT_BOX elm: %s\n", elm.c_str());
   }else if(c.type == TEXT_AREA){
-    String file = String(CONFIGASSIST_HTML_TEXT_AREA_FNAME);        
+    String file = String(CONFIGASSIST_HTML_TEXT_AREA_FNAME);
     file.replace("{key}", c.name + CA_FILENAME_IDENTIFIER);
     file.replace("{val}", c.value);
     elm = String(CONFIGASSIST_HTML_TEXT_AREA);
     String txt="";
     // Replace loaded text
     LOG_V("Loading %s\n",c.value.c_str());
-    if(loadText(c.value, txt)){ 
-      elm.replace("{val}", txt); 
+    if(loadText(c.value, txt)){
+      elm.replace("{val}", txt);
     }else{ // Text not yet saved, load default text
-      elm.replace("{val}", c.attribs); 
+      elm.replace("{val}", c.attribs);
     }
     elm = file + "\n" + elm;
   }else if(c.type == CHECK_BOX){
@@ -1367,12 +1367,12 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     elm.replace("{opt}", optList);
   }else if(c.type == COMBO_BOX){
     elm = String(CONFIGASSIST_HTML_DATA_LIST);
-    String optList = getOptionsListHtml(c.value, c.attribs, true);            
+    String optList = getOptionsListHtml(c.value, c.attribs, true);
     elm.replace("{opt}", optList);
   }else if(c.type == RANGE_BOX){
     elm = getRangeHtml(c.value, c.attribs);
   }
-  out.replace("{elm}",elm); 
+  out.replace("{elm}",elm);
   out.replace("{key}",c.name);
   out.replace("{lbl}",c.label);
   out.replace("{val}",c.value);
@@ -1383,12 +1383,12 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     // Build a seperator
     String outSep = String(CONFIGASSIST_HTML_SEP);
     modifySeperator(sepKeyPos, outSep);
-    
+
     String sVal = _seperators[sepKeyPos].value;
     outSep.replace("{val}", sVal);
     if(sepKeyPos > 0) // Close the previous seperator
       out = String(CONFIGASSIST_HTML_SEP_CLOSE) + outSep + out;
-    else 
+    else
       out = outSep + out;
     LOG_V("SEP key[%i]: %s = %s\n", sepKeyPos, sKey.c_str(), sVal.c_str());
   }else if(c.readNo==0 && _seperators.size() < 1 ){ //No start seperator found
@@ -1397,12 +1397,12 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     outSep.replace("{val}", "General settings");
     modifySeperator(0, outSep);
     out = outSep + out;
-  }  
+  }
   LOG_V("HTML key[%i]: %s = %s, type: %i, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.attribs.substring(0,30).c_str() );
   return true;
 }
 
-// Render range 
+// Render range
 String ConfigAssist::getRangeHtml(String defVal, String attribs){
   char *token = NULL;
   char seps[] = ",";
@@ -1417,7 +1417,7 @@ String ConfigAssist::getRangeHtml(String defVal, String attribs){
       ret.replace("{min}", optVal);
     }else if(i==1){
       ret.replace("{max}", optVal);
-    }else if(i==2){          
+    }else if(i==2){
       if(optVal=="") optVal="1";
       ret.replace("{step}", optVal);
     }
@@ -1436,11 +1436,11 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
   //Look for line feeds as seperators
   int lfPos = attribs.indexOf("\n");
   if( lfPos >=0 && lfPos != (int)attribs.length() - 1 ) strcpy(&sep[0],"\n");
-  
+
   LOG_N("getOptionsListHtml ndxLnF: %i sep: '%s', defVal: %s attribs: %s \n", attribs.indexOf("\n"), sep, defVal.c_str(), attribs.c_str());
   token = strtok(&attribs[0],  sep);
   while( token != NULL ){
-    String opt;    
+    String opt;
     if(isDataList)
       opt = String(CONFIGASSIST_HTML_SELECT_DATALIST_OPTION);
     else
@@ -1459,9 +1459,9 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
     optName.replace("\"","");
     optVal.trim();
     optName.replace("'","");
-    optName.trim();   
-    LOG_V("getOptionsListHtml %s = %s\n",optName.c_str(), optVal.c_str()); 
-    
+    optName.trim();
+    LOG_V("getOptionsListHtml %s = %s\n",optName.c_str(), optVal.c_str());
+
     opt.replace("{optVal}", optVal);
     opt.replace("{optName}", optName);
     if(optVal == defVal){
@@ -1470,7 +1470,7 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
       opt.replace("{sel}", "");
     }
     if(ret != "") ret += "\n";
-    ret += opt;        
+    ret += opt;
     token = strtok( NULL,  sep );
   }
   return ret;
@@ -1481,16 +1481,16 @@ int ConfigAssist::getKeyPos(String key) {
   if(!_init) init();
   if (_keysNdx.empty()) return -1;
   auto lower = std::lower_bound(_keysNdx.begin(), _keysNdx.end(), key, [](
-      const confNdx &a, const String &b) { 
+      const confNdx &a, const String &b) {
       return a.key < b;}
   );
-  int keyPos = std::distance(_keysNdx.begin(), lower); 
+  int keyPos = std::distance(_keysNdx.begin(), lower);
   //LOG_I("getKeyPos  ndx: %i\n", _keysNdx[keyPos].ndx);
   //if (key == _keysNdx[keyPos].key) return _keysNdx[keyPos].ndx;
-  if (_keysNdx[keyPos].ndx < _configs.size() && key == _configs[ _keysNdx[keyPos].ndx ].name) 
+  if (_keysNdx[keyPos].ndx < _configs.size() && key == _configs[ _keysNdx[keyPos].ndx ].name)
     return _keysNdx[keyPos].ndx;
-  else 
-    LOG_V("Get pos, key %s not found.\n", key.c_str()); 
+  else
+    LOG_V("Get pos, key %s not found.\n", key.c_str());
   return -1; // Not found
 }
 
@@ -1498,47 +1498,47 @@ int ConfigAssist::getKeyPos(String key) {
 int ConfigAssist::getSepKeyPos(String key) {
   if (_seperators.empty()) return -1;
   auto lower = std::lower_bound(_seperators.begin(), _seperators.end(), key, [](
-      const confSeperators &a, const String &b) { 
+      const confSeperators &a, const String &b) {
       return a.name < b;}
   );
-  int keyPos = std::distance(_seperators.begin(), lower); 
+  int keyPos = std::distance(_seperators.begin(), lower);
   if (key == _seperators[keyPos].name) return keyPos;
-  LOG_N("Sep key %s not found.\n", key.c_str()); 
+  LOG_N("Sep key %s not found.\n", key.c_str());
   return -1; // not found
 }
 
 // Extract a config tokens from keyValPair and load it into configs vector
-void ConfigAssist::loadVectItem(String keyValPair) {  
+void ConfigAssist::loadVectItem(String keyValPair) {
   if (!keyValPair.length()) return;
   String key,val;
   key = splitString(keyValPair,CA_INI_FILE_DELIM,0);
   val = splitString(keyValPair,CA_INI_FILE_DELIM,1);
-  
+
 #if CA_DONT_ALLOW_SPACES
     val.replace(" ","");
 #endif
   val.replace("\r","");
   val.replace("\n","");
-#ifdef CA_USE_PERSIST_CON      
+#ifdef CA_USE_PERSIST_CON
   String no;
-  if(endsWith(key,CA_SSID_KEY, no)){ 
-    loadPref(key, val);        
+  if(endsWith(key,CA_SSID_KEY, no)){
+    loadPref(key, val);
   }else if(endsWith(key,CA_PASSWD_KEY, no)){
     loadPref(key, val);
   }
 #endif
   // No label added for memory issues
   add(key, val, true);
-  if (_configs.size() > CA_MAX_PARAMS) 
+  if (_configs.size() > CA_MAX_PARAMS)
     LOG_W("Config file entries: %u exceed max: %u\n", _configs.size(), CA_MAX_PARAMS);
 }
 
-#ifdef CA_USE_WIFISCAN     
-// Build json on Wifi scan complete     
+#ifdef CA_USE_WIFISCAN
+// Build json on Wifi scan complete
 void ConfigAssist::scanComplete(int networksFound) {
-  LOG_D("%d network(s) found\n", networksFound);      
+  LOG_D("%d network(s) found\n", networksFound);
   if( networksFound <= 0 ) return;
-  
+
   _jWifi = "[";
   for (int i = 0; i < networksFound; ++i){
       if(i) _jWifi += ",\n";
@@ -1549,7 +1549,7 @@ void ConfigAssist::scanComplete(int networksFound) {
       LOG_V("%i,%s\n", WiFi.RSSI(i), WiFi.SSID(i).c_str());
     }
   _jWifi += "]";
-  LOG_D("Scan complete \n");    
+  LOG_D("Scan complete \n");
 }
 
 // Send wifi scan results to client
@@ -1559,7 +1559,7 @@ void ConfigAssist::checkScanRes(){
     scanComplete(n);
     WiFi.scanDelete();
     startScanWifi();
-  }        
+  }
 }
 
 // Start async wifi scan
@@ -1568,10 +1568,10 @@ void ConfigAssist::startScanWifi(){
   if(n==-1){
     LOG_D("Scan in progress..\n");
   }else if(n==-2){
-    LOG_D("Starting async scan..\n");          
+    LOG_D("Starting async scan..\n");
     WiFi.scanNetworks(/*async*/true,/*show_hidden*/true);
   }else{
     LOG_D("Scan complete status: %i\n", n);
   }
-} 
+}
 #endif //CA_USE_WIFISCAN
