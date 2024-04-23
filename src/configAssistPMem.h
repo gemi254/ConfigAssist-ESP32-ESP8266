@@ -21,7 +21,7 @@ PROGMEM const char CONFIGASSIST_HTML_START[] = R"=====(
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
-  <link rel="shortcut icon" href="#" />
+  <link rel="shortcut icon" href="data:" />
   <title>{title}</title>
 </head>
 )=====";
@@ -144,7 +144,7 @@ const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
 // Template for checking firmware
 PROGMEM const char CONFIGASSIST_HTML_FIRMW_CHECK[] = R"=====(
 <script>
-const port = !window.location.port ? "80" : window.location.port;
+  const port = !window.location.port ? "80" : window.location.port;
   const otaServer = 'http://' + document.location.hostname + ':' + port;
   const $ = document.querySelector.bind(document);
   var otaUrl = "";
@@ -928,7 +928,7 @@ R"=====(<input id="{key}" name="{key}" length="64" value="{val}">)=====";
 
 // Template for one input text area
 PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA[] =
-R"=====(<textarea id="{key}" name="{key}" rows="auto" cols="auto">{val}</textarea>)=====";
+R"=====(<textarea id="{key}" name="{key}" rows="auto" cols="auto">{val})=====";
 
 // Template for one input text area file name
 PROGMEM const char CONFIGASSIST_HTML_TEXT_AREA_FNAME[] =
@@ -985,14 +985,24 @@ PROGMEM const char CONFIGASSIST_HTML_BODY[] = R"=====(
         <div title="Colapse / Expand" id="toggleAcord" class="accordBtt closed"></div>
       </div>)=====";
 
-// Template for one line
+// Template for one line start
+PROGMEM const char CONFIGASSIST_HTML_LINE_S[] = R"=====(
+          <tr>
+            <td class="card-key">{key}</td>
+            <td class="card-val">{elm})=====";
+// Template for one line end
+PROGMEM const char CONFIGASSIST_HTML_LINE_E[] = R"=====(
+            </td>
+            <td class="card-lbl">{lbl}</td>
+          </tr>)=====";
+/*/ Template for one line
 PROGMEM const char CONFIGASSIST_HTML_LINE[] = R"=====(
           <tr>
             <td class="card-key">{key}</td>
             <td class="card-val">{elm}</td>
             <td class="card-lbl">{lbl}</td>
           </tr>)=====";
-
+*/
 // Seperator line
 PROGMEM const char CONFIGASSIST_HTML_SEP[] = R"=====(
       <div class="card">
