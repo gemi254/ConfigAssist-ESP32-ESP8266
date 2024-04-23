@@ -14,7 +14,7 @@
 #define APP_NAME "ConfigAssistDemo"       // Define application name
 #define INI_FILE "/ConfigAssistDemo.ini"  // Define SPIFFS storage file
 
-unsigned long pingMillis = millis();             // Ping 
+unsigned long pingMillis = millis();             // Ping
 
 // Default application config dictionary
 // Modify the file with the params for you application
@@ -27,7 +27,7 @@ Wifi settings:
   - st_pass:
       label: Password for WLAN
       default:
-  - host_name: 
+  - host_name:
       label: Host name to use for MDNS and AP
         {mac} will be replaced with device's mac id
       default: configAssist_{mac}
@@ -35,20 +35,20 @@ Wifi settings:
 Application settings:
   - app_name:
       label: Name your application
-      default: ConfigAssistDemo  
+      default: ConfigAssistDemo
   - led_buildin:
-      label: Enter the pin that the build in led is connected. 
+      label: Enter the pin that the build in led is connected.
         Leave blank for auto.
       attribs: "min='2' max='23' step='1'"
       default:
-      
+
 ConfigAssist settings:
   - display_style:
-      label: Choose how the config sections are displayed. 
+      label: Choose how the config sections are displayed.
         Must reboot to apply
-      options: 
+      options:
         - AllOpen: 0
-        - AllClosed: 1 
+        - AllClosed: 1
         - Accordion : 2
         - AccordionToggleClosed : 3
       default: AccordionToggleClosed
@@ -61,22 +61,22 @@ Other settings:
   - float_val:
       label: Enter a float val
       default: 3.14159
-      attribs: min="2.0" max="5" step=".001" 
+      attribs: min="2.0" max="5" step=".001"
   - debug:
       label: Check to enable debug
       checked: False
   - sensor_type:
       label: Enter the sensor type
       options: 'BMP280', 'DHT12', 'DHT21', 'DHT22'
-      default: DHT22  
+      default: DHT22
   - refresh_rate:
       label: Enter the sensor update refresh rate
       range: 10, 50, 1
       default: 30
   - time_zone:
       label: Needs to be a valid time zone string
-      default: EET-2EEST,M3.5.0/3,M10.5.0/4 
-      datalist: 
+      default: EET-2EEST,M3.5.0/3,M10.5.0/4
+      datalist:
         - Etc/GMT,GMT0
         - Etc/GMT-0,GMT0
         - Etc/GMT-1,<+01>-1
@@ -114,7 +114,7 @@ Other settings:
       default:
         X1=222, Y1=1.22
         X2=900, Y2=3.24
-)~"; 
+)~";
 
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML); // Config assist class
 
@@ -122,12 +122,12 @@ ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML); // Config assist class
 bool b = (conf["led_buildin"] == "") ? conf.put("led_buildin", LED_BUILTIN) : false;
 
 // Print memory info
-void debugMemory(const char* caller) {      
+void debugMemory(const char* caller) {
   #if defined(ESP32)
     LOG_I("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
   #else
     LOG_I("%s > Free: heap %u\n", caller, ESP.getFreeHeap());
-  #endif   
+  #endif
 }
 
 // List the storage file system
@@ -151,14 +151,14 @@ void ListDir(const char * dirname) {
 void handleRoot() {
   String out("<h2>Hello from {name}</h2>");
   out += "<h4>Device time: " + conf.getLocalTime() +"</h4>";
-  out += "<a href='/cfg'>Edit config</a>";   
+  out += "<a href='/cfg'>Edit config</a>";
 
   #if defined(ESP32)
     out.replace("{name}", "ESP32");
-  #else 
+  #else
     out.replace("{name}", "ESP8266!");
   #endif
-  #ifdef CA_USE_TIMESYNC 
+  #ifdef CA_USE_TIMESYNC
   out += "<script>" + conf.getTimeSyncScript() + "</script>";
   #endif
   server.send(200, "text/html", out);
@@ -189,26 +189,26 @@ void onDataChanged(String key){
 }
 // Setup function
 void setup(void) {
-  
+
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
-    
+
   LOG_I("Starting..\n");
   debugMemory("setup");
- 
+
   ListDir("/");
-  
+
   //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
 
-  // Register handlers for web server    
+  // Register handlers for web server
   server.on("/", handleRoot);         // Add root handler
   server.on("/d", []() {              // Append dump handler
     conf.dump(&server);
   });
 
   server.onNotFound(handleNotFound);  // Append not found handler
-  
+
   debugMemory("Loaded config");
   pinMode(conf["led_buildin"].toInt(), OUTPUT);
 
@@ -219,12 +219,12 @@ void setup(void) {
   ConfigAssistHelper confHelper(conf);
   WiFi.setAutoConnect(false);
   WiFi.setAutoReconnect(false);
-  
-  // Connect to any available network  
-  bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
-  
+
+  // Connect to any available network
+  bool bConn = confHelper.connectToNetwork(15000, conf["led_buildin"].toInt());
+
   // Append config assist handlers to web server, setup ap on no connection
-  conf.setup(server, !bConn); 
+  conf.setup(server, !bConn);
   if(!bConn) LOG_E("Connect failed.\n");
 
   if (MDNS.begin(conf[CA_HOSTNAME_KEY].c_str())) {
@@ -233,50 +233,50 @@ void setup(void) {
 
   // Get int/bool value
   bool debug = conf["debug"].toInt();
-  LOG_I("Boolean value: %i\n", debug);  
-  
+  LOG_I("Boolean value: %i\n", debug);
+
   // Get float value
   float float_value = atof(conf["float_val"].c_str());
   LOG_I("Float value: %1.5f\n", float_value);
- 
+
   // Set the defined display type
   conf.setDisplayType((ConfigAssistDisplayType)conf["display_style"].toInt());
-  
+
   server.begin();
   LOG_I("HTTP server started, display type: %s\n", conf["display_style"].c_str());
-  
+
   // On the fly generate an ini info file on SPIFFS
   {
     if(debug) STORAGE.remove("/info.ini");
     ConfigAssist info("/info.ini", NULL);
     // Add a key even if not exists. It will be not editable
     if(!info.valid()){
-      LOG_D("Info file not exists\n"); 
+      LOG_D("Info file not exists\n");
       info.put("bootCnt", 1, true);
       info.put("lastRSSI", WiFi.RSSI(), true);
     }else{
-      LOG_D("Info file: bootCnt:  %s, lastRSSI: %s\n", info["bootCnt"].c_str(), info["lastRSSI"].c_str() );      
+      LOG_D("Info file: bootCnt:  %s, lastRSSI: %s\n", info["bootCnt"].c_str(), info["lastRSSI"].c_str() );
       info.put("bootCnt", info["bootCnt"].toInt() + 1, true);
       info.put("lastRSSI", WiFi.RSSI(), true);
     }
     info.saveConfigFile();
-  }  
+  }
 }
 
-// App main loop 
+// App main loop
 void loop(void) {
   server.handleClient();
   #if not defined(ESP32)
     MDNS.update();
-  #endif  
-  
+  #endif
+
   // Display info
   if (millis() - pingMillis >= 10000){
-    // if debug is enabled in config display memory debug messages    
+    // if debug is enabled in config display memory debug messages
     if(conf["debug"].toInt()) debugMemory("Loop");
     pingMillis = millis();
-  } 
-  
-  // Allow the cpu to switch to other tasks  
+  }
+
+  // Allow the cpu to switch to other tasks
   delay(2);
 }
