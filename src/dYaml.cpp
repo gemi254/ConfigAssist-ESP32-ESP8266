@@ -256,7 +256,7 @@ namespace dyml
 
 			if (sp[0] == '#') continue;
 			if (sp[0] == '%') continue; // %YAML, %TAG
-			if (startwith(sp, "---")) continue;
+			if (startwith(sp, "//")) continue;
 			if (startwith(sp, "...")) continue;
 
 			const char *key = sp;
