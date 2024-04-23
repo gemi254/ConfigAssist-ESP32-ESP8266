@@ -6,7 +6,7 @@ Wifi settings:
   - st_pass:
       label: Password for WLAN
       default:
-  - host_name: 
+  - host_name:
       label: >-
         Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac id
       default: configAssist_{mac}
@@ -14,9 +14,9 @@ Wifi settings:
 Application settings:
   - app_name:
       label: Name your application
-      default: NtpTimeSync  
+      default: NtpTimeSync
   - led_buildin:
-      label: Enter the pin that the build in led is connected. 
+      label: Enter the pin that the build in led is connected.
         Leave blank for auto.
       attribs: "min='2' max='23' step='1'"
       default:
@@ -24,8 +24,8 @@ Application settings:
 Time settings:
   - time_zone:
       label: Needs to be a valid time zone string
-      default: EET-2EEST,M3.5.0/3,M10.5.0/4 
-      datalist: 
+      default: EET-2EEST,M3.5.0/3,M10.5.0/4
+      datalist:
         - Etc/GMT,GMT0
         - Etc/GMT-0,GMT0
         - Etc/GMT-1,<+01>-1
@@ -57,13 +57,13 @@ Time settings:
         - Etc/GMT+11,<-11>11
         - Etc/GMT+12,<-12>12
 
-  - ntp_server1: 
+  - ntp_server1:
       label: Time server to sync time1
       default: "europe.pool.ntp.org"
-  - ntp_server2: 
+  - ntp_server2:
       label: Time server to sync time2
       default: "time.windows.com"
-  - ntp_server3: 
+  - ntp_server3:
       label: Time server to sync time3
       default: "pool.ntp.org"
-)~"; 
+)~";
