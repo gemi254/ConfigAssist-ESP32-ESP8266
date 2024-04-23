@@ -6,7 +6,7 @@ Wifi settings:
   - st_pass:
       label: Password for WLAN
       default:
-  - host_name: 
+  - host_name:
       label: >-
         Host name to use for MDNS and AP
         {mac} will be replaced with device's mac id
@@ -15,15 +15,15 @@ Wifi settings:
 Application settings:
   - app_name:
       label: Name your application
-      default: FirmwareCheck  
+      default: FirmwareCheck
   - firmware_url:
       label: Firmware upgrade url with version and info
       default: >-
         https://raw.githubusercontent.com/gemi254/ConfigAssist-ESP32-ESP8266/main/examples/ConfigAssist-FirmwareCheck/firmware/ESP32/lastest.json
   - time_zone:
       label: Needs to be a valid time zone string
-      default: EET-2EEST,M3.5.0/3,M10.5.0/4 
-      datalist: 
+      default: EET-2EEST,M3.5.0/3,M10.5.0/4
+      datalist:
         - Etc/GMT,GMT0
         - Etc/GMT-0,GMT0
         - Etc/GMT-1,<+01>-1
@@ -54,4 +54,4 @@ Application settings:
         - Etc/GMT+10,<-10>10
         - Etc/GMT+11,<-11>11
         - Etc/GMT+12,<-12>12
-)~"; 
+)~";
