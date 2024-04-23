@@ -1,4 +1,8 @@
-2.8.2 (2024-02-014)
+2.8.3 (2024-04-23)
+  * Generate config files on first run with default values.
+  * Stream html controls to handle big text areas.
+
+2.8.2 (2024-02-14)
   * Added attributes to variables (javascript, style, etc.).
   * Added a function to append a javascript to main page
 
@@ -7,7 +11,7 @@
 
 2.8.0 (2024-01-25)
   * Added accordion open/closed button. Fixed errors
-  
+
 2.7.9 (2024-01-12)
   * Removed Json. Fixed yaml errors
 
@@ -31,7 +35,7 @@
 
 2.7.1 (2023-10-10)
   * Dump to web server
-  
+
 2.7.0 (2023-10-10)
   * Enable saving wifi credentials to nvs
 
@@ -52,15 +56,15 @@
   * Add a not found key to ini file if defined in json.
 
 2.6.4 (2023-07-08)
-  * Reboot confirmation using timestamp    
+  * Reboot confirmation using timestamp
 
 2.6.3 (2023-06-21)
-  * Test multiple station network connections from AP portal and show ip and signal strength 
+  * Test multiple station network connections from AP portal and show ip and signal strength
     after connection
 
 2.6.2 (2023-05-15)
-  * Allow application to logging into a file with logLevel 
-  
+  * Allow application to logging into a file with logLevel
+
 2.6.1 (2023-05-11)
   * Added function getCSS() to get ConfigAssist css on application main page
   * Added function getTimeSyncScript() to get ConfigAssist time sync script
