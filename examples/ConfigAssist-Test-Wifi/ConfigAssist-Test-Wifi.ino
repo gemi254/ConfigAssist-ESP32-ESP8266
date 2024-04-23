@@ -34,7 +34,7 @@ Wifi settings:
       label: Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)
       default:
 
-  - host_name: 
+  - host_name:
       label: >-
         Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac id
       default: configAssist_{mac}
@@ -42,9 +42,9 @@ Wifi settings:
 Application settings:
   - app_name:
       label: Name your application
-      default: TestWifi  
+      default: TestWifi
   - led_buildin:
-      label: Enter the pin that the build in led is connected. 
+      label: Enter the pin that the build in led is connected.
         Leave blank for auto.
       attribs: "min='2' max='23' step='1'"
       default:
@@ -78,8 +78,8 @@ void handleRoot() {
   // Send browser time sync script
   #ifdef CA_USE_TESTWIFI
     out += "<script>" + conf.getTimeSyncScript() + "</script>";
-  #endif  
-  server.send(200, "text/html", out);  
+  #endif
+  server.send(200, "text/html", out);
 }
 
 // Page not found handler
@@ -95,7 +95,7 @@ void handleNotFound() {
   for (uint8_t i = 0; i < server.args(); i++) {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
-  server.send(404, "text/plain", message);  
+  server.send(404, "text/plain", message);
 }
 
 //Setup function
@@ -109,31 +109,29 @@ void setup(void) {
   debugMemory("setup");
 
    //conf.deleteConfig();  //Uncomment to remove ini file and re-built it fron json
-    
-  // Setup web server 
-  server.on("/", handleRoot);  
+
+  // Setup web server
+  server.on("/", handleRoot);
   server.on("/d", []() {    // Append dump handler
     conf.dump(&server);
   });
 
   server.onNotFound(handleNotFound);
-  // Setup led on empty string
-  if(conf["led_buildin"]=="") conf.put("led_buildin", LED_BUILTIN);  
 
   // Define a ConfigAssist helper class to connect wifi
   ConfigAssistHelper confHelper(conf);
-  
-  // Connect to any available network  
-  bool bConn = confHelper.connectToNetwork(15000, "led_buildin");
-  
+
+  // Connect to any available network
+  bool bConn = confHelper.connectToNetwork(15000, LED_BUILTIN);
+
   // Append config assist handlers to web server, setup ap on no connection
-  conf.setup(server, !bConn); 
+  conf.setup(server, !bConn);
   if(!bConn) LOG_E("Connect failed.\n");
 
   if (MDNS.begin(conf[CA_HOSTNAME_KEY].c_str())) {
     LOG_I("MDNS responder started\n");
   }
-  
+
   server.begin();
   LOG_I("HTTP server started\n");
 }
