@@ -20,7 +20,7 @@
   #define LOGGER_LOG_LEVEL 3             // Set log level for this module
 #endif
 
-#define CA_CLASS_VERSION "2.8.2"         // Class version
+#define CA_CLASS_VERSION "2.8.3"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -66,6 +66,7 @@ struct confPairs {
     String value;
     String label;
     String attribs;
+    String text;
     int readNo;
     byte type;
 };
@@ -122,6 +123,8 @@ class ConfigAssist{
     void setSubScript(const char * initScript){ _subScript = initScript; }
     // Is config loaded valid ?
     bool valid();
+    // Is configuration file exists>
+    bool confExists();
     // Is key exists in configuration
     bool exists(String key);
     // Start an AP with a web server and render config values loaded from json dictionary
@@ -160,8 +163,10 @@ class ConfigAssist{
     void dumpYaml(WEB_SERVER *server = NULL);
     // Display config items in web server, or on log on NULL
     void dump(WEB_SERVER *server = NULL);
-    // Load a description file. On updateInfo = true update only additional pair info
-    String loadDict(const char *dictStr, bool updateInfo = false);
+    // Load a description file. On updateProps = true update only additional pair info
+    String loadDict(const char *dictStr, bool updateProps = false);
+    // Build config file from dict
+    void buildConfigFile();
     // Load config pairs from an ini file
     bool loadConfigFile(String filename = "");
     // Delete configuration files
@@ -224,6 +229,9 @@ class ConfigAssist{
     bool loadText(const String fPath, String& txt);
     // Write a string to a file
     bool saveText(const String fPath, String& txt);
+    // Strem text files to web server (long files)
+    bool streamText(const String fPath, WEB_SERVER &server);
+
 #ifdef CA_USE_PERSIST_CON
     // Clear nvs
     bool clearPrefs();
@@ -234,8 +242,8 @@ class ConfigAssist{
 #endif
     // Implement seperators mode
     void modifySeperator(int sepNo, String &outSep);
-    // Render keys,values to html lines
-    bool getEditHtmlChunk(String &out);
+    // Render keys, values to html lines
+    bool streamHtmlElementChunk(WEB_SERVER &server);
     // Render range
     String getRangeHtml(String defVal, String attribs);
     // Render options list
