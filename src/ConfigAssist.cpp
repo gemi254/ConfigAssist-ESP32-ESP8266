@@ -56,7 +56,8 @@ void ConfigAssist::setDictStr(const char * dictStr, bool load){
   if(dictStr==NULL) return;
   _dictStr = dictStr;
 
-  if(load) loadDict(_dictStr);
+  if(!_init){LOG_I("setDictStr init\n"); init();}
+  if(load) loadDict(_dictStr, true);
 }
 
 // Start storage if not init
@@ -75,7 +76,12 @@ void ConfigAssist::init() {
   if(_init) return;
   _init = true;
   startStorage();
-  loadConfigFile(_confFile);
+  // First run ?
+  if(!loadConfigFile(_confFile)){
+    LOG_I("Config not found! Generating default..\n");
+    buildConfigFile();
+    //saveConfigFile();
+  }
   //Failed to load ini file
   if(!_iniLoaded) _dirty = true;
   LOG_V("ConfigAssist::init done ini:%i json:%i\n",_iniLoaded, _dictLoaded);
@@ -86,6 +92,12 @@ bool ConfigAssist::valid(){
   if(!_init) init();
   return (_iniLoaded || _dictLoaded);
 }
+
+// Is configuration file exists>
+bool ConfigAssist::confExists(){
+  return STORAGE.exists(_confFile);
+}
+
 
 // True if key exists in conf
 bool ConfigAssist::exists(String key){ return getKeyPos(key) >= 0; }
@@ -189,11 +201,11 @@ void ConfigAssist::add(const String key, String val, bool force){
   static int forcedNo = -1;
   confPairs c;
   if(force){ // Forced variables will not be editable
-    c = {key, val, "", "", forcedNo , TEXT_BOX };
+    c = {key, val, "", "", "", forcedNo, TEXT_BOX };
     forcedNo --;
     add(c);
   }else{
-    c = {key, val, "", "", readNo , TEXT_BOX };
+    c = {key, val, "", "", "", readNo, TEXT_BOX };
     readNo ++;
     add(c);
   }
@@ -286,8 +298,9 @@ void ConfigAssist::dump(WEB_SERVER *server){
   while (getNextKeyVal(c)){ //List by array ndx
     if(c.readNo >= 0){
       //c.attribs may be too long to fit on outBuff
-      len =  sprintf(outBuff, "No: %02i. key: %s, val: %s, attr: %s, lbl: %s, type: %i\n",
-                    c.readNo, c.name.c_str(), c.value.c_str(), c.attribs.substring(0, 30).c_str(),  c.label.c_str(),  c.type );
+      len =  sprintf(outBuff, "No: %02i. key: %s, val: %s, attr: %s, lbl: %s, txt: %s, type: %i\n",
+                    c.readNo, c.name.c_str(), c.value.c_str(), c.attribs.substring(0, 30).c_str(),
+                    c.label.c_str(), c.text.substring(0, 30).c_str(), c.type );
       if(server) server->sendContent(outBuff, len);
       else LOG_I("%s", outBuff);
     }
@@ -298,7 +311,7 @@ void ConfigAssist::dump(WEB_SERVER *server){
   else LOG_I("%s", outBuff);
   while (getNextKeyVal(c)){
     if(c.readNo < 0){
-      len =  sprintf(outBuff, "No: %03i, key: %s, val: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type );
+      len = sprintf(outBuff, "No: %03i, key: %s, val: %s, type: %i\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type );
       if(server) server->sendContent(outBuff, len);
       else LOG_I("%s", outBuff);
     }
@@ -309,7 +322,7 @@ void ConfigAssist::dump(WEB_SERVER *server){
   else LOG_I("%s", outBuff);
   size_t i = 0;
   while( i < _keysNdx.size() ){
-    int len =  sprintf(outBuff, "No: %02i, ndx: %02i, key: %s\n", i, _keysNdx[i].ndx, _keysNdx[i].key.c_str());
+    len = sprintf(outBuff, "No: %02i, ndx: %02i, key: %s\n", i, _keysNdx[i].ndx, _keysNdx[i].key.c_str());
     if(server) server->sendContent(outBuff, len);
     else LOG_I("%s", outBuff);
     i++;
@@ -320,12 +333,22 @@ void ConfigAssist::dump(WEB_SERVER *server){
   else LOG_I("%s", outBuff);
   i = 0;
   while( i < _seperators.size() ){
-    int len =  sprintf(outBuff, "No: %02i, key: %s, val: %s\n", i, _seperators[i].name.c_str(), _seperators[i].value.c_str() );
+    len = sprintf(outBuff, "No: %02i, key: %s, val: %s\n", i, _seperators[i].name.c_str(), _seperators[i].value.c_str() );
     if(server) server->sendContent(outBuff, len);
     else LOG_I("%s", outBuff);
     i++;
   }
+  // Dump ini file
+  strcpy(outBuff, "Ini file: \n");
+  if(server) server->sendContent("\n" + String(outBuff));
+  else LOG_I("%s", outBuff);
+  String iniTxt;
+  loadText(_confFile, iniTxt);
+  len = sprintf(outBuff, "%s\n",iniTxt.c_str());
+  if(server) server->sendContent(outBuff, len);
+  else LOG_I("%s", outBuff);
 }
+
 // Split a String with delimeter, index -> itemNo
 String ConfigAssist::splitString(String s, char delim, int index){
   if(s=="") return "";
@@ -398,7 +421,7 @@ inline String ConfigAssist::getChilds(dyml::Directyaml::Node &node){
 }
 
 // Load yaml dictionary
-String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
+String ConfigAssist::loadDict(const char *dictStr, bool updateProps) {
   if(dictStr==NULL) return String("Empty yaml string\n");
 
   dyml::Directyaml dyaml(strdup(dictStr), false);
@@ -426,7 +449,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
     for (int k = 0; k < snoc; ++k) {  // Variables nodes
       auto var = sep.child(k);
       auto vnoc = var.children();
-      confPairs c = {var.key(), "", "", "", 0, TEXT_BOX};
+      confPairs c = {var.key(), "", "", "", "", 0, TEXT_BOX};
       LOG_V("  Var no: %i, key: %s, childs: %i\n", no, var.key(), vnoc );
       c.readNo  = no;
       for (int l = 0; l < vnoc; ++l){  // Atributes nodes
@@ -440,8 +463,14 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
           val = val.substring(1, val.length() );
           val = val.substring(0, val.length() - 1);
         }
+        if(val.startsWith("\n")){
+          val = val.substring(1, val.length() );
+        }
+        if(val.endsWith("\n")){
+          val = val.substring(0, val.length() - 1);
+        }
 
-        if( key == "options"){
+        if( key == "options"){          // Options box
           c.type = OPTION_BOX;
           c.attribs =  val;
 
@@ -455,6 +484,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
 
         }else if (key == "file"){       //Text area
           c.type = TEXT_AREA;
+          // Save the filename on ini file
           c.value = val;
 
         }else if (key == "checked"){    // Check box
@@ -469,8 +499,10 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
           c.label.replace("\n", "<br>\n");
 
         }else if( key == "default"){    // Default value
-          if(c.type == TEXT_AREA) c.attribs = val;
-          else c.value = val;
+          if(c.type == TEXT_AREA)
+            c.text = val;
+          else
+            c.value = val;
 
         }else{
           LOG_E("Undefined key on param no: %i, key: %s\n", i, key.c_str());
@@ -486,24 +518,25 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
             loadPref(c.name, c.value);
           }
         #endif
-        if(updateInfo){
+        if(updateProps){
           int keyPos = getKeyPos(c.name);
-          //Add a yaml key if not exists in ini file
+          // Add a yaml key if not exists in ini file
           if (keyPos < 0) {
             LOG_V("Yaml key: %s not found in ini file.\n", c.name.c_str());
             add(c.name, c.value);
             keyPos = getKeyPos(c.name);
           }
-          if (keyPos >= 0) { //Update all other fields but not value,key
+          if (keyPos >= 0) { // Update all other fields but not value,key
             _configs[keyPos].readNo = no;
             _configs[keyPos].label = c.label;
             _configs[keyPos].type = c.type;
             _configs[keyPos].attribs = c.attribs;
+            _configs[keyPos].text = c.text;
             LOG_V("Yaml upd pos: %i, key: %s, type:%i, read: %i\n", keyPos, c.name.c_str(), c.type, i);
           }else{
             LOG_E("Undefined yaml Key: %s\n", c.name.c_str());
           }
-        }else{
+        }else{ // Add pair
           LOG_V("Yaml add: %s, val %s, read: %i\n", c.name.c_str(), c.value.c_str(), i);
           add(c);
         }
@@ -515,7 +548,7 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
    // Sort seperators vectors for binarry search
   sortSeperators();
   _dictLoaded = true;
-
+  if(updateProps) _dirty = true;
   LOG_D("Loaded yaml dict, keys: %u\n", _configs.size());
 
   // Sort by read order if ini file was not sorted
@@ -523,7 +556,20 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateInfo) {
 
   return "";
 }
+// Build config file from dict
+void ConfigAssist::buildConfigFile(){
+  _configs.clear();
+  loadDict(_dictStr);
+  confPairs c;
+  while (getNextKeyVal(c)){ //List by array ndx
+    if(c.type == TEXT_AREA){
+      LOG_D("Generate text file: %s,  sz: %u\n", c.value.c_str(), c.text.length());
+      saveText(c.value, c.text);
+    }
+  }
+  _dirty = true;
 
+}
 // Load config pairs from an ini file
 bool ConfigAssist::loadConfigFile(String filename) {
   if(filename=="") filename = _confFile;
@@ -558,7 +604,7 @@ bool ConfigAssist::loadConfigFile(String filename) {
 
 // Delete configuration file
 bool ConfigAssist::deleteConfig(String filename){
-  if(!_init) init();
+  //if(!_init) init();
   if(filename=="") filename = _confFile;
   _iniLoaded = false;
   LOG_I("Removing config: %s\n",filename.c_str());
@@ -899,8 +945,9 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       deleteConfig();
       _configs.clear();
       _dirty = true;
-      loadDict(_dictStr);
-      saveConfigFile();
+      buildConfigFile();
+      //loadDict(_dictStr);
+      //saveConfigFile();
       if(_dirty){
         server->send(200, "text/html", "ERROR: Failed to save config.");
       }else{
@@ -1052,7 +1099,9 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   LOG_D("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniLoaded, _dictLoaded, _dirty);
   //Send config form data
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
-  String out(CONFIGASSIST_HTML_START);
+  String out="";
+  out.reserve(2048);
+  out = String(CONFIGASSIST_HTML_START);
   out.replace("{title}", "Configuration for " + getHostName());
   server->sendContent(out);
   server->sendContent(CONFIGASSIST_HTML_CSS);
@@ -1084,9 +1133,10 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   if(_displayType == ConfigAssistDisplayType::AllClosed)
     out.replace("accordBtt closed", "accordBtt open");
   server->sendContent(out);
+  out = "";
   //Render html keys
-  while(getEditHtmlChunk(out)){
-    server->sendContent(out);
+  while(streamHtmlElementChunk(*server)){
+    LOG_V("Streaming html chunk\n");
   }
   out = String(CONFIGASSIST_HTML_END);
 
@@ -1101,15 +1151,6 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   server->sendContent(out);
 }
 
-/*// Get edit page html table (no form)
-String ConfigAssist::getEditHtml(){
-  String ret = "";
-  String out = "";
-  while(getEditHtmlChunk(out)){
-    ret += out;
-  }
-  return ret;
-}*/
 // Get page css
 String ConfigAssist::getCSS(){
   return String(CONFIGASSIST_HTML_CSS);
@@ -1188,7 +1229,6 @@ String ConfigAssist::urlDecode(const String& text){
   }
   return decoded;
 }
-
 // Load a file into a string
 bool ConfigAssist::loadText(const String fPath, String &txt){
   File file = STORAGE.open(fPath, "r");
@@ -1201,10 +1241,33 @@ bool ConfigAssist::loadText(const String fPath, String &txt){
   while (file.available()) {
     txt += file.readString();
   }
-  LOG_D("Loaded: %s, sz: %u B\n" , fPath.c_str(), txt.length() );
+  LOG_V("loadText: %s, sz: %u B\n" , fPath.c_str(), txt.length() );
   file.close();
   return true;
 }
+
+// Stram a file to web server
+bool ConfigAssist::streamText(const String fPath, WEB_SERVER &server){
+  File file = STORAGE.open(fPath, "r");
+  if (!file || !file.size()) {
+    LOG_E("Failed to load: %s, sz: %u B\n", fPath.c_str(), file.size());
+    return false;
+  }
+  // Load text from file
+  uint8_t chunk[512];
+
+  while (file.available()) {
+    //txt += file.readString();
+    size_t chunksize = file.read(chunk, 512);
+    server.sendContent((char *)chunk, chunksize);
+    LOG_V("Send chunk: %s\n", chunk);
+  }
+
+  LOG_D("Streamed: %s, sz: %u B\n" , fPath.c_str(), file.size() );
+  file.close();
+  return true;
+}
+
 
 #ifdef CA_USE_PERSIST_CON
 // Clear nvs
@@ -1294,21 +1357,50 @@ void ConfigAssist::modifySeperator(int sepNo, String &outSep){
     }
 }
 
-// Render keys,values to html lines
-bool ConfigAssist::getEditHtmlChunk(String &out){
+// Render keys, values to html lines
+bool ConfigAssist::streamHtmlElementChunk(WEB_SERVER &server){
   confPairs c;
-  out="";
   if(!getNextKeyVal(c)) return false;
   // Values added manually not editable
   if(c.readNo < 0) return true;
 
-  out = String(CONFIGASSIST_HTML_LINE);
-  String elm;
+  String out = "";
+  out.reserve(512);
+  if(c.type == TEXT_AREA){
+    out = (CONFIGASSIST_HTML_LINE_S);
+    //Dynamic build element
+    out.replace("{elm}", "" );
+    out.replace("{key}", c.name );
+    server.sendContent(out);
+    // Hidden file name
+    out = String(CONFIGASSIST_HTML_TEXT_AREA_FNAME);
+    out.replace("{key}", c.name + CA_FILENAME_IDENTIFIER);
+    out.replace("{val}", c.value);
+    server.sendContent(out);
+    // Text area start
+    out = String(CONFIGASSIST_HTML_TEXT_AREA);
+    out.replace("{key}", c.name);
+    out.replace(">{val}", " " + c.attribs + ">");
+    server.sendContent(out);
+    // The real text
+    streamText(c.value, server);
+    server.sendContent(F("</textarea>"));
+
+    out = String(CONFIGASSIST_HTML_LINE_E);
+    out.replace("{lbl}", c.label);
+    server.sendContent(out);
+    return true;
+  }
+
+  out =  String(CONFIGASSIST_HTML_LINE_S);
+  out += String(CONFIGASSIST_HTML_LINE_E);
+  String elm = "";
   String no = "";
+
   if(c.type == TEXT_BOX){
     elm = String(CONFIGASSIST_HTML_TEXT_BOX);
     if(endsWith(c.name, CA_PASSWD_KEY, no)) { //Password field
-      elm.replace("<input ", "<input type=\"password\" " +c.attribs);
+      elm.replace("<input ", "<input type=\"password\" " +c.attribs+ " ");
       //Generate pass view checkbox
       String chk1(CONFIGASSIST_HTML_CHECK_VIEW_PASS);
       chk1.replace("{key}","_PASS_VIEW" + String(no));
@@ -1324,7 +1416,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
       }
       c.value = ast;
     }else if(isNumeric(c.value))
-      elm.replace("<input ", "<input type=\"number\" " +c.attribs);
+      elm.replace("<input ", "<input type=\"number\" " +c.attribs+ " ");
 #ifdef CA_USE_TESTWIFI
     else if(endsWith(c.name, CA_SSID_KEY, no)) {
       out.replace("<td class=\"card-lbl\">", "<td class=\"card-lbl\" id=\"st_ssid" + no + "-lbl\">");
@@ -1337,23 +1429,9 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     }
 #endif // CA_USE_TESTWIFI
     else
-      elm.replace("<input ", "<input " + c.attribs);
+      elm.replace("<input ", "<input " + c.attribs + " ");
 
     //LOG_I("TEXT_BOX elm: %s\n", elm.c_str());
-  }else if(c.type == TEXT_AREA){
-    String file = String(CONFIGASSIST_HTML_TEXT_AREA_FNAME);
-    file.replace("{key}", c.name + CA_FILENAME_IDENTIFIER);
-    file.replace("{val}", c.value);
-    elm = String(CONFIGASSIST_HTML_TEXT_AREA);
-    String txt="";
-    // Replace loaded text
-    LOG_V("Loading %s\n",c.value.c_str());
-    if(loadText(c.value, txt)){
-      elm.replace("{val}", txt);
-    }else{ // Text not yet saved, load default text
-      elm.replace("{val}", c.attribs);
-    }
-    elm = file + "\n" + elm;
   }else if(c.type == CHECK_BOX){
     elm = String(CONFIGASSIST_HTML_CHECK_BOX);
     elm.replace("<input ", "<input " + c.attribs + " ");
@@ -1399,6 +1477,7 @@ bool ConfigAssist::getEditHtmlChunk(String &out){
     out = outSep + out;
   }
   LOG_V("HTML key[%i]: %s = %s, type: %i, attr: %s\n", c.readNo, c.name.c_str(), c.value.c_str(), c.type, c.attribs.substring(0,30).c_str() );
+  server.sendContent(out);
   return true;
 }
 
@@ -1460,7 +1539,7 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
     optVal.trim();
     optName.replace("'","");
     optName.trim();
-    LOG_V("getOptionsListHtml %s = %s\n",optName.c_str(), optVal.c_str());
+    LOG_N("getOptionsListHtml %s = %s\n",optName.c_str(), optVal.c_str());
 
     opt.replace("{optVal}", optVal);
     opt.replace("{optName}", optName);
