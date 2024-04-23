@@ -99,16 +99,13 @@ class ConfigAssistHelper
             return true;
         }
 
-        // Try multiple connections and connect wifi
-        bool connectToNetwork(uint32_t CONNECT_TIMEOUT = 10000, const char *ledKey = NULL){
-            LOG_V("Connect with timeout: %zu\n", CONNECT_TIMEOUT);
+        // Try multiple connections and connect wifi with a led key pin for status
+        bool connectToNetwork(uint32_t connectTimout = 10000, const uint8_t ledPin = 0){
+            LOG_V("Connect with timeout: %zu\n", connectTimout);
             confPairs c;
-            int ledPin = -1;
-            // Setup led
-            if(ledKey){
-                ledPin = _conf[ledKey].toInt();
-                pinMode(ledPin, OUTPUT);
-            }
+
+            // Setup led pin
+            if(ledPin) pinMode(ledPin, OUTPUT);
 
             while(_conf.getNextKeyVal(c)){
                 String no;
@@ -133,7 +130,7 @@ class ConfigAssistHelper
                     WiFi.begin(st_ssid.c_str(), st_pass.c_str());
                     int col = 0;
                     uint32_t startAttemptTime = millis();
-                    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < CONNECT_TIMEOUT) {
+                    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < connectTimout) {
                         if(ledPin >=0 ) digitalWrite(ledPin, 0);
                         Serial.printf(".");
                         if (++col >= 60){
