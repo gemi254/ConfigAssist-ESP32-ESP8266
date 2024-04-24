@@ -7,7 +7,6 @@
   ESP8266WebServer server(80);
 #endif
 
-#define APP_NAME "TestWifi"      // Define application name
 #define INI_FILE "/TestWifi.ini" // Define SPIFFS storage file
 
 #ifndef LED_BUILTIN
