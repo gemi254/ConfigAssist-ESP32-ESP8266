@@ -11,7 +11,6 @@
   #define LED_BUILTIN 22
 #endif
 
-#define APP_NAME "ConfigAssistDemo"       // Define application name
 #define INI_FILE "/ConfigAssistDemo.ini"  // Define SPIFFS storage file
 
 unsigned long pingMillis = millis();             // Ping
@@ -210,7 +209,6 @@ void setup(void) {
   server.onNotFound(handleNotFound);  // Append not found handler
 
   debugMemory("Loaded config");
-  pinMode(conf["led_buildin"].toInt(), OUTPUT);
 
   // Will be called when portal is updating a key
   conf.setRemotUpdateCallback(onDataChanged);
