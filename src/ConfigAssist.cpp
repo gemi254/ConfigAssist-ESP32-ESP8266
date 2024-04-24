@@ -56,7 +56,7 @@ void ConfigAssist::setDictStr(const char * dictStr, bool load){
   if(dictStr==NULL) return;
   _dictStr = dictStr;
 
-  if(!_init){LOG_I("setDictStr init\n"); init();}
+  if(!_init) init();
   if(load) loadDict(_dictStr, true);
 }
 
@@ -97,7 +97,6 @@ bool ConfigAssist::valid(){
 bool ConfigAssist::confExists(){
   return STORAGE.exists(_confFile);
 }
-
 
 // True if key exists in conf
 bool ConfigAssist::exists(String key){ return getKeyPos(key) >= 0; }
@@ -946,13 +945,14 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       _configs.clear();
       _dirty = true;
       buildConfigFile();
-      //loadDict(_dictStr);
-      //saveConfigFile();
+      /* It will be saved automatically when user visit page
+      saveConfigFile();
       if(_dirty){
         server->send(200, "text/html", "ERROR: Failed to save config.");
       }else{
         server->send ( 200, "text/html", "OK: Recreated config.");
-      }
+      }*/
+      server->send ( 200, "text/html", "OK: Recreated config.");
       server->client().flush();
       return;
     }
@@ -1263,7 +1263,7 @@ bool ConfigAssist::streamText(const String fPath, WEB_SERVER &server){
     LOG_V("Send chunk: %s\n", chunk);
   }
 
-  LOG_D("Streamed: %s, sz: %u B\n" , fPath.c_str(), file.size() );
+  LOG_D("Streamed file: %s, sz: %u B\n" , fPath.c_str(), file.size() );
   file.close();
   return true;
 }
