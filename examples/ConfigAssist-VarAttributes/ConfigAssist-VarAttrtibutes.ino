@@ -12,7 +12,6 @@
   ESP8266WebServer  server(80);
 #endif
 
-#define APP_NAME "VarAttributes"      // Define application name
 #define INI_FILE "/VarAttributes.ini" // Define SPIFFS storage file
 
 // Config class
