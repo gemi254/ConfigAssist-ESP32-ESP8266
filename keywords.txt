@@ -18,12 +18,14 @@ handleFormRequest KEYWORD2
 loadDict KEYWORD2
 setup KEYWORD2
 loadConfigFile KEYWORD2
+streamText KEYWORD2
 get KEYWORD2
 put KEYWORD2
 add KEYWORD2
 getHostName KEYWORD2
 getLocalTime KEYWORD2
-getEditHtml KEYWORD2
+streamHtmlElementChunk KEYWORD2
+setRemotUpdateCallback  KEYWORD2
 getCSS KEYWORD2
 getTimeSyncScript KEYWORD2
 getMessageHtml KEYWORD2
