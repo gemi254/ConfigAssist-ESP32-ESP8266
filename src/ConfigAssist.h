@@ -20,7 +20,7 @@
   #define LOGGER_LOG_LEVEL 3             // Set log level for this module
 #endif
 
-#define CA_CLASS_VERSION "2.8.3"         // Class version
+#define CA_CLASS_VERSION "2.8.4a"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -105,7 +105,7 @@ class ConfigAssist{
     ConfigAssist();
     // Initialize with custom ini file, default dict
     ConfigAssist(const String& ini_file);
-    // Initialize with custom Ini file, and custom json dict
+    // Initialize with custom Ini file, and custom yaml dict
     ConfigAssist(const String& ini_file, const char * dictStr);
     ~ConfigAssist();
   public:
@@ -117,7 +117,7 @@ class ConfigAssist{
     void startStorage();
     // Set ini file at run time
     void setIniFile(const String& ini_file);
-    // Set json at run time.. Must called before _init
+    // Set yaml at run time.. Must called before _init
     void setDictStr(const char * dictStr, bool load = false);
     // Add a script to main page
     void setSubScript(const char * initScript){ _subScript = initScript; }
@@ -127,7 +127,7 @@ class ConfigAssist{
     bool confExists();
     // Is key exists in configuration
     bool exists(String key);
-    // Start an AP with a web server and render config values loaded from json dictionary
+    // Start an AP with a web server and render config values loaded from yaml dictionary
     void setup(WEB_SERVER& server, bool apEnable = false);
     // Add a global callback function to handle changes on form updates
     void setRemotUpdateCallback(ConfigAssistChangeCbf ev);
@@ -254,8 +254,8 @@ class ConfigAssist{
     int getSepKeyPos(String key);
     // Extract a config tokens from keyValPair and load it into configs vector
     void loadVectItem(String keyValPair);
-    // Build json on Wifi scan complete
 #ifdef CA_USE_WIFISCAN
+    // Build json on Wifi scan complete
     static void scanComplete(int networksFound);
     // Send wifi scan results to client
     static void checkScanRes();
