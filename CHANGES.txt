@@ -1,3 +1,6 @@
+2.8.4a (2024-05-13)
+  * Load default dictionary only on setup AP
+
 2.8.3 (2024-04-23)
   * Generate config files on first run with default values.
   * Stream html controls to handle big text areas.
