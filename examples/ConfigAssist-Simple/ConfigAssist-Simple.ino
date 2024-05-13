@@ -15,7 +15,7 @@ void setup() {
   LOG_I("Starting..\n");
 
   // Create a config class with an ini filename for storage
-  // and disabled json (NULL)
+  // and disabled yaml (NULL)
   ConfigAssist info("/info.ini", NULL);
 
   //info.deleteConfig(); // Uncomment to remove ini file and re-built
