@@ -21,7 +21,7 @@ ConfigAssist::ConfigAssist() {
   _dictLoaded = false; _iniLoaded=false;
   _dirty = false; _apEnabled=false;
   _confFile = CA_DEF_CONF_FILE;
-  _dictStr = CA_DEFAULT_DICT_JSON;
+  _dictStr = NULL; //CA_DEFAULT_DICT_JSON;
   _subScript = NULL;
   _displayType = ConfigAssistDisplayType::AllOpen;
 }
@@ -32,7 +32,7 @@ ConfigAssist::ConfigAssist(const String& ini_file) : ConfigAssist(){
   else _confFile = CA_DEF_CONF_FILE;
 }
 
-// Standard constructor with ini file and json description
+// Standard constructor with ini file and yaml description
 ConfigAssist::ConfigAssist(const String& ini_file, const char * dictStr) : ConfigAssist(ini_file){
   _dictStr = dictStr;
 }
@@ -46,7 +46,7 @@ void ConfigAssist::setIniFile(const String& ini_file){
   if (ini_file != "") _confFile = ini_file;
 }
 
-// Set json at run time.. Must called before _init || _dictLoaded
+// Set yaml at run time.. Must called before _init || _dictLoaded
 void ConfigAssist::setDictStr(const char * dictStr, bool load){
   if(_dictLoaded){
     LOG_E("Configuration already initialized.\n");
@@ -77,14 +77,14 @@ void ConfigAssist::init() {
   _init = true;
   startStorage();
   // First run ?
-  if(!loadConfigFile(_confFile)){
+  if(!loadConfigFile(_confFile) && _dictStr!=NULL){
     LOG_I("Config not found! Generating default..\n");
     buildConfigFile();
     //saveConfigFile();
   }
   //Failed to load ini file
   if(!_iniLoaded) _dirty = true;
-  LOG_V("ConfigAssist::init done ini:%i json:%i\n",_iniLoaded, _dictLoaded);
+  LOG_V("ConfigAssist::init done ini:%i yaml:%i\n",_iniLoaded, _dictLoaded);
 }
 
 // Is configuration valid
@@ -101,8 +101,12 @@ bool ConfigAssist::confExists(){
 // True if key exists in conf
 bool ConfigAssist::exists(String key){ return getKeyPos(key) >= 0; }
 
-// Start an AP with a web server and render config values loaded from json dictionary
+// Start an AP with a web server and render config values loaded from yaml dictionary
 void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
+  if(_dictStr == NULL){
+    LOG_W("ConfigAssist using default dictionary\n");
+    _dictStr = CA_DEFAULT_DICT_JSON;
+  }
   String hostName = getHostName();
   _server = &server;
   if(apEnable){
@@ -337,15 +341,16 @@ void ConfigAssist::dump(WEB_SERVER *server){
     else LOG_I("%s", outBuff);
     i++;
   }
-  // Dump ini file
-  strcpy(outBuff, "Ini file: \n");
+
+  strcpy(outBuff, "Ini file: ");
+  strcat(outBuff,(_confFile + "\n").c_str());
   if(server) server->sendContent("\n" + String(outBuff));
   else LOG_I("%s", outBuff);
   String iniTxt;
   loadText(_confFile, iniTxt);
   len = sprintf(outBuff, "%s\n",iniTxt.c_str());
   if(server) server->sendContent(outBuff, len);
-  else LOG_I("%s", outBuff);
+  else LOG_I("\n%s", outBuff);
 }
 
 // Split a String with delimeter, index -> itemNo
@@ -575,7 +580,7 @@ bool ConfigAssist::loadConfigFile(String filename) {
   LOG_D("Loading file: %s\n",filename.c_str());
   File file = STORAGE.open(filename, "r");
   if (!file){
-    LOG_E("File: %s not exists!\n", filename.c_str());
+    LOG_W("File: %s not exists!\n", filename.c_str());
     _iniLoaded = false;
     return false;
   }else if(!file.size()) {
@@ -939,7 +944,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       return;
     }
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);
-    //Discard edits and load json defaults;
+    //Discard edits and load yaml defaults;
     if (server->hasArg(F("_RST"))) {
       deleteConfig();
       _configs.clear();
@@ -1096,7 +1101,7 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
     return;
   }
 
-  LOG_D("Generate form, iniValid: %i, jsonLoaded: %i, dirty: %i\n", _iniLoaded, _dictLoaded, _dirty);
+  LOG_D("Generate form, iniValid: %i, dictLoaded: %i, dirty: %i\n", _iniLoaded, _dictLoaded, _dirty);
   //Send config form data
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
   String out="";
