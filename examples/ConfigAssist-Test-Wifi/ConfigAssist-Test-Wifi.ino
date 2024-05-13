@@ -107,7 +107,7 @@ void setup(void) {
   LOG_I("Starting..\n");
   debugMemory("setup");
 
-   //conf.deleteConfig();  //Uncomment to remove ini file and re-built it fron json
+   //conf.deleteConfig();  //Uncomment to remove ini file and re-built it fron yaml
 
   // Setup web server
   server.on("/", handleRoot);
