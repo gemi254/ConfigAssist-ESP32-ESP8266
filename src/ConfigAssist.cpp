@@ -2,7 +2,7 @@
 #include "configAssistPMem.h" // Memory static valiables (html pages)
 
 #if defined(ESP32)
-  #ifdef CA_USE_OTAUPLOAD
+  #if (CA_USE_OTAUPLOAD)
       #include "Update.h"
   #endif
 #endif
@@ -11,7 +11,7 @@
 WEB_SERVER *ConfigAssist::_server = NULL;
 String ConfigAssist::_jWifi="[{}]";
 
-#ifdef CA_USE_PERSIST_CON
+#if (CA_USE_PERSIST_CON)
  Preferences ConfigAssist::_prefs;
 #endif
 
@@ -117,17 +117,17 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
     server.begin();
     _apEnabled = true;
   }
-  #ifdef CA_USE_WIFISCAN
+ #if (CA_USE_WIFISCAN)
     startScanWifi();
     server.on("/scan", [this] { this->handleWifiScanRequest(); } );
   #endif
     server.on("/cfg",[this] { this->handleFormRequest(this->_server);  } );
     server.on("/upl", [this] { this->sendHtmlUploadPage(); } );
     server.on("/fupl", HTTP_POST,[this](){  },  [this](){this->handleFileUpload(); });
-  #ifdef CA_USE_OTAUPLOAD
+  #if (CA_USE_OTAUPLOAD)
     server.on("/ota", [this] { this->sendHtmlOtaUploadPage(); } );
   #endif
-  #ifdef CA_USE_FIMRMCHECK
+  #if (CA_USE_FIMRMCHECK)
     if(get(CA_FIRMWURL_KEY) != "")
       server.on("/fwc", [this] { this->sendHtmlFirmwareCheckPage(); } );
   #endif
@@ -514,11 +514,11 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateProps) {
       } // Attr
       if (c.type) { //Valid
         if(c.name==CA_HOSTNAME_KEY) c.value.replace("{mac}", getMacID());
-        #ifdef CA_USE_PERSIST_CON
-          String no;
-          if(endsWith(c.name,CA_SSID_KEY, no)){
+        #if (CA_USE_PERSIST_CON)
+          String sNo;
+          if(endsWith(c.name,CA_SSID_KEY, sNo)){
             loadPref(c.name, c.value);
-          }else if(endsWith(c.name,CA_PASSWD_KEY, no)){
+          }else if(endsWith(c.name,CA_PASSWD_KEY, sNo)){
             loadPref(c.name, c.value);
           }
         #endif
@@ -637,7 +637,7 @@ bool ConfigAssist::saveConfigFile(String filename) {
       row.value.replace("{mac}", getMacID());
     }
 
-#ifdef CA_USE_PERSIST_CON
+#if (CA_USE_PERSIST_CON)
     String no;
     if(endsWith(row.name, CA_SSID_KEY, no)){
       savePref(row.name, row.value);
@@ -704,7 +704,7 @@ void ConfigAssist::checkTime(uint32_t timeUtc, int timeOffs){
   }
 }
 
-#ifdef CA_USE_WIFISCAN
+ #if (CA_USE_WIFISCAN)
 // Respond a HTTP request for /scan results
 void ConfigAssist::handleWifiScanRequest(){
   checkScanRes();   _server->sendContent(_jWifi);
@@ -795,8 +795,8 @@ void ConfigAssist::sendHtmlUploadPage(){
   //out.replace("{host_name}", getHostName());
   _server->sendContent(out);
 }
-#ifdef CA_USE_OTAUPLOAD
 
+#if (CA_USE_OTAUPLOAD)
 // Send html OTA upload page to client
 void ConfigAssist::sendHtmlOtaUploadPage(){
   String out(CONFIGASSIST_HTML_START);
@@ -807,7 +807,7 @@ void ConfigAssist::sendHtmlOtaUploadPage(){
 }
 #endif //CA_USE_OTAUPLOAD
 
-#ifdef CA_USE_FIMRMCHECK
+#if (CA_USE_FIMRMCHECK)
 // Send html OTA upload page to client
 void ConfigAssist::sendHtmlFirmwareCheckPage(){
   String out(CONFIGASSIST_HTML_START);
@@ -827,11 +827,11 @@ void ConfigAssist::handleFileUpload(){
   static File tmpFile;
   static String filename,tmpFilename;
   HTTPUpload& uploadfile = _server->upload();
-  #ifdef CA_USE_OTAUPLOAD
+  #if (CA_USE_OTAUPLOAD)
     bool isOta = _server->hasArg("ota");
   #endif //CA_USE_OTAUPLOAD
   if(uploadfile.status == UPLOAD_FILE_START){
-    #ifdef CA_USE_OTAUPLOAD
+    #if (CA_USE_OTAUPLOAD)
       if(isOta){
         uint32_t otaSize = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
         LOG_I("Firmware update initiated: %s\r\n", uploadfile.filename.c_str());
@@ -851,7 +851,7 @@ void ConfigAssist::handleFileUpload(){
     if(STORAGE.exists(tmpFilename)) STORAGE.remove(tmpFilename);
     tmpFile = STORAGE.open(tmpFilename, "w+");
   }else if (uploadfile.status == UPLOAD_FILE_WRITE){
-    #ifdef CA_USE_OTAUPLOAD
+    #if (CA_USE_OTAUPLOAD)
       if(isOta){ // flashing firmware to ESP
         if (Update.write(uploadfile.buf, uploadfile.currentSize) != uploadfile.currentSize) {
           LOG_E("OTA Error: %x\n", Update.getError());
@@ -877,7 +877,7 @@ void ConfigAssist::handleFileUpload(){
     out += CONFIGASSIST_HTML_MESSAGE;
     out.replace("{url}", "/cfg");
     out.replace("{refresh}", "9000");
-    #ifdef CA_USE_OTAUPLOAD
+    #if (CA_USE_OTAUPLOAD)
       if(isOta){ // flashing firmware to ESP
         if (Update.end(true)) { //true to set the size to the current progress
           msg = "Firmware update successful file: <font style='color: blue;'>" + uploadfile.filename + "</font>, size: " + uploadfile.totalSize + " B";
@@ -966,7 +966,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       server->send ( 200, "text/html", "<meta http-equiv=\"refresh\" content=\"0;url=/\">");
       return;
     }
-#ifdef CA_USE_PERSIST_CON
+#if (CA_USE_PERSIST_CON)
     //Clear preferences
     if (server->hasArg(F("_CLEAR"))) {
         if(clearPrefs()) reply = "Cleared preferences.";
@@ -977,7 +977,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     }
 #endif //CA_USE_PERSIST_CON
 
-#ifdef CA_USE_TESTWIFI
+#if (CA_USE_TESTWIFI)
     //Test wifi?
     if (server->hasArg(F("_TEST_WIFI"))) {
       LOG_D("Testing WIFI ST connection..\n");
@@ -1117,17 +1117,17 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   script.replace("{CA_PASSWD_KEY}",CA_PASSWD_KEY);
 
   String subScript = "";
-#ifdef CA_USE_TIMESYNC
+#if (CA_USE_TIMESYNC)
   subScript += CONFIGASSIST_HTML_SCRIPT_TIME_SYNC;
   subScript += "\n";
 #endif
-#ifdef CA_USE_WIFISCAN
+#if (CA_USE_WIFISCAN)
   subScript += CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN;
   subScript += "\n";
 #endif
   script.replace("/*{SUB_SCRIPT_ONLOADED}*/", subScript);
 
-#ifdef CA_USE_TESTWIFI
+#if (CA_USE_TESTWIFI)
   script.replace("/*{SUB_SCRIPT}*/", CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION + String("/*{SUB_SCRIPT}*/"));
 #endif
 
@@ -1145,10 +1145,10 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   }
   out = String(CONFIGASSIST_HTML_END);
 
-#ifdef CA_USE_OTAUPLOAD
+#if (CA_USE_OTAUPLOAD)
   out.replace("<!--extraButtons-->", String(HTML_UPGRADE_BUTTON) +"\n        <!--extraButtons-->");
 #endif
-#ifdef CA_USE_FIMRMCHECK
+#if (CA_USE_FIMRMCHECK)
   if(get(CA_FIRMWURL_KEY) != "")
     out.replace("<!--extraButtons-->", String(HTML_FIRMWCHECK_BUTTON) +"\n        <!--extraButtons-->");
 #endif
@@ -1160,8 +1160,8 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
 String ConfigAssist::getCSS(){
   return String(CONFIGASSIST_HTML_CSS);
 }
-#ifdef CA_USE_TIMESYNC
 
+#ifdef CA_USE_TIMESYNC
 // Get browser time synchronization java script
 String ConfigAssist::getTimeSyncScript(){
   return String(CONFIGASSIST_HTML_SCRIPT_TIME_SYNC);
@@ -1274,7 +1274,7 @@ bool ConfigAssist::streamText(const String fPath, WEB_SERVER &server){
 }
 
 
-#ifdef CA_USE_PERSIST_CON
+#if (CA_USE_PERSIST_CON)
 // Clear nvs
 bool ConfigAssist::clearPrefs(){
   if (!_prefs.begin(CA_PREFERENCES_NS, false)) {
@@ -1422,7 +1422,7 @@ bool ConfigAssist::streamHtmlElementChunk(WEB_SERVER &server){
       c.value = ast;
     }else if(isNumeric(c.value))
       elm.replace("<input ", "<input type=\"number\" " +c.attribs+ " ");
-#ifdef CA_USE_TESTWIFI
+#if (CA_USE_TESTWIFI)
     else if(endsWith(c.name, CA_SSID_KEY, no)) {
       out.replace("<td class=\"card-lbl\">", "<td class=\"card-lbl\" id=\"st_ssid" + no + "-lbl\">");
       if(!c.label.endsWith("\n") && !c.label.endsWith("<br>")) c.label += "&nbsp;";
@@ -1603,7 +1603,7 @@ void ConfigAssist::loadVectItem(String keyValPair) {
 #endif
   val.replace("\r","");
   val.replace("\n","");
-#ifdef CA_USE_PERSIST_CON
+#if (CA_USE_PERSIST_CON)
   String no;
   if(endsWith(key,CA_SSID_KEY, no)){
     loadPref(key, val);
@@ -1617,7 +1617,7 @@ void ConfigAssist::loadVectItem(String keyValPair) {
     LOG_W("Config file entries: %u exceed max: %u\n", _configs.size(), CA_MAX_PARAMS);
 }
 
-#ifdef CA_USE_WIFISCAN
+#if (CA_USE_WIFISCAN)
 // Build json on Wifi scan complete
 void ConfigAssist::scanComplete(int networksFound) {
   LOG_D("%d network(s) found\n", networksFound);
