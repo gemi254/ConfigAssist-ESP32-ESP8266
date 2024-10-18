@@ -22,10 +22,8 @@ const char* VARIABLES_DEF_YAML PROGMEM = R"~(
 Wifi settings:
   - st_ssid:
       label: Name for WLAN
-      default:
   - st_pass:
       label: Password for WLAN
-      default:
   - host_name:
       label: Host name to use for MDNS and AP
         {mac} will be replaced with device's mac id
@@ -39,7 +37,6 @@ Application settings:
       label: Enter the pin that the build in led is connected.
         Leave blank for auto.
       attribs: "min='2' max='23' step='1'"
-      default:
 
 ConfigAssist settings:
   - display_style:
@@ -152,14 +149,14 @@ void handleRoot() {
   out += "<h4>Device time: " + conf.getLocalTime() +"</h4>";
   out += "<a href='/cfg'>Edit config</a>";
 
-  #if defined(ESP32)
+#if defined(ESP32)
     out.replace("{name}", "ESP32");
-  #else
+#else
     out.replace("{name}", "ESP8266!");
-  #endif
-  #ifdef CA_USE_TIMESYNC
+#endif
+#if (CA_USE_TIMESYNC)
   out += "<script>" + conf.getTimeSyncScript() + "</script>";
-  #endif
+#endif
   server.send(200, "text/html", out);
 }
 
