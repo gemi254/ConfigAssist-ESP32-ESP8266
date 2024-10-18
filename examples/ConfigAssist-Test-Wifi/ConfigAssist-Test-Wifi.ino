@@ -16,22 +16,16 @@ const char* VARIABLES_DEF_YAML PROGMEM = R"~(
 Wifi settings:
   - st_ssid1:
       label: Name for WLAN
-      default:
   - st_pass1:
       label: Password for WLAN
-      default:
   - st_ip1:
       label: Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)
-      default:
   - st_ssid2:
       label: Name for WLAN
-      default:
   - st_pass2:
       label: Password for WLAN
-      default:
   - st_ip2:
       label: Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)
-      default:
 
   - host_name:
       label: >-
@@ -46,7 +40,6 @@ Application settings:
       label: Enter the pin that the build in led is connected.
         Leave blank for auto.
       attribs: "min='2' max='23' step='1'"
-      default:
 )~";
 
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML);
@@ -75,7 +68,7 @@ void handleRoot() {
     out.replace("{name}", "ESP8266!");
   #endif
   // Send browser time sync script
-  #ifdef CA_USE_TESTWIFI
+  #if (CA_USE_TESTWIFI)
     out += "<script>" + conf.getTimeSyncScript() + "</script>";
   #endif
   server.send(200, "text/html", out);
