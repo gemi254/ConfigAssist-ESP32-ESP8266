@@ -30,14 +30,14 @@ void handleRoot() {
   out += "<h4>Device time: " + conf.getLocalTime() +"</h4>";
   out += "<a href='/cfg'>Edit config</a>";
 
-  #if defined(ESP32)
+#if defined(ESP32)
     out.replace("{name}", "ESP32");
-  #else
+#else
     out.replace("{name}", "ESP8266!");
-  #endif
-  #ifdef CA_USE_TIMESYNC
+#endif
+#if (CA_USE_TIMESYNC)
   out += "<script>" + conf.getTimeSyncScript() + "</script>";
-  #endif
+#endif
   server.send(200, "text/html", out);
 }
 
