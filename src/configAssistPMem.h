@@ -65,7 +65,7 @@ PROGMEM const char CONFIGASSIST_HTML_UPLOAD[] = R"=====(
 </body>
 </html>
 )=====";
-#ifdef CA_USE_OTAUPLOAD
+#if (CA_USE_OTAUPLOAD)
 // Template for uploading a ota file
 const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
 <script>
@@ -140,7 +140,7 @@ const char* CONFIGASSIST_HTML_OTAUPLOAD = R"=====(
 )=====";
 #endif
 
-#ifdef CA_USE_FIMRMCHECK
+#if (CA_USE_FIMRMCHECK)
 // Template for checking firmware
 PROGMEM const char CONFIGASSIST_HTML_FIRMW_CHECK[] = R"=====(
 <script>
@@ -797,7 +797,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
 /*{SUB_SCRIPT}*/
 </script>)=====";
 
-#ifdef CA_USE_TIMESYNC
+#if (CA_USE_TIMESYNC)
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
   async function sendTime() {
     let now = new Date();
@@ -815,7 +815,7 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
   setTimeTimer = setTimeout(sendTime, 500);)=====";
 #endif
 
-#ifdef CA_USE_TESTWIFI
+#if (CA_USE_TESTWIFI)
 // Test wifi
 PROGMEM const char HTML_TEST_ST_CONNECTION_LINK[] =
 R"=====(<a href="#" title="Test ST connection" onClick="testWifi('{wifi_no}'); return false;" id="_TEST_WIFI{wifi_no}">Test connection</a>)=====";
@@ -867,7 +867,7 @@ async function testWifi(no="") {
 )=====";
 #endif
 
-#ifdef CA_USE_WIFISCAN
+#if (CA_USE_WIFISCAN)
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN[] = R"=====(
   async function getWifiScan() {
     const baseHost = document.location.origin;
