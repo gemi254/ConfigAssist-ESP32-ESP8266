@@ -20,7 +20,7 @@
   #define LOGGER_LOG_LEVEL 3             // Set log level for this module
 #endif
 
-#define CA_CLASS_VERSION "2.8.4a"         // Class version
+#define CA_CLASS_VERSION "2.8.4"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -35,12 +35,12 @@
 #define CA_TIMEZONE_KEY "time_zone"      // The key that defines time zone for setting time
 #define CA_FIRMWVER_KEY "firmware_ver"   // The key that defines the firmware version
 #define CA_FIRMWURL_KEY "firmware_url"   // The key that defines the url with firmware information
-#define CA_USE_WIFISCAN                  // Comment to disable wifi scan
-#define CA_USE_TESTWIFI                  // Comment to disable test wifi st connection
-#define CA_USE_TIMESYNC                  // Comment to disable sync esp with browser if out of sync
-#define CA_USE_OTAUPLOAD                 // Comment to disable ota and reduce memory
-#define CA_USE_FIMRMCHECK                // Comment to disable firmware check and upgrade from url
-//#define CA_USE_PERSIST_CON             // Comment to disable saving wifi credentials to nvs
+#define CA_USE_WIFISCAN     true         // Set false to disable wifi scan
+#define CA_USE_TESTWIFI     true         // Set false to disable test wifi st connection
+#define CA_USE_TIMESYNC     true         // Set false to disable sync esp with browser if out of sync
+#define CA_USE_OTAUPLOAD    true         // Set false to disable ota and reduce memory
+#define CA_USE_FIMRMCHECK   true         // Set false to disable firmware check and upgrade from url
+#define CA_USE_PERSIST_CON  false        // Set false to disable saving wifi credentials to nvs
 
 // Define Platform libs
 #if defined(ESP32)
@@ -55,7 +55,7 @@
 
 #define IS_BOOL_TRUE(x) (x=="On" || x=="on" || x=="True" || x=="true" || x=="1")
 
-#ifdef CA_USE_PERSIST_CON
+#if (CA_USE_PERSIST_CON)
   #define CA_PREFERENCES_NS "ConfigAssist" // Name space for pererences
   #include <Preferences.h>
 #endif
@@ -181,11 +181,11 @@ class ConfigAssist{
     void handleWifiScanRequest();
     // Send html upload page to client
     void sendHtmlUploadPage();
-#ifdef CA_USE_OTAUPLOAD
+#if (CA_USE_OTAUPLOAD)
     // Send html ota upload page to client
     void sendHtmlOtaUploadPage();
 #endif
-#ifdef CA_USE_FIMRMCHECK
+#if (CA_USE_FIMRMCHECK)
     // Send html firmware check page to client
     void sendHtmlFirmwareCheckPage();
 #endif
@@ -207,7 +207,7 @@ class ConfigAssist{
     // Get page css
     String getCSS();
     // Get browser time synchronization java script
-#ifdef CA_USE_TIMESYNC
+#if (CA_USE_TIMESYNC)
     String getTimeSyncScript();
 #endif
     // Get html custom message page
@@ -232,7 +232,7 @@ class ConfigAssist{
     // Strem text files to web server (long files)
     bool streamText(const String fPath, WEB_SERVER &server);
 
-#ifdef CA_USE_PERSIST_CON
+#if (CA_USE_PERSIST_CON)
     // Clear nvs
     bool clearPrefs();
     // Save a key from nvs
@@ -254,7 +254,7 @@ class ConfigAssist{
     int getSepKeyPos(String key);
     // Extract a config tokens from keyValPair and load it into configs vector
     void loadVectItem(String keyValPair);
-#ifdef CA_USE_WIFISCAN
+ #if (CA_USE_WIFISCAN)
     // Build json on Wifi scan complete
     static void scanComplete(int networksFound);
     // Send wifi scan results to client
@@ -279,7 +279,7 @@ class ConfigAssist{
     bool                          _apEnabled;
     ConfigAssistDisplayType       _displayType;
     ConfigAssistChangeCbf         _changeCbf;
-#ifdef CA_USE_PERSIST_CON
+#if (CA_USE_PERSIST_CON)
     static Preferences _prefs;
 #endif
 };
