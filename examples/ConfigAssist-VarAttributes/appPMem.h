@@ -2,10 +2,8 @@ const char* VARIABLES_DEF_YAML PROGMEM = R"~(
 Wifi settings:
   - st_ssid:
       label: Name for WLAN
-      default:
   - st_pass:
       label: Password for WLAN
-      default:
   - host_name:
       label: >-
         Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac id
@@ -19,7 +17,6 @@ Application settings:
       label: Pin that the build in led is connected. Leave blank for auto.
         Usually pin 4 on esp32, 2 on esp8266
       attribs: "min='2' max='23' step='1'"
-      default:
   - display_style:
       label: Choose how the config sections are displayed.
         Must reboot to apply
