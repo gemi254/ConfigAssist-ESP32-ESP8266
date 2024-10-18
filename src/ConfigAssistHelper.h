@@ -16,7 +16,7 @@ class ConfigAssistHelper
             tzset();
         }
         // Setup ntp time synch
-        void syncTime(uint32_t syncTimout = 20000){
+        void syncTime(uint32_t syncTimeout = 20000){
             if (WiFi.status() != WL_CONNECTED)  return;
             if(_conf[CA_TIMEZONE_KEY]==""){
                 LOG_E("No time zone found in config!\n");
@@ -43,7 +43,7 @@ class ConfigAssistHelper
             LOG_D("syncTime tz: %s, npt1: %s, ntp2:, %s ntp3: %s\n", _conf[CA_TIMEZONE_KEY].c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
 
             // Wait until time is in sync or timeout
-            waitTimeSync( syncTimout );
+            waitTimeSync( syncTimeout );
         }
 
         // Is time sycnhronized ?
