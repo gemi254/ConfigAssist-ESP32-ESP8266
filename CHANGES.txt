@@ -1,5 +1,6 @@
-2.8.4 (2024-05-13)
+2.8.4 (2024-10-19)
   * Load default dictionary only when setup AP
+  * Fixed retain connections
 
 2.8.3 (2024-04-23)
   * Generate config files on first run with default values.
