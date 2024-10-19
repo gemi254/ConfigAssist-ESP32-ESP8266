@@ -30,6 +30,7 @@ ConfigAssist::ConfigAssist() {
 ConfigAssist::ConfigAssist(const String& ini_file) : ConfigAssist(){
   if (ini_file != "") _confFile = ini_file;
   else _confFile = CA_DEF_CONF_FILE;
+  
 }
 
 // Standard constructor with ini file and yaml description
@@ -141,7 +142,7 @@ void ConfigAssist::setRemotUpdateCallback(ConfigAssistChangeCbf ev){
 }
 
 // Implement operator [] i.e. val = config['key']
-String ConfigAssist::operator [] (String k) { return get(k); }
+String ConfigAssist::operator [] (const String &key) { return get(key); }
 
 // Get the device mac id
 String ConfigAssist::getMacID(){
@@ -159,7 +160,7 @@ String ConfigAssist::getHostName(){
 }
 
 // Return the value of a given key, Empty on not found
-String ConfigAssist::get(const String key) {
+String ConfigAssist::get(const String &key) {
   int keyPos = getKeyPos(key);
   if (keyPos >= 0) {
     return _configs[keyPos].value;
@@ -168,7 +169,7 @@ String ConfigAssist::get(const String key) {
 }
 
 // Update the value of key = value (string)
-bool ConfigAssist::put(const String key, String val, bool force) {
+bool ConfigAssist::put(const String &key, String val, bool force) {
   int keyPos = getKeyPos(key);
   if (keyPos >= 0) {
     // Save 0,1 on booleans
@@ -194,12 +195,12 @@ bool ConfigAssist::put(const String key, String val, bool force) {
 }
 
 // Update the value of key = value (int), force to add if not exists
-bool ConfigAssist::put(const String key, int val, bool force) {
+bool ConfigAssist::put(const String &key, int val, bool force) {
   return put(key, String(val), force);
 }
 
 // Add vectors by key (name in confPairs)
-void ConfigAssist::add(const String key, String val, bool force){
+void ConfigAssist::add(const String &key, const String &val, bool force){
   static int readNo = 0;
   static int forcedNo = -1;
   confPairs c;
@@ -228,7 +229,7 @@ void ConfigAssist::add(confPairs &c){
 }
 
 // Add seperator by key
-void ConfigAssist::addSeperator(const String key, const String val){
+void ConfigAssist::addSeperator(const String &key, const String &val){
   LOG_V("Adding sep key: %s=%s\n", key.c_str(), val.c_str());
   _seperators.push_back({key, val});
 }
@@ -354,7 +355,7 @@ void ConfigAssist::dump(WEB_SERVER *server){
 }
 
 // Split a String with delimeter, index -> itemNo
-String ConfigAssist::splitString(String s, char delim, int index){
+String ConfigAssist::splitString(const String &s, char delim, int index){
   if(s=="") return "";
   String ret = "\0";
   //int parserIndex = index;
@@ -639,15 +640,13 @@ bool ConfigAssist::saveConfigFile(String filename) {
 
 #if (CA_USE_PERSIST_CON)
     String no;
-    if(endsWith(row.name, CA_SSID_KEY, no)){
+    if(endsWith(row.name, CA_SSID_KEY, no) || endsWith(row.name, CA_PASSWD_KEY, no) ){
       savePref(row.name, row.value);
-      row.value = "";
-    }else if(endsWith(row.name, CA_PASSWD_KEY, no)){
-      savePref(row.name, row.value);
-      row.value = "";
-    }
+      char configLine[255];
+      sprintf(configLine, "%s%c\n", row.name.c_str(), CA_INI_FILE_DELIM);
+      szOut+=file.write((uint8_t*)configLine, strlen(configLine));
+    }else
 #endif
-
     if(file){
       char configLine[512];
       sprintf(configLine, "%s%c%s\n", row.name.c_str(), CA_INI_FILE_DELIM, row.value.c_str());
@@ -657,7 +656,7 @@ bool ConfigAssist::saveConfigFile(String filename) {
   }
 
   if(szOut>0){
-    file.close();
+    //file.close();
     LOG_I("File saved: %s, keys: %i, sz: %u B\n", filename.c_str(), _configs.size(), szOut);
     _dirty = false;
   }
@@ -753,7 +752,7 @@ String ConfigAssist::testWiFiSTConnection(String no){
 }
 
 // Download a file in browser window
-void ConfigAssist::handleDownloadFile(const String fileName){
+void ConfigAssist::handleDownloadFile(const String &fileName){
   File f = STORAGE.open(fileName.c_str(), "r");
   if (!f) {
     f.close();
@@ -975,7 +974,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         server->client().flush();
         return;
     }
-#endif //CA_USE_PERSIST_CON
+#endif 
 
 #if (CA_USE_TESTWIFI)
     //Test wifi?
@@ -1161,7 +1160,7 @@ String ConfigAssist::getCSS(){
   return String(CONFIGASSIST_HTML_CSS);
 }
 
-#ifdef CA_USE_TIMESYNC
+#if (CA_USE_TIMESYNC) 
 // Get browser time synchronization java script
 String ConfigAssist::getTimeSyncScript(){
   return String(CONFIGASSIST_HTML_SCRIPT_TIME_SYNC);
@@ -1194,7 +1193,7 @@ bool ConfigAssist::isNumeric(String s){ //1.0, -.232, .233, -32.32
 }
 
 // Name ends with key + number?
-bool ConfigAssist::endsWith(String name, String key, String &no) {
+bool ConfigAssist::endsWith(const String &name, const String &key, String &no) {
   int l = name.length();
   while( --l >= 0 )
     if( !isDigit(name.charAt(l)) ) break;
@@ -1235,7 +1234,7 @@ String ConfigAssist::urlDecode(const String& text){
   return decoded;
 }
 // Load a file into a string
-bool ConfigAssist::loadText(const String fPath, String &txt){
+bool ConfigAssist::loadText(const String &fPath, String &txt){
   File file = STORAGE.open(fPath, "r");
   if (!file || !file.size()) {
     LOG_E("Failed to load: %s, sz: %u B\n", fPath.c_str(), file.size());
@@ -1252,7 +1251,7 @@ bool ConfigAssist::loadText(const String fPath, String &txt){
 }
 
 // Stram a file to web server
-bool ConfigAssist::streamText(const String fPath, WEB_SERVER &server){
+bool ConfigAssist::streamText(const String &fPath, WEB_SERVER &server){
   File file = STORAGE.open(fPath, "r");
   if (!file || !file.size()) {
     LOG_E("Failed to load: %s, sz: %u B\n", fPath.c_str(), file.size());
@@ -1288,7 +1287,7 @@ bool ConfigAssist::clearPrefs(){
 }
 
 // Save a key to nvs
-bool ConfigAssist::savePref(String key, String val){
+bool ConfigAssist::savePref(const String &key, const String &val){
   if (!_prefs.begin(CA_PREFERENCES_NS, false)) {
     LOG_E("Failed to begin prefs\n");
     return false;
@@ -1300,7 +1299,7 @@ bool ConfigAssist::savePref(String key, String val){
 }
 
 // Load a key from nvs
-bool ConfigAssist::loadPref(String key, String &val){
+bool ConfigAssist::loadPref(const String &key, String &val){
   if (!_prefs.begin(CA_PREFERENCES_NS, false)) {
     LOG_E("Failed to begin prefs\n");
     return false;
@@ -1313,14 +1312,14 @@ bool ConfigAssist::loadPref(String key, String &val){
     LOG_I("Moving key: %s = %s to nvs\n", key.c_str(), val.c_str());
     _prefs.putString(key.c_str(), val.c_str());
   }
-  LOG_V("Loaded prefs key: %s = %s\n", key.c_str(), val.c_str());
+  LOG_D("Loaded prefs key: %s = %s\n", key.c_str(), val.c_str());
   _prefs.end();
   return true;
 }
 #endif
 
 // Write a string to a file
-bool ConfigAssist::saveText(const String fPath, String &txt){
+bool ConfigAssist::saveText(const String &fPath, String &txt){
   STORAGE.remove(fPath);
   File file = STORAGE.open(fPath, "w+");
   if(!file){
