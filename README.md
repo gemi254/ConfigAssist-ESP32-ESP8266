@@ -35,7 +35,7 @@ Application variables like **Wifi ssid**, **Wifi password**, **Host Name** can b
 
 **WiFi credentials** can also be saved to **nvs** to retain ST connections. On **factory defaults** the nvs will be not cleared and the ST connection will be still available.
 You can use the command ``http://ip/cfg?_CLEAR=1`` to clear nvs.
-Set **CA_USE_PERSIST_CON** to true in ``ConfigAssist.h`` to use this feature.
+Set **CA_USE_PERSIST_CON** to 1 in ``ConfigAssist.h`` to use this feature.
 
 **ConfigAssist** can also check and synchronize the internal **clock** of ESP device with the browser time if needed. So even if no internet connection (AP mode) and no **npt** server is available the device will get the correct time. If **CA_TIMEZONE_KEY** string exists in variables it will be used to set the device time zone string. If not it will use browser offset.
 
@@ -45,7 +45,7 @@ Set **CA_USE_PERSIST_CON** to true in ``ConfigAssist.h`` to use this feature.
 
 Check the <a href="/examples/ConfigAssist-FirmwareCheck/README.txt">FirmwareCheck</a>  example for more details.
 
-These features can be disabled to save memory by setting true / false the lines **CA_USE_WIFISCAN**, **CA_USE_TESTWIFI**, **CA_USE_TIMESYNC**, **CA_USE_OTAUPLOAD**, and **CA_USE_FIMRMCHECK** in ``ConfigAssist.h``.
+These features can be disabled to save memory by setting 1 / 0 the lines **CA_USE_WIFISCAN**, **CA_USE_TESTWIFI**, **CA_USE_TIMESYNC**, **CA_USE_OTAUPLOAD**, and **CA_USE_FIMRMCHECK** in ``ConfigAssist.h``.
 
 Device's configuration ``(*.ini files)`` can be downloaded with the **Backup** button and can be restored later with the **Restore** button.
 
