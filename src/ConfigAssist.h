@@ -35,12 +35,12 @@
 #define CA_TIMEZONE_KEY "time_zone"      // The key that defines time zone for setting time
 #define CA_FIRMWVER_KEY "firmware_ver"   // The key that defines the firmware version
 #define CA_FIRMWURL_KEY "firmware_url"   // The key that defines the url with firmware information
-#define CA_USE_WIFISCAN     true         // Set false to disable wifi scan
-#define CA_USE_TESTWIFI     true         // Set false to disable test wifi st connection
-#define CA_USE_TIMESYNC     true         // Set false to disable sync esp with browser if out of sync
-#define CA_USE_OTAUPLOAD    true         // Set false to disable ota and reduce memory
-#define CA_USE_FIMRMCHECK   true         // Set false to disable firmware check and upgrade from url
-#define CA_USE_PERSIST_CON  false        // Set false to disable saving wifi credentials to nvs
+#define CA_USE_WIFISCAN     1            // Set to 0 to disable wifi scan
+#define CA_USE_TESTWIFI     1            // Set to 0 to disable test wifi st connection
+#define CA_USE_TIMESYNC     1            // Set to 0 to disable sync esp with browser if out of sync
+#define CA_USE_OTAUPLOAD    1            // Set to 0 to disable ota and reduce memory
+#define CA_USE_FIMRMCHECK   1            // Set to 0 to disable firmware check and upgrade from url
+#define CA_USE_PERSIST_CON  0            // Set to 1 to enable saving wifi credentials to nvs
 
 // Define Platform libs
 #if defined(ESP32)
@@ -136,19 +136,19 @@ class ConfigAssist{
     // Get a temponary hostname
     String getHostName();
     // Implement operator [] i.e. val = config['key']
-    String operator [] (String k);
+    String operator [] (const String &key);
     // Return the value of a given key, Empty on not found
-    String get(const String key);
+    String get(const String &key);
     // Update the value of key = val (int)
-    bool put(const String key, int val, bool force = false);
+    bool put(const String &key, int val, bool force = false);
     // Update the value of key = val (string)
-    bool put(const String key, String val, bool force = false);
+    bool put(const String &key, String val, bool force = false);
     // Add vectors by key (name in confPairs)
-    void add(const String key, String val, bool force = false);
+    void add(const String &key, const String &val, bool force = false);
     // Add unique name vectors pairs
     void add(confPairs &c);
     // Add seperator by key
-    void addSeperator(const String key, const String val);
+    void addSeperator(const String &key, const String &val);
     // Rebuild keys indexes wher sorting by readNo
     void rebuildKeysNdx();
     // Sort keys asc by name
@@ -194,7 +194,7 @@ class ConfigAssist{
     // Test the specified connection no
     String testWiFiSTConnection(String no);
     // Download a file in browser window
-    void handleDownloadFile(const String fileName);
+    void handleDownloadFile(const String &fileName);
     // Respond a not found HTTP request
     void handleNotFound();
     // Respond a HTTP request for the form use the CONF_FILE
@@ -213,10 +213,10 @@ class ConfigAssist{
     // Get html custom message page
     String getMessageHtml();
     // Name ends with key + number?
-    bool endsWith(String name, String key, String& no);
+    bool endsWith(const String &name, const String &key, String& no);
   private:
     // Split a String with delimeter, index -> itemNo
-    String splitString(String s, char delim, int index);
+    String splitString(const String &s, char delim, int index);
     // Get child nodes as string
     inline String getChilds(dyml::Directyaml::Node &node);
     // Get all child nodes as tree string, on option key add key & val
@@ -226,19 +226,19 @@ class ConfigAssist{
     // Decode given string, replace encoded characters
     String urlDecode(const String& text);
     // Load a file into a string
-    bool loadText(const String fPath, String& txt);
+    bool loadText(const String &fPath, String& txt);
     // Write a string to a file
-    bool saveText(const String fPath, String& txt);
+    bool saveText(const String &fPath, String& txt);
     // Strem text files to web server (long files)
-    bool streamText(const String fPath, WEB_SERVER &server);
+    bool streamText(const String &fPath, WEB_SERVER &server);
 
 #if (CA_USE_PERSIST_CON)
     // Clear nvs
     bool clearPrefs();
     // Save a key from nvs
-    bool savePref(String key, String val);
+    bool savePref(const String &key, const String &val);
     // Load a key from nvs
-    bool loadPref(String key, String &val);
+    bool loadPref(const String &key, String &val);
 #endif
     // Implement seperators mode
     void modifySeperator(int sepNo, String &outSep);
