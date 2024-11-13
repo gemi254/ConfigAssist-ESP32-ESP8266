@@ -9,6 +9,7 @@
 #if defined(ESP32)
   #include <WebServer.h>
   #include "SPIFFS.h"
+  #include <LittleFS.h>
   #include <ESPmDNS.h>
 #else
   #include <ESP8266WebServer.h>
@@ -20,7 +21,7 @@
   #define LOGGER_LOG_LEVEL 3             // Set log level for this module
 #endif
 
-#define CA_CLASS_VERSION "2.8.4"         // Class version
+#define CA_CLASS_VERSION "2.8.5"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
@@ -45,7 +46,8 @@
 // Define Platform libs
 #if defined(ESP32)
   #define WEB_SERVER WebServer
-  #define STORAGE SPIFFS // one of: SPIFFS LittleFS SD_MMC
+  //#define STORAGE SPIFFS // one of: SPIFFS LittleFS SD_MMC
+  #define STORAGE LittleFS // one of: SPIFFS LittleFS SD_MMC
 #else
   #define WEB_SERVER ESP8266WebServer
   #define STORAGE LittleFS // one of: SPIFFS LittleFS SD_MMC
