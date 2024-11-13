@@ -293,7 +293,7 @@ Variables ending with **CA_NTPSYNC_KEY** for example  **ntp_server1**, **ntp_ser
 will be used as ntp servers.
 The current timezone for the device will be set automatically using **CA_TIMEZONE_KEY** for example **time_zone**
 
-Just define **ntp_server1**, **ntp_server2**, **ntp_server3** and **time_zone** settings in your config and call **syncTime** with timeout ms to wait until time is synchronized.
+Just define **ntp_server1**, **ntp_server2**, **ntp_server3** and **time_zone** settings in your config and call **syncTime** with timeout ms to wait until time is synchronized. User force = true to reset clock and wait time to be synchronized.
 ```
 - ntp_server1:
       label: Time server to sync time1
@@ -306,8 +306,14 @@ Just define **ntp_server1**, **ntp_server2**, **ntp_server3** and **time_zone** 
       default: "pool.ntp.org"
 
   // Setup time synchronization
-  // Wait max 10 sec
+  // Wait max 10 sec for sync
   confHelper.syncTime(10000);
+
+  // Force time synchronization,
+  // Clock will be reseted and wait for max 20 sec to sync
+  // If fail clock will be restored
+  confHelper.syncTime(20000, true);
+
   ```
 
 ## Setup function
