@@ -22,7 +22,7 @@ ConfigAssistHelper confHelper(conf);
 
 // Setup internal led variable if not set
 bool b1 = (conf["led_buildin"] == "") ? conf.put("led_buildin", LED_BUILTIN, true) : false;
-
+time_t tnow;
 unsigned long pingMillis = millis();  // Ping
 
 // Handler function for Home page
@@ -37,7 +37,9 @@ void handleRoot() {
 #else
     out.replace("{name}", "ESP8266!");
 #endif
+
 #if (CA_USE_TIMESYNC)
+  // Send a web browser sync java script to client
   out += "<script>" + conf.getTimeSyncScript() + "</script>";
 #endif
   server.send(200, "text/html", out);
@@ -97,9 +99,13 @@ void setup(void) {
 
   // Setup time synchronization
   // Wait max 10 sec
+  LOG_I("Start time sync..\n");
   confHelper.syncTime(20000);
-
+  tnow = time(nullptr);
 }
+
+int cntSoft = 0;
+int cntHard = 0;
 
 // App main loop
 void loop(void) {
@@ -110,9 +116,31 @@ void loop(void) {
 
   // Display info
   if (millis() - pingMillis >= 5000){
-    time_t tnow = time(nullptr);
-    LOG_I("Is time sync: %i time: %s", confHelper.isTimeSync(), ctime(&tnow));
+    tnow = time(nullptr);
+    LOG_I("Time in sync: %i clock: %s", confHelper.isTimeSync(), ctime(&tnow));
+    cntSoft++;
+    cntHard++;
     pingMillis = millis();
+  }
+
+  if(cntSoft>2){
+    // Force time synchronization,
+    // Clock will not wait if already time is set
+    // and time will be automatically sync in background.
+    confHelper.syncTime(20000, false);
+    tnow = time(nullptr);
+    cntSoft = 0;
+    LOG_I("Soft resync time: %i clock: %s", confHelper.isTimeSync(), ctime(&tnow));
+  }
+
+  if(cntHard>4){
+    // Force time synchronization,
+    // Clock will be reseted and wait for max 20 sec to sync
+    // If fail clock will be restored
+    confHelper.syncTime(20000, true);
+    tnow = time(nullptr);
+    LOG_I("Hard resynced time: %i clock: %s", confHelper.isTimeSync(), ctime(&tnow));
+    cntHard = 0;
   }
 
   // Allow the cpu to switch to other tasks
