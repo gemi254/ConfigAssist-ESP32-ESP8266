@@ -51,7 +51,7 @@ namespace dyml
 			friend class Directyaml;
 
 		protected:
-			Node() : _dyml(nullptr) {}
+			Node() : _dyml(nullptr), _row(0), _level(0) {}
 			Node(int row, int lv, const Directyaml* dy) : _row(row), _level(lv), _dyml(dy) {}
 
 		public:
@@ -112,10 +112,9 @@ namespace dyml
 		};
 
 	public :
-		Directyaml() {}
-		Directyaml(char* ymlstr, bool managed = false)
+		Directyaml():_lastError("") {}
+		Directyaml(char* ymlstr, bool managed = false):Directyaml()
 		{
-			_lastError = "";
 			parse(ymlstr, managed);
 		}
 
