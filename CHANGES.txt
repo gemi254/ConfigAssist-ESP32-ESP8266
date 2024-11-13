@@ -1,3 +1,6 @@
+2.8.5
+  * Added force time synchronization.
+
 2.8.4 (2024-10-19)
   * Load default dictionary only when setup AP
   * Fixed retain connections
