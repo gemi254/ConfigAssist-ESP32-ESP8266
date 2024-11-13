@@ -2,6 +2,7 @@
 /debug_custom.json
 /esp32.svd
 .pio/
+partitions/
 test/
 .vscode/
 /platformio.ini
