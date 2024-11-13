@@ -7,16 +7,16 @@ class ConfigAssistHelper
         ConfigAssistHelper(ConfigAssist &conf): _conf(conf) { }
         ~ConfigAssistHelper() {}
     public:
-        void setEnvTimeZone(){
-            setEnvTimeZone(_conf[CA_TIMEZONE_KEY].c_str());
-        }
         void setEnvTimeZone(const char *tz){
             LOG_D("Set environment tz: %s\n", tz);
             setenv("TZ", tz, 1);
             tzset();
         }
+        void setEnvTimeZone(){
+            setEnvTimeZone(_conf[CA_TIMEZONE_KEY].c_str());
+        }
         // Setup ntp time synch
-        void syncTime(uint32_t syncTimeout = 20000){
+        void syncTime(uint32_t syncTimeout = 20000, bool force = false){
             if (WiFi.status() != WL_CONNECTED)  return;
             if(_conf[CA_TIMEZONE_KEY]==""){
                 LOG_E("No time zone found in config!\n");
@@ -41,15 +41,33 @@ class ConfigAssistHelper
 
             configTzTime(_conf[CA_TIMEZONE_KEY].c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
             LOG_D("syncTime tz: %s, npt1: %s, ntp2:, %s ntp3: %s\n", _conf[CA_TIMEZONE_KEY].c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
+            if(force){
+                struct timeval tv;
+                tv.tv_sec = 0l;  // Reset the timestamp (seconds since 1970)
+                tv.tv_usec = 0;  // Microseconds (set to 0)
+                time_t tnow = time(nullptr);
+                settimeofday(&tv, NULL); // Reset the system time
 
-            // Wait until time is in sync or timeout
-            waitTimeSync( syncTimeout );
+                time_t start = millis();
+                // Wait until time is in sync or timeout
+                waitTimeSync( syncTimeout );
+                //Failed to sync, Restore old time
+                if(!isTimeSync()){
+                    time_t duration = (millis() - start);
+                    tv.tv_sec = tnow + (duration)/1000;
+                    tv.tv_usec = 0;           // Microseconds (set to 0)
+                    settimeofday(&tv, NULL); // Set the system time
+                }
+            }else{
+                waitTimeSync( syncTimeout );
+            }
         }
 
         // Is time sycnhronized ?
         bool isTimeSync(){ return time(nullptr) > 1000000000l; }
 
         // Wait for ntp time synchronization
+        // Check isTimeSync to determine if timeout
         void waitTimeSync(const uint32_t timeout = 20000 ){
             LOG_I("Synchronizing time..\n");
             uint32_t startAttemptTime = millis();
