@@ -50,10 +50,10 @@ void setup() {
   //info.deleteConfig(); //Uncomment to remove ini file and re-built
 
   if(!info.valid()){ //Add boot counter
-    info.put("bootCnt", 0, true);
+    info["bootCnt"] = 1;
   }else{ //Ini is valid, increase counter and display the value
-    info.put("bootCnt", info["bootCnt"].toInt() + 1, true);
-    LOG_I("Info file: bootCnt:  %lu\n", info["bootCnt"].toInt());
+    info["bootCnt"] = info("bootCnt").toInt() + 1;
+    LOG_I("Info file: bootCnt:  %lu\n", info("bootCnt").toInt());
   }
   //Save keys & values into ini file
   info.saveConfigFile();
