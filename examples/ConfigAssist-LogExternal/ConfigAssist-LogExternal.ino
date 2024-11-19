@@ -60,8 +60,6 @@ void setup() {
     if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!");
   #endif
 
-  // STORAGE.remove(LOGGER_LOG_FILENAME); //Uncomment to reset the log file
-
   // Display the log file
   serialPrintLog();
 
@@ -76,13 +74,16 @@ void setup() {
   // Create a config class with an ini filename and disabled dictionary
   ConfigAssist info("/info.ini", NULL);
 
-  //info.deleteConfig(); //Uncomment to remove ini file and re-built
-
+  if(true){ // Set to true to reset
+    info.deleteConfig(); // Remove ini file and re-built
+    info.clear();        // Clear loaded keys
+    STORAGE.remove(LOGGER_LOG_FILENAME);
+  }
   if(!info.valid()){ //Add boot counter
-    info.put("bootCnt", 0, true);
+    info["bootCnt"] = 1;
   }else{ // Ini is valid, increase counter and display the value
-    info.put("bootCnt", info["bootCnt"].toInt() + 1, true);
-    LOG_I("Info file: bootCnt:  %lu\n", info["bootCnt"].toInt());
+    info["bootCnt"] = info("bootCnt").toInt() + 1;
+    LOG_I("Info file: bootCnt:  %lu\n", info("bootCnt").toInt());
   }
   // ave keys & values into ini file
   info.saveConfigFile();
