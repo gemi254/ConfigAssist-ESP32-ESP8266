@@ -115,7 +115,7 @@ Other settings:
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML); // Config assist class
 
 // Setup led
-bool b = (conf["led_buildin"] == "") ? conf.put("led_buildin", LED_BUILTIN) : false;
+bool b = (conf("led_buildin") == "") ? conf["led_buildin"] =  LED_BUILTIN : false;
 
 // Print memory info
 void debugMemory(const char* caller) {
@@ -148,7 +148,7 @@ void handleRoot() {
   String out("<h2>Hello from {name}</h2>");
   out += "<h4>Device time: " + conf.getLocalTime() +"</h4>";
   out += "<a href='/cfg'>Edit config</a>";
-
+  conf["refresh_rate"] = conf("refresh_rate").toInt() + 1;
 #if defined(ESP32)
     out.replace("{name}", "ESP32");
 #else
@@ -178,14 +178,13 @@ void handleNotFound() {
 
 // CallBack function when conf remotely changes
 void onDataChanged(String key){
-  LOG_I("Data changed: %s = %s \n", key.c_str(), conf[key].c_str());
+  LOG_I("Data changed: %s = %s \n", key.c_str(), conf(key).c_str());
   if(key == "display_style")
-    conf.setDisplayType((ConfigAssistDisplayType)conf["display_style"].toInt());
+    conf.setDisplayType((ConfigAssistDisplayType)conf("display_style").toInt());
 
 }
 // Setup function
 void setup(void) {
-
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
@@ -193,7 +192,7 @@ void setup(void) {
   LOG_I("Starting..\n");
   debugMemory("setup");
 
-  ListDir("/");
+  //ListDir("/");
 
   //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
 
@@ -216,29 +215,29 @@ void setup(void) {
   WiFi.setAutoReconnect(false);
 
   // Connect to any available network
-  bool bConn = confHelper.connectToNetwork(15000, conf["led_buildin"].toInt());
+  bool bConn = confHelper.connectToNetwork(15000, conf("led_buildin").toInt());
 
   // Append config assist handlers to web server, setup ap on no connection
   conf.setup(server, !bConn);
   if(!bConn) LOG_E("Connect failed.\n");
 
-  if (MDNS.begin(conf[CA_HOSTNAME_KEY].c_str())) {
+  if (MDNS.begin(conf(CA_HOSTNAME_KEY).c_str())) {
     LOG_I("MDNS responder started\n");
   }
 
   // Get int/bool value
-  bool debug = conf["debug"].toInt();
+  bool debug = conf("debug").toInt();
   LOG_I("Boolean value: %i\n", debug);
 
   // Get float value
-  float float_value = atof(conf["float_val"].c_str());
+  float float_value = conf("float_val").toFloat();
   LOG_I("Float value: %1.5f\n", float_value);
 
   // Set the defined display type
-  conf.setDisplayType((ConfigAssistDisplayType)conf["display_style"].toInt());
+  conf.setDisplayType((ConfigAssistDisplayType)conf("display_style").toInt());
 
   server.begin();
-  LOG_I("HTTP server started, display type: %s\n", conf["display_style"].c_str());
+  LOG_I("HTTP server started, display type: %s\n", conf("display_style").c_str());
 
   // On the fly generate an ini info file on SPIFFS
   {
@@ -247,14 +246,19 @@ void setup(void) {
     // Add a key even if not exists. It will be not editable
     if(!info.valid()){
       LOG_D("Info file not exists\n");
-      info.put("bootCnt", 1, true);
-      info.put("lastRSSI", WiFi.RSSI(), true);
+      info["bootCnt"] = 1;
+      info["lastRSSI"] = WiFi.RSSI();
+      //info.put("bootCnt", 1, true);
+      //info.put("lastRSSI", WiFi.RSSI(), true);
     }else{
-      LOG_D("Info file: bootCnt:  %s, lastRSSI: %s\n", info["bootCnt"].c_str(), info["lastRSSI"].c_str() );
-      info.put("bootCnt", info["bootCnt"].toInt() + 1, true);
-      info.put("lastRSSI", WiFi.RSSI(), true);
+      LOG_I("Info file: bootCnt:  %s, lastRSSI: %s\n", info("bootCnt").c_str(), info("lastRSSI").c_str() );
+      info["bootCnt"] = info("bootCnt").toInt() + 1;
+      info["lastRSSI"] = WiFi.RSSI();
+      //info.put("bootCnt", info["bootCnt"].toInt() + 1, true);
+      //info.put("lastRSSI", WiFi.RSSI(), true);
     }
     info.saveConfigFile();
+    info.dump();
   }
 }
 
@@ -268,7 +272,7 @@ void loop(void) {
   // Display info
   if (millis() - pingMillis >= 10000){
     // if debug is enabled in config display memory debug messages
-    if(conf["debug"].toInt()) debugMemory("Loop");
+    if(conf("debug").toInt()) debugMemory("Loop");
     pingMillis = millis();
   }
 
