@@ -1,5 +1,5 @@
 // Helper class allowing easy connection to WiFi, set static ip using and synchronize time
-// using the key values contained in a config class;
+// using the key values contained in the config class;
 
 class ConfigAssistHelper
 {
@@ -13,12 +13,12 @@ class ConfigAssistHelper
             tzset();
         }
         void setEnvTimeZone(){
-            setEnvTimeZone(_conf[CA_TIMEZONE_KEY].c_str());
+            setEnvTimeZone(_conf(CA_TIMEZONE_KEY).c_str());
         }
         // Setup ntp time synch
         void syncTime(uint32_t syncTimeout = 20000, bool force = false){
             if (WiFi.status() != WL_CONNECTED)  return;
-            if(_conf[CA_TIMEZONE_KEY]==""){
+            if(_conf(CA_TIMEZONE_KEY)==""){
                 LOG_E("No time zone found in config!\n");
                 return;
             }
@@ -29,7 +29,7 @@ class ConfigAssistHelper
             while(_conf.getNextKeyVal(c)){
                 String no;
                 if( _conf.endsWith(c.name, CA_NTPSYNC_KEY, no ) ){
-                    ntpServers[i] = _conf[c.name];
+                    ntpServers[i] = _conf(c.name);
                     if(i++ > 3) break;
                 }
             }
@@ -39,8 +39,8 @@ class ConfigAssistHelper
 
             setEnvTimeZone();
 
-            configTzTime(_conf[CA_TIMEZONE_KEY].c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
-            LOG_D("syncTime tz: %s, npt1: %s, ntp2:, %s ntp3: %s\n", _conf[CA_TIMEZONE_KEY].c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
+            configTzTime(_conf(CA_TIMEZONE_KEY).c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
+            LOG_D("syncTime tz: %s, npt1: %s, ntp2:, %s ntp3: %s\n", _conf(CA_TIMEZONE_KEY).c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
             if(force){
                 struct timeval tv;
                 tv.tv_sec = 0l;  // Reset the timestamp (seconds since 1970)
@@ -135,13 +135,13 @@ class ConfigAssistHelper
                     String st_passKey = st_ssidKey;
                     st_passKey.replace(CA_SSID_KEY, CA_PASSWD_KEY);
                     LOG_V("Found ssid key: %s, val: %s\n", st_ssidKey.c_str(), st_ssid.c_str());
-                    String st_pass = _conf[st_passKey];
+                    String st_pass = _conf(st_passKey);
                     LOG_V("Found pass key: %s, val: %s\n", st_passKey.c_str(), st_pass.c_str());
 
                     //Set static ip if defined
                     String st_ipKey = st_ssidKey;
                     st_ipKey.replace(CA_SSID_KEY, CA_STATICIP_KEY);
-                    String st_ip = _conf[st_ipKey];
+                    String st_ip = _conf(st_ipKey);
                     if(st_ip!="") setStaticIP(st_ip);
 
                     LOG_I("Wifi ST connecting to: %s, %s \n",st_ssid.c_str(), st_pass.c_str());
