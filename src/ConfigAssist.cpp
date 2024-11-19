@@ -21,16 +21,19 @@ ConfigAssist::ConfigAssist() {
   _dictLoaded = false; _iniLoaded=false;
   _dirty = false; _apEnabled=false;
   _confFile = CA_DEF_CONF_FILE;
-  _dictStr = NULL; //CA_DEFAULT_DICT_JSON;
+  _dictStr = NULL;
   _subScript = NULL;
   _displayType = ConfigAssistDisplayType::AllOpen;
+  _readNo = 0;
+  _forcedNo = -1;
+  _row = 0;
 }
-
 // Standard constructor with ini file
-ConfigAssist::ConfigAssist(const String& ini_file) : ConfigAssist(){
+ConfigAssist::ConfigAssist(const String& ini_file, bool defaultYaml): ConfigAssist(){
   if (ini_file != "") _confFile = ini_file;
   else _confFile = CA_DEF_CONF_FILE;
-  
+  if(defaultYaml)
+    _dictStr = CA_DEFAULT_DICT_JSON;
 }
 
 // Standard constructor with ini file and yaml description
@@ -96,6 +99,7 @@ bool ConfigAssist::valid(){
 
 // Is configuration file exists>
 bool ConfigAssist::confExists(){
+  if(!_init) init();
   return STORAGE.exists(_confFile);
 }
 
@@ -140,10 +144,6 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
 void ConfigAssist::setRemotUpdateCallback(ConfigAssistChangeCbf ev){
   _changeCbf = ev;
 }
-
-// Implement operator [] i.e. val = config['key']
-String ConfigAssist::operator [] (const String &key) { return get(key); }
-
 // Get the device mac id
 String ConfigAssist::getMacID(){
   String mac = WiFi.macAddress();
@@ -157,6 +157,53 @@ String ConfigAssist::getHostName(){
   if(hostName=="") hostName = "configAssist_" + getMacID();
   else hostName.replace("{mac}", getMacID());
   return hostName;
+}
+// Implement operator [] i.e. val = config('key')
+// Access operator (const)
+String ConfigAssist::operator () (const String &key)  {
+  if (_keysNdx.empty()){
+    for (auto& config : _configs) {
+        if (config.name == key) {
+            return config.value; // If key found, return its value (modifiable)
+        }
+    }
+     return "";
+  }
+  //With index search
+  auto lower = std::lower_bound(_keysNdx.begin(), _keysNdx.end(), key, [](
+      const confNdx &a, const String &b) {
+      return a.key < b;}
+  );
+  int keyPos = std::distance(_keysNdx.begin(), lower);
+  LOG_V("operator() Found key: %s, pos: %i \n",key.c_str(), keyPos);
+
+  if (_keysNdx[keyPos].ndx < _configs.size() && key == _configs[ _keysNdx[keyPos].ndx ].name)
+    keyPos = _keysNdx[keyPos].ndx;
+  else
+    keyPos = -1;
+
+  if (keyPos >= 0) {
+    return _configs[keyPos].value;
+  }
+  //static const String emptyString;  // Static to persist after the function ends
+  return "";  // Returns a const reference
+}
+
+// Implement operator [] i.e. config['key'] = val
+// Modify operator (non-const)
+String& ConfigAssist::operator[](const String& key) {
+  _dirty = true;
+  // Look for the key in the _configs vector
+  int keyPos = getKeyPos(key);
+  if (keyPos >= 0) {
+    LOG_D("operator[]& Found key: %s, pos: %i \n",key.c_str(), keyPos);
+    return _configs[keyPos].value;
+  }
+  // If the key doesn't exist, add a new entry and return the reference
+  keyPos = add(key,"", true);
+  //keyPos = getKeyPos(key);
+  LOG_D("operator[]& Added key: %s, pos: %i \n",key.c_str(), keyPos);
+  return _configs[keyPos].value;
 }
 
 // Return the value of a given key, Empty on not found
@@ -200,32 +247,32 @@ bool ConfigAssist::put(const String &key, int val, bool force) {
 }
 
 // Add vectors by key (name in confPairs)
-void ConfigAssist::add(const String &key, const String &val, bool force){
-  static int readNo = 0;
-  static int forcedNo = -1;
+int ConfigAssist::add(const String &key, const String &val, bool force){
   confPairs c;
   if(force){ // Forced variables will not be editable
-    c = {key, val, "", "", "", forcedNo, TEXT_BOX };
-    forcedNo --;
-    add(c);
+    c = {key, val, "", "", "", _forcedNo, TEXT_BOX };
+    _forcedNo --;
+    return add(c);
   }else{
-    c = {key, val, "", "", "", readNo, TEXT_BOX };
-    readNo ++;
-    add(c);
+    c = {key, val, "", "", "", _readNo, TEXT_BOX };
+    _readNo ++;
+    return add(c);
   }
 }
 
 // Add unique name vectors pairs
-void ConfigAssist::add(confPairs &c){
+int ConfigAssist::add(confPairs &c){
   int keyPos = getKeyPos(c.name);
   if(keyPos>=0){
     LOG_E("Add Key: %s already exists\n", c.name.c_str());
-    return;
+    return keyPos;
   }
   _configs.push_back({c});
-  _keysNdx.push_back( {c.name, _configs.size() - 1} );
+  keyPos = (int)_configs.size() - 1;
+  _keysNdx.push_back( {c.name, keyPos} );
   sortKeysNdx();
-  LOG_V("Add key no: %i, key: %s, val: %s\n", c.readNo, c.name.c_str(), c.value.c_str());
+  LOG_V("Add key no: %i, key: %s, val: %s, ndx: %i\n", c.readNo, c.name.c_str(), c.value.c_str(),keyPos);
+  return keyPos;
 }
 
 // Add seperator by key
@@ -234,11 +281,22 @@ void ConfigAssist::addSeperator(const String &key, const String &val){
   _seperators.push_back({key, val});
 }
 
+void ConfigAssist::clear(){
+    _configs.clear();
+    _keysNdx.clear();
+    _seperators.clear();
+    _dictLoaded = false; _iniLoaded=false;
+    _dirty = false;
+    _dictStr = NULL;
+    _readNo = 0;
+    _forcedNo = -1;
+    _row = 0;
+}
 // Rebuild keys indexes wher sorting by readNo
 void ConfigAssist::rebuildKeysNdx(){
   _keysNdx.clear();
   for(size_t i = 0; i < _configs.size(); ++i){
-    _keysNdx.push_back( {_configs[i].name, i} );
+    _keysNdx.push_back( {_configs[i].name, (int)i} );
   }
   sortKeysNdx();
 }
@@ -270,19 +328,19 @@ void ConfigAssist::sortSeperators(){
 
 // Return next key and value from configs on each call in key order
 bool ConfigAssist::getNextKeyVal(confPairs &c, bool reset ) {
-  static uint8_t row = 0;
+  //static uint8_t row = 0;
   if(!_init) init();
   if(reset){
-    row = 0;
+    _row = 0;
     return false;
   }
 
-  if (row++ < _configs.size()) {
-      c = _configs[row - 1];
+  if (_row++ < _configs.size()) {
+      c = _configs[_row - 1];
       return true;
   }
   // end of vector reached, reset
-  row = 0;
+  _row = 0;
   return false;
 }
 
@@ -609,7 +667,7 @@ bool ConfigAssist::loadConfigFile(String filename) {
 
 // Delete configuration file
 bool ConfigAssist::deleteConfig(String filename){
-  //if(!_init) init();
+  if(!_init) init();
   if(filename=="") filename = _confFile;
   _iniLoaded = false;
   LOG_I("Removing config: %s\n",filename.c_str());
@@ -974,7 +1032,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         server->client().flush();
         return;
     }
-#endif 
+#endif
 
 #if (CA_USE_TESTWIFI)
     //Test wifi?
@@ -1160,7 +1218,7 @@ String ConfigAssist::getCSS(){
   return String(CONFIGASSIST_HTML_CSS);
 }
 
-#if (CA_USE_TIMESYNC) 
+#if (CA_USE_TIMESYNC)
 // Get browser time synchronization java script
 String ConfigAssist::getTimeSyncScript(){
   return String(CONFIGASSIST_HTML_SCRIPT_TIME_SYNC);
@@ -1632,7 +1690,7 @@ void ConfigAssist::scanComplete(int networksFound) {
       LOG_V("%i,%s\n", WiFi.RSSI(i), WiFi.SSID(i).c_str());
     }
   _jWifi += "]";
-  LOG_D("Scan complete \n");
+  LOG_V("Scan complete \n");
 }
 
 // Send wifi scan results to client
@@ -1649,12 +1707,12 @@ void ConfigAssist::checkScanRes(){
 void ConfigAssist::startScanWifi(){
   int n = WiFi.scanComplete();
   if(n==-1){
-    LOG_D("Scan in progress..\n");
+    LOG_V("Scan in progress..\n");
   }else if(n==-2){
-    LOG_D("Starting async scan..\n");
+    LOG_V("Starting async scan..\n");
     WiFi.scanNetworks(/*async*/true,/*show_hidden*/true);
   }else{
-    LOG_D("Scan complete status: %i\n", n);
+    LOG_V("Scan complete status: %i\n", n);
   }
 }
 #endif //CA_USE_WIFISCAN
