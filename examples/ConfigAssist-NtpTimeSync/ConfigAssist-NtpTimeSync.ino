@@ -21,7 +21,8 @@ ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML);
 ConfigAssistHelper confHelper(conf);
 
 // Setup internal led variable if not set
-bool b1 = (conf["led_buildin"] == "") ? conf.put("led_buildin", LED_BUILTIN, true) : false;
+bool b = (conf("led_buildin") == "") ? conf["led_buildin"] =  LED_BUILTIN : false;
+
 time_t tnow;
 unsigned long pingMillis = millis();  // Ping
 
@@ -83,13 +84,13 @@ void setup(void) {
   server.onNotFound(handleNotFound);  // Append not found handler
 
   // Connect to any available network
-  bool bConn = confHelper.connectToNetwork(15000, conf["led_buildin"].toInt());
+  bool bConn = confHelper.connectToNetwork(15000, conf("led_buildin").toInt());
 
   // Append config assist handlers to web server, setup ap on no connection
   conf.setup(server, !bConn);
   if(!bConn) LOG_E("Connect failed.\n");
 
-  if (MDNS.begin(conf["host_name"].c_str())) {
+  if (MDNS.begin(conf("host_name").c_str())) {
     LOG_I("MDNS responder started\n");
   }
 
