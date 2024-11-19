@@ -5,8 +5,9 @@
 #else
   ESP8266WebServer  server(80);
 #endif
-// Create a config class with an ini filename for storage and disabled yaml
-ConfigAssist conf("/minimal.ini");
+// Create a config class with an ini filename for storage
+// Default wifi connect credentials yaml
+ConfigAssist conf("/minimal.ini", true);
 
 void setup() {
   // put your setup code here, to run once:
@@ -15,11 +16,6 @@ void setup() {
   Serial.print("\n\n\n\n");
   Serial.flush();
 
-  #if defined(ESP32)
-    if(!STORAGE.begin(true)) Serial.println("ESP32 storage init failed!");
-  #else
-    if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!");
-  #endif
   LOG_I("Starting..\n");
 
   //conf.deleteConfig(); // Uncomment to remove ini file and re-built
@@ -31,7 +27,7 @@ void setup() {
   bool bConn = confHelper.connectToNetwork(15000);
   if(!bConn) LOG_E("Connect failed.\n");
 
-  // Check connection
+  // Start AP to fix wifi credentials
   conf.setup(server, !bConn);
 
   server.on("/", []() {              // Append dump handler
@@ -41,6 +37,7 @@ void setup() {
 
   // Start web server
   server.begin();
+  conf.dump();
 }
 
 void loop() {
