@@ -1,8 +1,9 @@
 #include <ConfigAssist.h>  // Config assist class definition
 
 // Create a config class with an ini filename for storage
+//Start storage and load config
 ConfigAssist config("/info1.ini");
-
+bool reset = false;
 void setup() {
   // put your setup code here, to run once:
 
@@ -10,17 +11,12 @@ void setup() {
   Serial.print("\n\n\n\n");
   Serial.flush();
 
-  #if defined(ESP32)
-    if(!STORAGE.begin(true)) Serial.println("ESP32 storage init failed!");
-  #else
-    if(!STORAGE.begin()) Serial.println("ESP8266 storage init failed!");
-  #endif
-
   LOG_I("Starting..\n");
-  LOG_I("Config exists: %i\n",config.confExists());
-  //Start storage and builds config
-  //config.deleteConfig(); // Uncomment to remove ini file and re-built
 
+  if(reset){
+    config.deleteConfig(); // Remove ini file and re-built
+    config.clear();        // Clear loaded keys
+  }
   // Dict is disabled, Ini file not found
   if(!config.confExists()){
     String textDict="YAML DICT: \n";
