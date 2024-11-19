@@ -18,7 +18,7 @@
 #endif
 
 #ifndef LOGGER_LOG_LEVEL
-  #define LOGGER_LOG_LEVEL 3             // Set log level for this module
+  #define LOGGER_LOG_LEVEL 4             // Set log level for this module
 #endif
 
 #define CA_CLASS_VERSION "2.8.5"         // Class version
@@ -94,7 +94,7 @@ struct confSeperators {
 // Positions of keys inside array
 struct confNdx {
     String key;
-    size_t ndx;
+    int ndx;
 };
 
 // Call back function type
@@ -105,8 +105,8 @@ class ConfigAssist{
   public:
     // Initialize with defaults
     ConfigAssist();
-    // Initialize with custom ini file, default dict
-    ConfigAssist(const String& ini_file);
+    // Initialize with custom ini file, load default dict ?
+    ConfigAssist(const String& ini_file, bool defaultYaml = false);
     // Initialize with custom Ini file, and custom yaml dict
     ConfigAssist(const String& ini_file, const char * dictStr);
     ~ConfigAssist();
@@ -137,18 +137,23 @@ class ConfigAssist{
     static String getMacID();
     // Get a temponary hostname
     String getHostName();
-    // Implement operator [] i.e. val = config['key']
-    String operator [] (const String &key);
+    // Implement Access operator () i.e. val = config('key')
+    String operator () (const String &key);
+    // Implement Modify operator [] i.e. config['key'] = val
+    String& operator[] (const String& key);
     // Return the value of a given key, Empty on not found
     String get(const String &key);
     // Update the value of key = val (int)
     bool put(const String &key, int val, bool force = false);
     // Update the value of key = val (string)
     bool put(const String &key, String val, bool force = false);
+    // Clear all elements
+    void clear();
+  private:
     // Add vectors by key (name in confPairs)
-    void add(const String &key, const String &val, bool force = false);
+    int add(const String &key, const String &val, bool force = false);
     // Add unique name vectors pairs
-    void add(confPairs &c);
+    int add(confPairs &c);
     // Add seperator by key
     void addSeperator(const String &key, const String &val);
     // Rebuild keys indexes wher sorting by readNo
@@ -159,6 +164,7 @@ class ConfigAssist{
     void sortReadOrder();
     // Sort seperator vectors by key (name in confSeperators)
     void sortSeperators();
+  public:
     // Return next key and val from configs on each call in key order
     bool getNextKeyVal(confPairs &c, bool reset = false);
     // Display config items in web server, yaml like
@@ -171,6 +177,7 @@ class ConfigAssist{
     void buildConfigFile();
     // Load config pairs from an ini file
     bool loadConfigFile(String filename = "");
+    void loadConfig();
     // Delete configuration files
     bool deleteConfig(String filename = "");
     // Save configs vectors in an ini file
@@ -231,7 +238,7 @@ class ConfigAssist{
     bool loadText(const String &fPath, String& txt);
     // Write a string to a file
     bool saveText(const String &fPath, String& txt);
-    // Strem text files to web server (long files)
+    // Stream text files to web server (long files)
     bool streamText(const String &fPath, WEB_SERVER &server);
 
 #if (CA_USE_PERSIST_CON)
@@ -269,6 +276,9 @@ class ConfigAssist{
     std::vector<confPairs>        _configs;
     std::vector<confNdx>          _keysNdx;
     std::vector<confSeperators>   _seperators;
+    int                           _readNo;
+    int                           _forcedNo ;
+    uint8_t                       _row;
     bool                          _init;
     bool                          _iniLoaded;
     bool                          _dictLoaded;
