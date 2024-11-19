@@ -60,7 +60,7 @@ void setup(void) {
   Serial.print("\n\n\n\n");
   Serial.flush();
 
-  LOG_I("Starting.. ver: %s\n", conf["firmware_ver"].c_str());
+  LOG_I("Starting.. ver: %s\n", conf("firmware_ver").c_str());
 
   //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
 
@@ -82,7 +82,7 @@ void setup(void) {
   if(!bConn) LOG_E("Connect failed.\n");
 
 
-  if (MDNS.begin(conf["host_name"].c_str())) {
+  if (MDNS.begin(conf("host_name").c_str())) {
     LOG_I("MDNS responder started\n");
   }
 
