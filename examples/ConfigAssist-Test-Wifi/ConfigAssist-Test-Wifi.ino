@@ -120,7 +120,7 @@ void setup(void) {
   conf.setup(server, !bConn);
   if(!bConn) LOG_E("Connect failed.\n");
 
-  if (MDNS.begin(conf[CA_HOSTNAME_KEY].c_str())) {
+  if (MDNS.begin(conf(CA_HOSTNAME_KEY).c_str())) {
     LOG_I("MDNS responder started\n");
   }
 
