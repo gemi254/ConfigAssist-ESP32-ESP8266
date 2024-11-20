@@ -20,11 +20,6 @@ ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML);
 // Define a ConfigAssist helper class
 ConfigAssistHelper confHelper(conf);
 
-// Setup internal led variable if not set
-
-// Setup led
-bool b = (conf("led_buildin") == "") ? conf["led_buildin"] =  LED_BUILTIN : false;
-
 // Handler function for Home page
 void handleRoot() {
 
@@ -61,6 +56,8 @@ void handleNotFound() {
 
 // Setup function
 void setup(void) {
+  // Setup internal led variable if not set
+  if (conf("led_buildin") == "")  conf["led_buildin"] = LED_BUILTIN;
 
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
