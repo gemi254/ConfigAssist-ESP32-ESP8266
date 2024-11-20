@@ -45,7 +45,7 @@ void setup() {
   LOG_V("This is a VERBOSE message \n");
 
   // Create a config class with an ini filename and disabled dictionary
-  ConfigAssist info("/info.ini", NULL);
+  ConfigAssist info("/info.ini");
 
   //info.deleteConfig(); //Uncomment to remove ini file and re-built
 
