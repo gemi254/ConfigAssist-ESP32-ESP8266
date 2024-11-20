@@ -21,7 +21,7 @@ ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML);
 ConfigAssistHelper confHelper(conf);
 
 // Setup internal led variable if not set
-bool b = (conf("led_buildin") == "") ? conf["led_buildin"] =  LED_BUILTIN : false;
+String s = (conf("led_buildin") == "") ? conf["led_buildin"] = LED_BUILTIN : "";
 
 time_t tnow;
 unsigned long pingMillis = millis();  // Ping
