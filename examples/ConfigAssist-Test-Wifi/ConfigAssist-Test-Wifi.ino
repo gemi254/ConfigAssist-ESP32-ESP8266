@@ -92,7 +92,8 @@ void handleNotFound() {
 
 //Setup function
 void setup(void) {
-
+  // Setup internal led variable if not set
+  if (conf("led_buildin") == "")  conf["led_buildin"] = LED_BUILTIN;
   Serial.begin(115200);
   Serial.print("\n\n\n\n");
   Serial.flush();
