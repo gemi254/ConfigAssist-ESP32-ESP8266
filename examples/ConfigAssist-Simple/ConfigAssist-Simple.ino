@@ -13,7 +13,7 @@ void setup() {
   // Create a config class with an ini filename for storage
   // and disabled yaml dictionary (NULL)
   // If ini file exists load it
-  ConfigAssist info("/info.ini", NULL);
+  ConfigAssist info("/info.ini");
 
   if(reset){
     info.deleteConfig(); // Remove ini file and re-built
