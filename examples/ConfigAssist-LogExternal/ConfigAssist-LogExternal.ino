@@ -71,10 +71,10 @@ void setup() {
   LOG_D("F:This is a DEBUG message \n");
   LOG_V("F:This is a VERBOSE message \n");
 
-  // Create a config class with an ini filename and disabled dictionary
-  ConfigAssist info("/info.ini", NULL);
+  // Create a config class with an ini filename and no dictionary
+  ConfigAssist info("/info.ini");
 
-  if(true){ // Set to true to reset
+  if(false){ // Set to true to reset
     info.deleteConfig(); // Remove ini file and re-built
     info.clear();        // Clear loaded keys
     STORAGE.remove(LOGGER_LOG_FILENAME);
