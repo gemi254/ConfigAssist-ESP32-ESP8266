@@ -1,7 +1,7 @@
 {
     "name": "ConfigAssist",
     "keywords": "configuration, form, setup, ota, ESP32, ESP8266, responsive, captive portal, ini, variables, wifi, access point",
-    "description": "A lightweight library allowing quick configuration of esp32/esp8266 devices using async requests. Define and edit application variables using a responsive captive portal with a definition dictionary and save in a file at local storage.",
+    "description": "A lightweight library for managing configuration settings on ESP32 and ESP8266 devices. It allows for handling configurations via web interfaces and supporting features like Wi-Fi credentials storage, NTP sync, OTA firmware updates, and more. The class can load configurations from various file systems (SPIFFS, LittleFS), supports YAML-style settings, and provides mechanisms to render configuration forms and handle user input.",
     "repository": {
         "type": "git",
         "url": "https://github.com/gemi254/ConfigAssist-ESP32-ESP8266.git"
