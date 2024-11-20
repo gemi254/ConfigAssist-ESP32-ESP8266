@@ -115,7 +115,7 @@ Other settings:
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML); // Config assist class
 
 // Setup led
-bool b = (conf("led_buildin") == "") ? conf["led_buildin"] =  LED_BUILTIN : false;
+String s = (conf("led_buildin") == "") ? conf["led_buildin"] =  LED_BUILTIN : "";
 
 // Print memory info
 void debugMemory(const char* caller) {
@@ -242,7 +242,7 @@ void setup(void) {
   // On the fly generate an ini info file on SPIFFS
   {
     if(debug) STORAGE.remove("/info.ini");
-    ConfigAssist info("/info.ini", NULL);
+    ConfigAssist info("/info.ini");
     // Add a key even if not exists. It will be not editable
     if(!info.valid()){
       LOG_D("Info file not exists\n");
