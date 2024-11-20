@@ -51,7 +51,7 @@ namespace dyml
 			friend class Directyaml;
 
 		protected:
-			Node() : _dyml(nullptr), _row(0), _level(0) {}
+			Node() : _row(0), _level(0), _dyml(nullptr) {}
 			Node(int row, int lv, const Directyaml* dy) : _row(row), _level(lv), _dyml(dy) {}
 
 		public:
