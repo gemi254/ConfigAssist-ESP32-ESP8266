@@ -177,7 +177,7 @@ String ConfigAssist::operator () (const String &key)  {
   int keyPos = std::distance(_keysNdx.begin(), lower);
   LOG_V("operator() Found key: %s, pos: %i \n",key.c_str(), keyPos);
 
-  if (_keysNdx[keyPos].ndx < _configs.size() && key == _configs[ _keysNdx[keyPos].ndx ].name)
+  if (_keysNdx[keyPos].ndx < (int)_configs.size() && key == _configs[ _keysNdx[keyPos].ndx ].name)
     keyPos = _keysNdx[keyPos].ndx;
   else
     keyPos = -1;
@@ -335,7 +335,7 @@ bool ConfigAssist::getNextKeyVal(confPairs &c, bool reset ) {
     return false;
   }
 
-  if (_row++ < _configs.size()) {
+  if (_row++ < (int)_configs.size()) {
       c = _configs[_row - 1];
       return true;
   }
@@ -1627,8 +1627,7 @@ int ConfigAssist::getKeyPos(String key) {
   );
   int keyPos = std::distance(_keysNdx.begin(), lower);
   //LOG_I("getKeyPos  ndx: %i\n", _keysNdx[keyPos].ndx);
-  //if (key == _keysNdx[keyPos].key) return _keysNdx[keyPos].ndx;
-  if (_keysNdx[keyPos].ndx < _configs.size() && key == _configs[ _keysNdx[keyPos].ndx ].name)
+  if (_keysNdx[keyPos].ndx < (int)_configs.size() && key == _configs[ _keysNdx[keyPos].ndx ].name)
     return _keysNdx[keyPos].ndx;
   else
     LOG_V("Get pos, key %s not found.\n", key.c_str());
