@@ -18,7 +18,7 @@
 #endif
 
 #ifndef LOGGER_LOG_LEVEL
-  #define LOGGER_LOG_LEVEL 4             // Set log level for this module
+  #define LOGGER_LOG_LEVEL 3             // Set log level for this module
 #endif
 
 #define CA_CLASS_VERSION "2.8.5"         // Class version
