@@ -12,11 +12,14 @@
 #ifndef LED_BUILTIN
   #define LED_BUILTIN 22
 #endif
-
+#define APP_VER "1.1" // Application version
 #define INI_FILE "/FirmwareCheck.ini" // Define SPIFFS storage file
 
 // Config class
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML);
+  // Define a ConfigAssist helper
+ConfigAssistHelper confHelper(conf);
+
 
 String hostName;                      // Default Host name
 
@@ -53,6 +56,7 @@ void handleNotFound() {
   }
   server.send(404, "text/plain", message);
 }
+
 // Setup function
 void setup(void) {
 
@@ -60,9 +64,10 @@ void setup(void) {
   Serial.print("\n\n\n\n");
   Serial.flush();
 
-  LOG_I("Starting.. ver: %s\n", conf("firmware_ver").c_str());
+  LOG_I("Starting.. ver: %s\n", APP_VER);
+  LOG_I("WiFi mode: %i\n", (int)WiFi.getMode());
 
-  //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
+  if(false) conf.deleteConfig(); // Set to true ro remove old ini file and re-built it fron dictionary
 
   // Register handlers for web server
   server.on("/", handleRoot);
@@ -71,19 +76,15 @@ void setup(void) {
   });
   server.onNotFound(handleNotFound);  // Append not found handler
 
-  // Define a ConfigAssist helper
-  ConfigAssistHelper confHelper(conf);
-
   // Connect to any available network
   bool bConn = confHelper.connectToNetwork(15000, LED_BUILTIN);
 
   // Append config assist handlers to web server, setup ap on no connection
   conf.setup(server, !bConn);
-  if(!bConn) LOG_E("Connect failed.\n");
-
-
-  if (MDNS.begin(conf("host_name").c_str())) {
-    LOG_I("MDNS responder started\n");
+  if(!bConn){
+    LOG_E("Connect failed.\n");
+  }else{
+    confHelper.startMDNS();
   }
 
   // Start web server
@@ -94,10 +95,7 @@ void setup(void) {
 // App main loop
 void loop(void) {
   server.handleClient();
-  #if not defined(ESP32)
-    MDNS.update();
-  #endif
-
+  confHelper.loop();
   // Allow the cpu to switch to other tasks
   delay(2);
 }
