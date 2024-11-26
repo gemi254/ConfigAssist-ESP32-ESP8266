@@ -107,28 +107,71 @@ bool ConfigAssist::confExists(){
 bool ConfigAssist::exists(String key){ return getKeyPos(key) >= 0; }
 
 // Start an AP with a web server and render config values loaded from yaml dictionary
-void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
+void ConfigAssist::setupConfigPortal(WEB_SERVER& server, bool apEnable){
   if(_dictStr == NULL){
     LOG_W("ConfigAssist using default dictionary\n");
     _dictStr = CA_DEFAULT_DICT_JSON;
   }
-  String hostName = getHostName();
   _server = &server;
+
+  String hostName = getHostName();
+
+  // Set webserver handlers
+  setupConfigPortalHandlers(server);
+
+  // Setup minimal AP to edit config
   if(apEnable){
-    WiFi.mode(WIFI_AP_STA);
-    WiFi.softAP(hostName.c_str(),"",1);
-    LOG_I("Wifi AP SSID: %s started, use 'http://%s' to connect\n", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());
-    if (MDNS.begin(hostName.c_str()))  LOG_V("AP MDNS responder Started\n");
+    // Setup an AP (Default or from config) and start MDNS
+    setupAP(true);
     server.begin();
-    _apEnabled = true;
   }
- #if (CA_USE_WIFISCAN)
-    startScanWifi();
+}
+// Start an AP with a web server and render config values loaded from yaml dictionary
+// Will removed in next versions
+void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
+  setupConfigPortal(server,apEnable);
+}
+
+// Setup an access point, settings from config or defaults
+bool ConfigAssist::setupAP(bool startMDNS){
+  if(_apEnabled) return true;
+  // Get defined hostname or default
+  String hostName = getHostName();
+  // Get ap ssid, hostname on empty
+  String ssid = get(CA_AP_SSID_KEY);
+  if(ssid == "") ssid = hostName;
+
+  if(WiFi.getMode() != WIFI_AP_STA)
+    WiFi.mode(WIFI_AP_STA);
+
+  // Get ip config and setup if found
+  IPAddress ip, mask, gw;
+  if(getIPFromString(get(CA_ST_STATICIP_KEY), ip, mask, gw)){
+    WiFi.softAPConfig(ip,gw,mask);
+  }
+
+  bool ret = WiFi.softAP(ssid.c_str(),"",1);
+  //WiFi.softAPConfig()
+  LOG_I("Wifi AP SSID: %s started, use 'http://%s' to connect\n", WiFi.softAPSSID().c_str(), WiFi.softAPIP().toString().c_str());
+  if(startMDNS && !MDNS.hostname(0)){
+    if(MDNS.begin(ssid.c_str()))
+      LOG_V("AP MDNS responder Started\n");
+    else
+      LOG_E("AP MDNS responder failed\n");
+  }
+  _apEnabled = ret;
+  return ret;
+}
+
+// Setup web servers handlers to handle config portal
+void ConfigAssist::setupConfigPortalHandlers(WEB_SERVER &server) {
+  _server = &server;
+  #if (CA_USE_WIFISCAN)
     server.on("/scan", [this] { this->handleWifiScanRequest(); } );
   #endif
-    server.on("/cfg",[this] { this->handleFormRequest(this->_server);  } );
-    server.on("/upl", [this] { this->sendHtmlUploadPage(); } );
-    server.on("/fupl", HTTP_POST,[this](){  },  [this](){this->handleFileUpload(); });
+  server.on("/cfg",[this] { this->handleFormRequest(this->_server);  });
+  server.on("/upl", [this] { this->sendHtmlUploadPage(); } );
+  server.on("/fupl", HTTP_POST,[this](){  },  [this](){this->handleFileUpload(); });
   #if (CA_USE_OTAUPLOAD)
     server.on("/ota", [this] { this->sendHtmlOtaUploadPage(); } );
   #endif
@@ -137,13 +180,74 @@ void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
       server.on("/fwc", [this] { this->sendHtmlFirmwareCheckPage(); } );
   #endif
   server.onNotFound([this] { this->handleNotFound(); } );
-  LOG_V("ConfigAssist setup AP & handlers done.\n");
+  #if (CA_USE_WIFISCAN)
+  startScanWifi();
+  #endif
+  LOG_V("ConfigAssist setup web handlers done.\n");
+}
+
+// Get static IP settings from ipString (IP address, subnet mask, and gateway)
+bool ConfigAssist::getIPFromString(String ipStr, IPAddress &ip, IPAddress &mask, IPAddress &gw) {
+    if (ipStr.length() <= 0) {
+        LOG_V("IP config string is empty.\n");
+        return false;
+    }
+
+    // Trim the entire input string to remove any leading/trailing spaces
+    ipStr.trim();
+
+    // Normalize spaces (replace multiple spaces with a single one)
+    while (ipStr.indexOf("  ") != -1) {
+        ipStr.replace("  ", " ");
+    }
+
+    // Split the input string by spaces
+    int ndx = ipStr.indexOf(' ');
+    if (ndx == -1) {
+        LOG_E("Error: Static IP string format is incorrect. Expected format: <IP> <Subnet Mask> <Gateway>. Received: %s\n", ipStr.c_str());
+        return false;
+    }
+
+    // Parse the IP address (first part)
+    String ipPart = ipStr.substring(0, ndx);
+    ipPart.trim();
+    if (!ip.fromString(ipPart)) {
+        LOG_E("Error parsing static IP: '%s'\n", ipPart.c_str());
+        return false;
+    }
+
+    // Extract remaining part of the string (Subnet Mask and Gateway)
+    ipStr = ipStr.substring(ndx + 1);
+    ndx = ipStr.indexOf(' ');
+    if (ndx == -1) {
+        LOG_E("Error: Static IP string format is incorrect. Missing subnet mask or gateway. Received: %s\n", ipStr.c_str());
+        return false;
+    }
+
+    // Parse Subnet Mask (second part)
+    String maskPart = ipStr.substring(0, ndx);
+    maskPart.trim();
+    if (!mask.fromString(maskPart)) {
+        LOG_E("Error parsing subnet mask: '%s'\n", maskPart.c_str());
+        return false;
+    }
+
+    // Extract Gateway (last part)
+    String gwPart = ipStr.substring(ndx + 1);
+    gwPart.trim();
+    if (!gw.fromString(gwPart)) {
+        LOG_E("Error parsing gateway: '%s'\n", gwPart.c_str());
+        return false;
+    }
+
+    return true;
 }
 
 // Add a global callback function to handle changes
 void ConfigAssist::setRemotUpdateCallback(ConfigAssistChangeCbf ev){
   _changeCbf = ev;
 }
+
 // Get the device mac id
 String ConfigAssist::getMacID(){
   String mac = WiFi.macAddress();
@@ -161,31 +265,10 @@ String ConfigAssist::getHostName(){
 // Implement operator [] i.e. val = config('key')
 // Access operator (const)
 String ConfigAssist::operator () (const String &key)  {
-  if (_keysNdx.empty()){
-    for (auto& config : _configs) {
-        if (config.name == key) {
-            return config.value; // If key found, return its value (modifiable)
-        }
-    }
-     return "";
-  }
-  //With index search
-  auto lower = std::lower_bound(_keysNdx.begin(), _keysNdx.end(), key, [](
-      const confNdx &a, const String &b) {
-      return a.key < b;}
-  );
-  int keyPos = std::distance(_keysNdx.begin(), lower);
-  LOG_V("operator() Found key: %s, pos: %i \n",key.c_str(), keyPos);
-
-  if (_keysNdx[keyPos].ndx < (int)_configs.size() && key == _configs[ _keysNdx[keyPos].ndx ].name)
-    keyPos = _keysNdx[keyPos].ndx;
-  else
-    keyPos = -1;
-
+  int keyPos = getKeyPos(key);
   if (keyPos >= 0) {
     return _configs[keyPos].value;
   }
-  //static const String emptyString;  // Static to persist after the function ends
   return "";  // Returns a const reference
 }
 
@@ -196,13 +279,13 @@ String& ConfigAssist::operator[](const String& key) {
   // Look for the key in the _configs vector
   int keyPos = getKeyPos(key);
   if (keyPos >= 0) {
-    LOG_D("operator[]& Found key: %s, pos: %i \n",key.c_str(), keyPos);
+    LOG_V("operator[]& Found key: %s, pos: %i \n",key.c_str(), keyPos);
     return _configs[keyPos].value;
   }
   // If the key doesn't exist, add a new entry and return the reference
   keyPos = add(key,"", true);
   //keyPos = getKeyPos(key);
-  LOG_D("operator[]& Added key: %s, pos: %i \n",key.c_str(), keyPos);
+  LOG_V("operator[]& Added key: %s, pos: %i \n",key.c_str(), keyPos);
   return _configs[keyPos].value;
 }
 
@@ -401,15 +484,14 @@ void ConfigAssist::dump(WEB_SERVER *server){
     i++;
   }
 
-  strcpy(outBuff, "Ini file: ");
+  strcpy(outBuff, "\nIni file: ");
   strcat(outBuff,(_confFile + "\n").c_str());
-  if(server) server->sendContent("\n" + String(outBuff));
-  else LOG_I("%s", outBuff);
   String iniTxt;
   loadText(_confFile, iniTxt);
-  len = sprintf(outBuff, "%s\n",iniTxt.c_str());
-  if(server) server->sendContent(outBuff, len);
-  else LOG_I("\n%s", outBuff);
+  //len = sprintf(outBuff, "%s%s\n",outBuff, iniTxt.c_str());
+  strcat(outBuff,(iniTxt + "\n").c_str());
+  if(server) server->sendContent( outBuff, len);
+  else LOG_I("%s", outBuff);
 }
 
 // Split a String with delimeter, index -> itemNo
@@ -575,9 +657,9 @@ String ConfigAssist::loadDict(const char *dictStr, bool updateProps) {
         if(c.name==CA_HOSTNAME_KEY) c.value.replace("{mac}", getMacID());
         #if (CA_USE_PERSIST_CON)
           String sNo;
-          if(endsWith(c.name,CA_SSID_KEY, sNo)){
+          if(endsWith(c.name,CA_ST_SSID_KEY, sNo)){
             loadPref(c.name, c.value);
-          }else if(endsWith(c.name,CA_PASSWD_KEY, sNo)){
+          }else if(endsWith(c.name,CA_ST_PASSWD_KEY, sNo)){
             loadPref(c.name, c.value);
           }
         #endif
@@ -698,7 +780,7 @@ bool ConfigAssist::saveConfigFile(String filename) {
 
 #if (CA_USE_PERSIST_CON)
     String no;
-    if(endsWith(row.name, CA_SSID_KEY, no) || endsWith(row.name, CA_PASSWD_KEY, no) ){
+    if(endsWith(row.name, CA_ST_SSID_KEY, no) || endsWith(row.name, CA_ST_PASSWD_KEY, no) ){
       savePref(row.name, row.value);
       char configLine[255];
       sprintf(configLine, "%s%c\n", row.name.c_str(), CA_INI_FILE_DELIM);
@@ -1043,7 +1125,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       server->send(200, "text/json", msg.c_str());
       server->client().flush();
       LOG_D("Testing WIFI ST connection..Done\n");
-      if(_apEnabled) WiFi.disconnect();
+      //if(_apEnabled) WiFi.disconnect();
       return;
     }
 #endif//CA_USE_TESTWIFI
@@ -1161,7 +1243,7 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   LOG_D("Generate form, iniValid: %i, dictLoaded: %i, dirty: %i\n", _iniLoaded, _dictLoaded, _dirty);
   //Send config form data
   server->setContentLength(CONTENT_LENGTH_UNKNOWN);
-  String out="";
+  String out = "";
   out.reserve(2048);
   out = String(CONFIGASSIST_HTML_START);
   out.replace("{title}", "Configuration for " + getHostName());
@@ -1169,10 +1251,9 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   server->sendContent(CONFIGASSIST_HTML_CSS);
   server->sendContent(CONFIGASSIST_HTML_CSS_CTRLS);
 
-  String script(CONFIGASSIST_HTML_SCRIPT);
-  script.replace("{CA_FILENAME_IDENTIFIER}",CA_FILENAME_IDENTIFIER);
-  script.replace("{CA_PASSWD_KEY}",CA_PASSWD_KEY);
-
+  out = CONFIGASSIST_HTML_SCRIPT;
+  out.replace("{CA_FILENAME_IDENTIFIER}",CA_FILENAME_IDENTIFIER);
+  out.replace("{CA_ST_PASSWD_KEY}",CA_ST_PASSWD_KEY);
   String subScript = "";
 #if (CA_USE_TIMESYNC)
   subScript += CONFIGASSIST_HTML_SCRIPT_TIME_SYNC;
@@ -1182,20 +1263,27 @@ void ConfigAssist::sendHtmlEditPage(WEB_SERVER * server){
   subScript += CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN;
   subScript += "\n";
 #endif
-  script.replace("/*{SUB_SCRIPT_ONLOADED}*/", subScript);
+  out.replace("/*{SUB_SCRIPT_ONLOADED}*/", subScript);
+  server->sendContent(out);
+  out = "";
 
 #if (CA_USE_TESTWIFI)
-  script.replace("/*{SUB_SCRIPT}*/", CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION + String("/*{SUB_SCRIPT}*/"));
+  server->sendContent(CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION);
+  //script.replace("/*{SUB_SCRIPT}*/", CONFIGASSIST_HTML_SCRIPT_TEST_ST_CONNECTION + String("/*{SUB_SCRIPT}*/"));
 #endif
 
-  if(_subScript) script.replace("/*{SUB_SCRIPT}*/", _subScript);
-  server->sendContent(script);
+  //if(_subScript) script.replace("/*{SUB_SCRIPT}*/", _subScript);
+  if(_subScript) server->sendContent(_subScript);
+  server->sendContent("</script>");
+
   out = String(CONFIGASSIST_HTML_BODY);
   out.replace("{host_name}", getHostName());
   if(_displayType == ConfigAssistDisplayType::AllClosed)
     out.replace("accordBtt closed", "accordBtt open");
   server->sendContent(out);
   out = "";
+  // Reset index
+  _row = 0;
   //Render html keys
   while(streamHtmlElementChunk(*server)){
     LOG_V("Streaming html chunk\n");
@@ -1461,7 +1549,7 @@ bool ConfigAssist::streamHtmlElementChunk(WEB_SERVER &server){
 
   if(c.type == TEXT_BOX){
     elm = String(CONFIGASSIST_HTML_TEXT_BOX);
-    if(endsWith(c.name, CA_PASSWD_KEY, no)) { //Password field
+    if(endsWith(c.name, CA_ST_PASSWD_KEY, no)) { //Password field
       elm.replace("<input ", "<input type=\"password\" " +c.attribs+ " ");
       //Generate pass view checkbox
       String chk1(CONFIGASSIST_HTML_CHECK_VIEW_PASS);
@@ -1480,7 +1568,7 @@ bool ConfigAssist::streamHtmlElementChunk(WEB_SERVER &server){
     }else if(isNumeric(c.value))
       elm.replace("<input ", "<input type=\"number\" " +c.attribs+ " ");
 #if (CA_USE_TESTWIFI)
-    else if(endsWith(c.name, CA_SSID_KEY, no)) {
+    else if(endsWith(c.name, CA_ST_SSID_KEY, no)) {
       out.replace("<td class=\"card-lbl\">", "<td class=\"card-lbl\" id=\"st_ssid" + no + "-lbl\">");
       if(!c.label.endsWith("\n") && !c.label.endsWith("<br>")) c.label += "&nbsp;";
 
@@ -1619,19 +1707,30 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
 
 // Get location of given key to retrieve other elements
 int ConfigAssist::getKeyPos(String key) {
-  if(!_init) init();
-  if (_keysNdx.empty()) return -1;
+  if(!_init) init();  // Initialize if not already initialized
+  if (_keysNdx.empty()) return -1;  // Return -1 if no keys are available
+
+  // Use binary search to find the position of the key
   auto lower = std::lower_bound(_keysNdx.begin(), _keysNdx.end(), key, [](
       const confNdx &a, const String &b) {
-      return a.key < b;}
-  );
+      return a.key < b;  // Compare key for binary search
+  });
+
+  // Calculate the position of the key in the _keysNdx vector
   int keyPos = std::distance(_keysNdx.begin(), lower);
-  //LOG_I("getKeyPos  ndx: %i\n", _keysNdx[keyPos].ndx);
-  if (_keysNdx[keyPos].ndx < (int)_configs.size() && key == _configs[ _keysNdx[keyPos].ndx ].name)
-    return _keysNdx[keyPos].ndx;
-  else
-    LOG_V("Get pos, key %s not found.\n", key.c_str());
-  return -1; // Not found
+
+  // If the position is out of range, return -1
+  if (keyPos >= (int)_keysNdx.size()) return -1;
+
+  // Log the key and its corresponding index for debugging
+  LOG_N("getKeyPos key: %s ndx: %i\n", key.c_str(), _keysNdx[keyPos].ndx);
+
+  // Validate if the key exists in the _configs and if the name matches
+  if (_keysNdx[keyPos].ndx < (int)_configs.size() && key == _configs[_keysNdx[keyPos].ndx].name) {
+    return _keysNdx[keyPos].ndx;  // Return the found index
+  }
+  LOG_V("Get pos, key %s not found.\n", key.c_str());  // Log if the key isn't found
+  return -1;  // Return -1 if the key isn't found in the configs
 }
 
 // Get seperation location of given key
@@ -1661,9 +1760,9 @@ void ConfigAssist::loadVectItem(String keyValPair) {
   val.replace("\n","");
 #if (CA_USE_PERSIST_CON)
   String no;
-  if(endsWith(key,CA_SSID_KEY, no)){
+  if(endsWith(key,CA_ST_SSID_KEY, no)){
     loadPref(key, val);
-  }else if(endsWith(key,CA_PASSWD_KEY, no)){
+  }else if(endsWith(key,CA_ST_PASSWD_KEY, no)){
     loadPref(key, val);
   }
 #endif
