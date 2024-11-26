@@ -113,7 +113,7 @@ Other settings:
 )~";
 
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML); // Config assist class
-
+ConfigAssistHelper confHelper(conf);             // Define a ConfigAssist helper for managing connection
 // Setup led
 String s = (conf("led_buildin") == "") ? conf["led_buildin"] =  LED_BUILTIN : "";
 
@@ -209,8 +209,6 @@ void setup(void) {
   // Will be called when portal is updating a key
   conf.setRemotUpdateCallback(onDataChanged);
 
-  // Define a ConfigAssist helper
-  ConfigAssistHelper confHelper(conf);
   WiFi.setAutoConnect(false);
   WiFi.setAutoReconnect(false);
 
@@ -220,10 +218,7 @@ void setup(void) {
   // Append config assist handlers to web server, setup ap on no connection
   conf.setup(server, !bConn);
   if(!bConn) LOG_E("Connect failed.\n");
-
-  if (MDNS.begin(conf(CA_HOSTNAME_KEY).c_str())) {
-    LOG_I("MDNS responder started\n");
-  }
+  else confHelper.startMDNS();
 
   // Get int/bool value
   bool debug = conf("debug").toInt();
@@ -265,9 +260,7 @@ void setup(void) {
 // App main loop
 void loop(void) {
   server.handleClient();
-  #if not defined(ESP32)
-    MDNS.update();
-  #endif
+  confHelper.loop();
 
   // Display info
   if (millis() - pingMillis >= 10000){
