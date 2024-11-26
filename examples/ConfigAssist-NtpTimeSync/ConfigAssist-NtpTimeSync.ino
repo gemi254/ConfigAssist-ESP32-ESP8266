@@ -62,6 +62,46 @@ void handleNotFound() {
   server.send(404, "text/plain", message);
 }
 
+
+void onConnectionResult(ConfigAssistHelper::WiFiResult result, const String& msg){
+
+  switch (result) {
+      case ConfigAssistHelper::WiFiResult::SUCCESS:
+          LOG_D("Connected to Wi-Fi! IP: %s\n", msg.c_str());
+          confHelper.startMDNS();
+          conf.setupConfigPortalHandlers(server);
+          // Start web server
+          server.begin();
+          LOG_I("HTTP server started\n");
+          // Setup time synchronization, Wait max 10 sec
+          LOG_I("Start time sync..\n");
+          confHelper.syncTime(10000);
+          tnow = time(nullptr);
+          break;
+
+      case ConfigAssistHelper::WiFiResult::INVALID_CREDENTIALS:
+          LOG_D("Invalid credentials: %s\n", msg.c_str());
+          // Append config assist handlers to web server, setup ap on no connection
+          conf.setup(server, true);
+          break;
+
+      case ConfigAssistHelper::WiFiResult::CONNECTION_TIMEOUT:
+          LOG_D("Connection fail: %s\n", msg.c_str());
+          conf.setup(server, true);
+          break;
+
+      case ConfigAssistHelper::WiFiResult::DISCONNECTION_ERROR:
+          LOG_D("Disconnect: %s\n", msg.c_str());
+          WiFi.setAutoReconnect(true);
+          confHelper.setReconnect(true);
+          break;
+
+      default:
+          LOG_D("Unknown result: %s\n", msg.c_str());
+          break;
+  }
+}
+
 // Setup function
 void setup(void) {
 
@@ -70,8 +110,7 @@ void setup(void) {
   Serial.flush();
 
   LOG_I("Starting.. \n");
-
-  //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
+  if(false) conf.deleteConfig(); //Set to true to remove old ini file and re-built it fron dictionary
 
   //Active seperator open/close, All others closed
   conf.setDisplayType(ConfigAssistDisplayType::AccordionToggleClosed);
@@ -82,39 +121,22 @@ void setup(void) {
     conf.dump(&server);
   });
   server.onNotFound(handleNotFound);  // Append not found handler
-
+  confHelper.setWiFiResultCallback(onConnectionResult);
   // Connect to any available network
-  bool bConn = confHelper.connectToNetwork(15000, conf("led_buildin").toInt());
-
-  // Append config assist handlers to web server, setup ap on no connection
-  conf.setup(server, !bConn);
-  if(!bConn) LOG_E("Connect failed.\n");
-
-  if (MDNS.begin(conf("host_name").c_str())) {
-    LOG_I("MDNS responder started\n");
-  }
-
-  // Start web server
-  server.begin();
-  LOG_I("HTTP server started\n");
-
-  // Setup time synchronization
-  // Wait max 10 sec
-  LOG_I("Start time sync..\n");
-  confHelper.syncTime(20000);
-  tnow = time(nullptr);
+  confHelper.connectToNetworkAsync(15000, conf("led_buildin").toInt());
 }
 
 int cntSoft = 0;
 int cntHard = 0;
 
+
 // App main loop
 void loop(void) {
   server.handleClient();
-  #if not defined(ESP32)
-    MDNS.update();
-  #endif
+  // Update led, print dots when connecting, check connection on connected
+  confHelper.loop();
 
+  if(!WiFi.isConnected()) return;
   // Display info
   if (millis() - pingMillis >= 5000){
     tnow = time(nullptr);
@@ -128,7 +150,7 @@ void loop(void) {
     // Force time synchronization,
     // Clock will not wait if already time is set
     // and time will be automatically sync in background.
-    confHelper.syncTime(20000, false);
+    confHelper.syncTime(10000, false);
     tnow = time(nullptr);
     cntSoft = 0;
     LOG_I("Soft resync time: %i clock: %s", confHelper.isTimeSync(), ctime(&tnow));
@@ -138,7 +160,7 @@ void loop(void) {
     // Force time synchronization,
     // Clock will be reseted and wait for max 20 sec to sync
     // If fail clock will be restored
-    confHelper.syncTime(20000, true);
+    confHelper.syncTime(10000, true);
     tnow = time(nullptr);
     LOG_I("Hard resynced time: %i clock: %s", confHelper.isTimeSync(), ctime(&tnow));
     cntHard = 0;
