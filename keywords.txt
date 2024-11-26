@@ -33,3 +33,10 @@ deleteConfig KEYWORD2
 handleWifiScanRequest KEYWORD2
 sendHtmlUploadPage KEYWORD2
 sendHtmlOtaUploadPage KEYWORD2
+setWiFiResultCallback KEYWORD2
+setupConfigPortal KEYWORD2
+setupConfigPortalHandlers KEYWORD2
+connectToNetwork KEYWORD2
+connectToNetworkAsync KEYWORD2
+startMDNS KEYWORD2
+syncTime KEYWORD2
