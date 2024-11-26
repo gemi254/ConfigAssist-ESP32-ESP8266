@@ -51,7 +51,7 @@ These features can be disabled to save memory by setting 1 / 0 the lines **CA_US
 
 You can also use compiler flags to enable / disable theese features
 ```
-build_flags = -DCA_USE_LITTLEFS       ;Use littlefs
+build_flags = -DCA_USE_LITTLEFS       ; Use littlefs remove for spiffs
               -DLOGGER_LOG_LEVEL=5
               -DCA_USE_WIFISCAN=1
               -DCA_USE_TESTWIFI=1
