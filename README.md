@@ -49,6 +49,16 @@ Check the <a href="/examples/ConfigAssist-FirmwareCheck/README.txt">FirmwareChec
 
 These features can be disabled to save memory by setting 1 / 0 the lines **CA_USE_WIFISCAN**, **CA_USE_TESTWIFI**, **CA_USE_TIMESYNC**, **CA_USE_OTAUPLOAD**, and **CA_USE_FIMRMCHECK** in ``ConfigAssist.h``.
 
+You can also use compiler flags to enable / disable theese features
+```
+build_flags = -DCA_USE_LITTLEFS       ;Use littlefs
+              -DLOGGER_LOG_LEVEL=5
+              -DCA_USE_WIFISCAN=1
+              -DCA_USE_TESTWIFI=1
+              -DCA_USE_TIMESYNC=1
+              -DCA_USE_OTAUPLOAD=1
+              -DCA_USE_FIMRMCHECK=1
+```
 Device's configuration ``(*.ini files)`` can be downloaded with the **Backup** button and can be restored later with the **Restore** button.
 
 You can use the command ``http://ip/cfg?_RST=1`` to manually clear the ini file and load defaults.
@@ -101,7 +111,7 @@ In your application sketch file you must define a yaml dictionary that includes 
 
 
 + If you use keywords `name, default` an **edit box** will be generated to edit the variable. Add `attribs` keywords to specify min, max, step for a numeric field.
-+ If you keyword name ends with ``_pass`` (or ``_pass`` and a number i.e``_pass1``) a **password field** will be used. See **CA_PASSWD_KEY** definition.
++ If you keyword name ends with ``_pass`` (or ``_pass`` and a number i.e``_pass1``) a **password field** will be used. See **CA_ST_PASSWD_KEY** definition.
 + If you use keyword `checked` instead of `default` a Boolean value will be used that will be edited by a **check box**
 + You can combine keywords `default` with `options` in order to use a select list that will be edited by a **drop list**.
   - The `options` field must contain a comma separated list of values and can be enclosed by single quotes.
@@ -238,7 +248,7 @@ Other settings:
 + if you want to use a different external **ini file name** and **yaml description** disabled
   - `ConfigAssist conf(INI_FILE, NULL);  // ConfigAssist with custom ini name & dictionary disabled`
 
-## Call back function
+## Call back functions
 You can define a call back function wich will be called when the portal changes a value.
 This function will be called each time a value is changed from the portal with the value name as a parameter.
 ```
@@ -259,17 +269,19 @@ conf.setRemotUpdateCallback(onDataChanged);
 Setup will add web handlers /cfg, /scan, to the server and if apEnable = true will enable Access Point.
 ```
 conf.setup(server, /*Start AP*/ true);
+or
+conf.setupConfigPortal(server, true);
 ```
 You can add /cfg handler to your application after connecting the device to the internet.
 Editing config will be enabled for station users.
 
 ```
-//ConfigAssist will register handlers to the web server
-//After connecting to the internet AP will not be started
-conf.setup(server);
+// ConfigAssist will register handlers to the web server
+// so config can be edited.
+conf.setupConfigPortalHandlers(server);
 ```
 ## Connect the WiFi using **ConfigAsistHelper**
-In order to simplify the proccess of connect to WiFi and set static ip address use the **ConfigAsistHelper class**. It will connect the WiFi using credentials contained in a ConfigAssist class. It will search for variables ending with **CA_SSID_KEY** for ssid and **CA_PASSWD_KEY** for passwords.
+In order to simplify the proccess of connect to WiFi and set static ip address use the **ConfigAsistHelper class**. It will connect the WiFi using credentials contained in a ConfigAssist class. It will search for variables ending with **CA_ST_SSID_KEY** for ssid and **CA_ST_PASSWD_KEY** for passwords.
   For example variables like..
   ```
   st_ssid,  st_pass,
@@ -282,7 +294,7 @@ In order to simplify the proccess of connect to WiFi and set static ip address u
   ```
   for failover connections.
 
-  If a variable found ending with **CA_STATICIP_KEY** it will automatically set static ip.
+  If a variable found ending with **CA_ST_STATICIP_KEY** it will automatically set static ip.
 
   To use **ConfigAsistHelper**
   ```
@@ -293,7 +305,37 @@ In order to simplify the proccess of connect to WiFi and set static ip address u
 
   ```
   // Connect to any available network
+  // Wait for connection or TimeOut
   bool bConn = confHelper.connectToNetwork(15000 /*Timeout ms*/, conf("led_buildin").toInt() /*Key containig internal led*/);
+  ```
+
+  ```
+  // Connect to any available network async
+  // It will not wait to connect but will send a connection result
+  // Set Wi-Fi credentials from config and start connection process
+  confHelper.connectToNetworkAsync(15000, 13, [](ConfigAssistHelper::WiFiResult result, const String& msg) {
+      switch (result) {
+          case ConfigAssistHelper::WiFiResult::SUCCESS:
+              LOG_D("Connected to Wi-Fi! IP: %s\n", msg.c_str());
+              break;
+
+          case ConfigAssistHelper::WiFiResult::INVALID_CREDENTIALS:
+              LOG_D("Invalid credentials: %s\n", msg.c_str());
+              break;
+
+          case ConfigAssistHelper::WiFiResult::CONNECTION_TIMEOUT:
+              LOG_D("Connection fail: %s\n", msg.c_str());
+              break;
+
+          case ConfigAssistHelper::WiFiResult::DISCONNECTION_ERROR:
+              LOG_D("Disconnect: %s\n", msg.c_str());
+              break;
+
+          default:
+              LOG_D("Unknown result: %s\n", msg.c_str());
+              break;
+      }
+  });
   ```
 
 ## Synchronize time using **ConfigAsistHelper**
