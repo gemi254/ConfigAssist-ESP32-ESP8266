@@ -63,13 +63,16 @@ void setup(void) {
   Serial.print("\n\n\n\n");
   Serial.flush();
 
-  LOG_I("Starting.. \n");
-
+#if defined(CA_USE_LITTLEFS)
+  LOG_I("Starting with LITTLEFS.. \n");
+#else
+  LOG_I("Starting with SPIFFS.. \n");
+#endif
   //conf.deleteConfig(); // Uncomment to remove old ini file and re-built it fron dictionary
 
   //Active seperator open/close, All others closed
   conf.setDisplayType(ConfigAssistDisplayType::AllOpen);
-  // Set a javascript on main page
+  // Append a javascript on main page
   conf.setSubScript(INIT_SCRIPT);
   // Register handlers for web server
   server.on("/", handleRoot);
@@ -81,18 +84,21 @@ void setup(void) {
   // Connect to any available network
   bool bConn = confHelper.connectToNetwork(15000, conf("led_buildin").toInt());
 
-  if(!bConn) LOG_E("Connect failed.\n");
-  // Append config assist handlers to web server, setup ap on no connection
-  conf.setup(server, !bConn);
-
-  if (MDNS.begin(conf("host_name").c_str())) {
-    LOG_I("MDNS responder started\n");
+  if(!bConn){
+      LOG_E("Connect failed.\n");
+      // Append config assist handlers to web server
+      // and setup an ap for config to be edited
+      conf.setup(server, true);
+  }else{
+    // Add config portal handlers
+    conf.setup(server, false);
+    // Start mdns
+    confHelper.startMDNS();
+    // Start web server
+    server.begin();
+    LOG_I("HTTP server started\n");
+    LOG_I("Device started. Visit http://%s\n", WiFi.localIP().toString().c_str());
   }
-
-  // Start web server
-  server.begin();
-  LOG_I("HTTP server started\n");
-
 }
 
 // App main loop
