@@ -13,7 +13,7 @@
   #define LED_BUILTIN 22
 #endif
 const char* VARIABLES_DEF_YAML PROGMEM = R"~(
-Wifi settings:
+Wifi connection settings:
   - st_ssid1:
       label: Name for WLAN
   - st_pass1:
@@ -27,12 +27,19 @@ Wifi settings:
   - st_ip2:
       label: Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)
 
+Wifi Access Point settings:
+  - ap_ssid:
+      label: Access point ssid. (Leave blank for defaule)
+  - ap_pass:
+      label: Password for Access point, leave blank for none.
+  - ap_ip:
+      label: Static ip setup (ip mask gateway) (192.168.4.1 255.255.255.0 192.168.4.1)
+
+Application settings:
   - host_name:
       label: >-
         Host name to use for MDNS and AP<br>{mac} will be replaced with device's mac id
       default: configAssist_{mac}
-
-Application settings:
   - app_name:
       label: Name your application
       default: TestWifi
@@ -40,9 +47,14 @@ Application settings:
       label: Enter the pin that the build in led is connected.
         Leave blank for auto.
       attribs: "min='2' max='23' step='1'"
+  - debug:
+      label: Debug application
+      checked: false
 )~";
 
 ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML);
+// Define a ConfigAssist helper class to manage wifi connections
+ConfigAssistHelper confHelper(conf);
 
 String hostName;
 unsigned long pingMillis = millis();
@@ -53,6 +65,7 @@ void debugMemory(const char* caller) {
     LOG_D("%s > Free: heap %u, block: %u, pSRAM %u\n", caller, ESP.getFreeHeap(), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL), ESP.getFreePsram());
   #else
     LOG_D("%s > Free: heap %u\n", caller, ESP.getFreeHeap());
+    LOG_D("%s > WiFi: %i, state: %i\n", caller, WiFi.isConnected(), (int)confHelper.getLedState() );
   #endif
 }
 
@@ -90,6 +103,29 @@ void handleNotFound() {
   server.send(404, "text/plain", message);
 }
 
+void onWiFiResult(ConfigAssistHelper::WiFiResult res, const String& message) {
+    if (res == ConfigAssistHelper::WiFiResult::SUCCESS) {
+        LOG_D("Connected to Wi-Fi! IP: %s\n", message.c_str());
+        confHelper.startMDNS();
+        conf.setupConfigPortalHandlers(server);
+        server.begin();
+        LOG_D("HTTP server started\n");
+        LOG_I("Device started. Visit http://%s\n", WiFi.localIP().toString().c_str());
+
+    }else if (res == ConfigAssistHelper::WiFiResult::DISCONNECTION_ERROR) {
+        LOG_E("Disconnect error: %s\n", message.c_str());
+        confHelper.setReconnect(true);
+
+    }else if (res == ConfigAssistHelper::WiFiResult::CONNECTION_TIMEOUT) {
+        LOG_E("Connect timeout: %s\n", message.c_str());
+        conf.setupConfigPortal(server, true);
+
+    }else if (res == ConfigAssistHelper::WiFiResult::INVALID_CREDENTIALS) {
+        LOG_W("Invalid credentials : %s\n", message.c_str());
+        conf.setupConfigPortal(server, true);
+    }
+}
+
 //Setup function
 void setup(void) {
   // Setup internal led variable if not set
@@ -111,22 +147,12 @@ void setup(void) {
 
   server.onNotFound(handleNotFound);
 
-  // Define a ConfigAssist helper class to connect wifi
-  ConfigAssistHelper confHelper(conf);
+  // Start connecting to any available network,
+  // On wifi event onWiFiResult will be called
+  // Starting mdns, webserver services will be
+  // called when the connection has been made
+  confHelper.connectToNetworkAsync(15000, LED_BUILTIN, onWiFiResult);
 
-  // Connect to any available network
-  bool bConn = confHelper.connectToNetwork(15000, LED_BUILTIN);
-
-  // Append config assist handlers to web server, setup ap on no connection
-  conf.setup(server, !bConn);
-  if(!bConn) LOG_E("Connect failed.\n");
-
-  if (MDNS.begin(conf(CA_HOSTNAME_KEY).c_str())) {
-    LOG_I("MDNS responder started\n");
-  }
-
-  server.begin();
-  LOG_I("HTTP server started\n");
 }
 
 //Loop function
@@ -140,6 +166,9 @@ void loop(void) {
     if(conf["debug"].toInt()) debugMemory("Loop");
     pingMillis = millis();
   }
+
+  // Run connection checker
+  confHelper.loop();
 
   delay(2);
 }
