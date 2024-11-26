@@ -6,48 +6,69 @@
 #include "dYaml.h"
     using namespace dyml;
 
+#if !defined(STORAGE)
+  #if defined(ESP8266) || defined(CA_USE_LITTLEFS)
+    #include <LittleFS.h>
+    #define STORAGE LittleFS // one of: SPIFFS LittleFS SD_MMC
+  #else
+    #include "SPIFFS.h"
+    #define STORAGE SPIFFS // SPIFFS
+  #endif
+#endif
+
 #if defined(ESP32)
   #include <WebServer.h>
-  #include "SPIFFS.h"
-  #include <LittleFS.h>
   #include <ESPmDNS.h>
 #else
   #include <ESP8266WebServer.h>
-  #include <LittleFS.h>
   #include <ESP8266mDNS.h>
 #endif
 
-#ifndef LOGGER_LOG_LEVEL
-  #define LOGGER_LOG_LEVEL 4             // Set log level for this module
+#if !defined(LOGGER_LOG_LEVEL)
+  #define LOGGER_LOG_LEVEL 3             // Set log level for this module
 #endif
 
-#define CA_CLASS_VERSION "2.8.5"         // Class version
+#define CA_CLASS_VERSION "2.8.6"         // Class version
 #define CA_MAX_PARAMS 50                 // Maximum parameters to handle
 #define CA_DEF_CONF_FILE "/config.ini"   // Default Ini file to save configuration
 #define CA_INI_FILE_DELIM '~'            // Ini file pairs seperator
 #define CA_FILENAME_IDENTIFIER "_F"      // Keys ending with this is a text box with the filename of a text area
 #define CA_DONT_ALLOW_SPACES false       // Allow spaces in var names ?
-#define CA_SSID_KEY     "_ssid"          // Vars ending with this key or key + Num defines a ssid field
-#define CA_PASSWD_KEY   "_pass"          // The key part that defines a password field
-#define CA_STATICIP_KEY "_ip"            // The key part that defines a static ip field
-#define CA_NTPSYNC_KEY  "ntp_server"     // Vars ending with this key or key + Num define a ntp server
+#define CA_ST_SSID_KEY     "st_ssid"     // Vars ending with this key or key + Num defines a ssid field
+#define CA_ST_PASSWD_KEY   "st_pass"     // The key part that defines a password field
+#define CA_ST_STATICIP_KEY "st_ip"       // The key part that defines a static ip field
+#define CA_AP_SSID_KEY     "ap_ssid"     // Vars ending with this key or key + Num defines a ssid field
+#define CA_AP_PASSWD_KEY   "ap_pass"     // The key part that defines a password field
+#define CA_AP_STATICIP_KEY "ap_ip"       // The key part that defines a static ip field
+#define CA_NTPSYNC_KEY     "ntp_server"  // Vars ending with this key or key + Num define a ntp server
 
 #define CA_HOSTNAME_KEY "host_name"      // The key that defines host name
 #define CA_TIMEZONE_KEY "time_zone"      // The key that defines time zone for setting time
 #define CA_FIRMWVER_KEY "firmware_ver"   // The key that defines the firmware version
 #define CA_FIRMWURL_KEY "firmware_url"   // The key that defines the url with firmware information
+#if !defined(CA_USE_WIFISCAN)
 #define CA_USE_WIFISCAN     1            // Set to 0 to disable wifi scan
+#endif
+#if !defined(CA_USE_TESTWIFI)
 #define CA_USE_TESTWIFI     1            // Set to 0 to disable test wifi st connection
+#endif
+#if !defined(CA_USE_TIMESYNC)
 #define CA_USE_TIMESYNC     1            // Set to 0 to disable sync esp with browser if out of sync
+#endif
+#if !defined(CA_USE_OTAUPLOAD)
 #define CA_USE_OTAUPLOAD    1            // Set to 0 to disable ota and reduce memory
+#endif
+#if !defined(CA_USE_FIMRMCHECK)
 #define CA_USE_FIMRMCHECK   1            // Set to 0 to disable firmware check and upgrade from url
+#endif
+#if !defined(CA_USE_PERSIST_CON)
 #define CA_USE_PERSIST_CON  0            // Set to 1 to enable saving wifi credentials to nvs
+#endif
+
 
 // Define Platform libs
 #if defined(ESP32)
   #define WEB_SERVER WebServer
-  //#define STORAGE SPIFFS // one of: SPIFFS LittleFS SD_MMC
-  #define STORAGE LittleFS // one of: SPIFFS LittleFS SD_MMC
 #else
   #define WEB_SERVER ESP8266WebServer
   #define STORAGE LittleFS // one of: SPIFFS LittleFS SD_MMC
@@ -131,12 +152,19 @@ class ConfigAssist{
     bool exists(String key);
     // Start an AP with a web server and render config values loaded from yaml dictionary
     void setup(WEB_SERVER& server, bool apEnable = false);
+    void setupConfigPortal(WEB_SERVER& server, bool apEnable = false);
+    // Setup an access point, settings from config or defaults
+    bool setupAP(bool startMDNS = false);
+    // Setup web servers handlers to handle config portal
+    void setupConfigPortalHandlers(WEB_SERVER& server);
     // Add a global callback function to handle changes on form updates
     void setRemotUpdateCallback(ConfigAssistChangeCbf ev);
     // Get a temponary hostname
     static String getMacID();
     // Get a temponary hostname
     String getHostName();
+    // Get static IP settings from ipString (IP address, subnet mask, and gateway)
+    bool getIPFromString(String ipStr, IPAddress &ip, IPAddress &mask, IPAddress &gw);
     // Implement Access operator () i.e. val = config('key')
     String operator () (const String &key);
     // Implement Modify operator [] i.e. config['key'] = val
