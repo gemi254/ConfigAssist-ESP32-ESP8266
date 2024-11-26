@@ -340,9 +340,13 @@ class ConfigAssistHelper {
                     _ledState = LEDState::DISCONNECTED;
                     if (_resultCallback) _resultCallback(WiFiResult::DISCONNECTION_ERROR, "Disconnection.");
                         LOG_D("Reconnecting to: %s\n", WiFi.SSID().c_str());
-                        if( wifi_station_disconnect()) {
+                        #if defined(ESP8266)
+                        if( _reconnect wifi_station_disconnect()) {
                             wifi_station_connect();
                         }
+                        #else
+                        if(_reconnect) WiFi.setAutoReconnect(true);
+                        #endif
                 }else if(WiFi.isConnected() && _ledState != LEDState::CONNECTED) {
                     _ledState = LEDState::CONNECTED;
                     if (_resultCallback) _resultCallback(WiFiResult::SUCCESS, "Connected");
@@ -376,7 +380,7 @@ class ConfigAssistHelper {
                     checkConnection();
             }
             #if defined(ESP8266)
-            MDNS.update();
+            if(MDNS.isRunning()) MDNS.update(); // Handle MDNS
             #endif
         }
 
