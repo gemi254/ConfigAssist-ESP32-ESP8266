@@ -20,7 +20,6 @@ ConfigAssist conf(INI_FILE, VARIABLES_DEF_YAML);
 // Define a ConfigAssist helper class
 ConfigAssistHelper confHelper(conf);
 
-
 unsigned long pingMillis = millis();  // Ping
 
 // Handler function for Home page
@@ -35,6 +34,9 @@ void handleRoot() {
 #else
     out.replace("{name}", "ESP8266");
 #endif
+// Setup time sync script in home page
+// When page opened by browser if esp time
+// is not set will be synchronized wih remote host time
 #if (CA_USE_TIMESYNC)
   out += "<script>" + conf.getTimeSyncScript() + "</script>";
 #endif
@@ -87,21 +89,15 @@ void setup(void) {
   // Append config assist handlers to web server, setup ap on no connection
   conf.setup(server, !bConn);
   if(!bConn) LOG_E("Connect failed.\n");
-
-  if (MDNS.begin(conf("host_name").c_str())) {
-    LOG_I("MDNS responder started\n");
-  }
+  else confHelper.startMDNS();
 
   // Start web server
   server.begin();
   LOG_I("HTTP server started\n");
-
 }
 
 // App main loop
 void loop(void) {
   server.handleClient();
-  #if not defined(ESP32)
-    MDNS.update();
-  #endif
+  confHelper.loop();
 }
