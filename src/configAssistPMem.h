@@ -622,6 +622,7 @@ PROGMEM const char CONFIGASSIST_HTML_SCRIPT[] = R"=====(
 const $ = document.querySelector.bind(document);
 const $$ = document.querySelectorAll.bind(document);
 document.addEventListener('DOMContentLoaded', function (event) {
+  let abortScanControler = null;
   let scanTimer = null;
   let setTimeTimer = null;
   let refreshInterval = 20000;
@@ -732,7 +733,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
       return;
     }
 
-    if( e.name.includes("{CA_PASSWD_KEY}") ){
+    if( e.name.includes("{CA_ST_PASSWD_KEY}") ){
       const no = getKeyNo(e.name);
       const passV = $('#_PASS_VIEW' + no + "_GRP");
       if(passV)
@@ -779,7 +780,9 @@ document.addEventListener('DOMContentLoaded', function (event) {
     }else if ( key=="_DWN" || key=="_UPG" || key=="_FWC" || key.includes('_PASS_VIEW') ){
       return;
     }
-    //console.log("Request ", url);
+    //console.log("Request ", url);    
+    abortScan();
+    
     const response = await fetch(encodeURI(url));
     if (!response.ok){
       const html = await response.text();
@@ -794,8 +797,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
   }
   /*{SUB_SCRIPT_ONLOADED}*/
 })
-/*{SUB_SCRIPT}*/
-</script>)=====";
+)=====";
 
 #if (CA_USE_TIMESYNC)
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_TIME_SYNC[] = R"=====(
@@ -869,16 +871,30 @@ async function testWifi(no="") {
 
 #if (CA_USE_WIFISCAN)
 PROGMEM const char CONFIGASSIST_HTML_SCRIPT_WIFI_SCAN[] = R"=====(
+  function abortScan(){  
+    if(abortScanControler == null) return;
+    abortScanControler.abort(); 
+    clearTimeout(scanTimer);
+    scanTimer = setTimeout(getWifiScan, refreshInterval);
+  }
   async function getWifiScan() {
     const baseHost = document.location.origin;
     const url = baseHost + "/scan"
+    abortScanControler = new AbortController();   
+    const signal = abortScanControler.signal;
+    options = {}
+    options.signal = signal;
+
+    // Cancel the request after 15 seconds
+    //setTimeout(() => { abortScan(); }, 15000);
+
     try{
-      const response = await fetch(encodeURI(url));
+      const response = await fetch(encodeURI(url), options);
       var json = await response.json();
       if (!response.ok){
         console.log('Error:', json)
       }else{
-        if(json.length == 1 && Object.keys(json[0]).length < 2 ) return;
+        if(json.length == 1 && Object.keys(json[0]).length < 2 ) throw new Error('Empty json');;
         json = json.sort((a, b) => {
           if (a.rssi > b.rssi) {
             return -1;
