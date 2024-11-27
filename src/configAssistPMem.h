@@ -781,7 +781,7 @@ document.addEventListener('DOMContentLoaded', function (event) {
       return;
     }
     //console.log("Request ", url);    
-    abortScan();
+    if (typeof abortScan === 'function')  abortScan();
     
     const response = await fetch(encodeURI(url));
     if (!response.ok){
