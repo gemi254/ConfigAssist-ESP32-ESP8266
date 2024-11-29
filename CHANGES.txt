@@ -1,6 +1,7 @@
 2.8.6
   * Added WiFi async connection with WiFiResultCallback. Added example
   * Check connection and auto reconnect on failure
+  * Added forced and async time synchronization
 
 2.8.5 (2024-11-20)
   * Added force time synchronization.
