@@ -139,7 +139,7 @@ void setup(void) {
   // Will be called when portal is updating a key
   conf.setRemotUpdateCallback(onDataChanged);
 
-  WiFi.setAutoConnect(false);
+  //WiFi.setAutoConnect(false);
   WiFi.setAutoReconnect(true);
 
   // Set the defined display type
