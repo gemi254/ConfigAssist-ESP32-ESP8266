@@ -159,6 +159,8 @@ class ConfigAssist{
     void setupConfigPortalHandlers(WEB_SERVER& server);
     // Add a global callback function to handle changes on form updates
     void setRemotUpdateCallback(ConfigAssistChangeCbf ev);
+    // AP started ?
+    bool isAPEnabled();
     // Get a temponary hostname
     static String getMacID();
     // Get a temponary hostname
