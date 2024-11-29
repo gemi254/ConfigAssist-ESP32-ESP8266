@@ -30,10 +30,10 @@ class ConfigAssistHelper {
         using WiFiResultCallback = std::function<void(WiFiResult, const String&)>;
 
         ConfigAssistHelper(ConfigAssist& conf):
-             _conf(conf),
-             _ledPin(0),
-             _ledState(LEDState::OFF),
-             _reconnect(false),
+            _conf(conf),
+            _ledPin(0),
+            _ledState(LEDState::OFF),
+            _reconnect(false),
             _waitForResult(false),
             _timeOld(0),
             _connectTimeout(10000)
@@ -118,7 +118,7 @@ class ConfigAssistHelper {
                 restoreClock(elapsed);
             }
 
-            LOG_D("Time sync ended ms: %llu\n", (millis() - start));
+            LOG_D("Time sync ended ms: %lu\n",  (unsigned long)(millis() - start));
         }
 
         // Is clock in sync
