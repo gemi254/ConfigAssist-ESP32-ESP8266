@@ -73,9 +73,12 @@ void onConnectionResult(ConfigAssistHelper::WiFiResult result, const String& msg
           // Start web server
           server.begin();
           LOG_I("HTTP server started\n");
+          LOG_I("Device started. Visit http://%s\n", WiFi.localIP().toString().c_str());
+
           // Setup time synchronization, Wait max 10 sec
           LOG_I("Start time sync..\n");
           confHelper.syncTime(10000);
+          pingMillis = millis();
           tnow = time(nullptr);
           break;
 
@@ -126,8 +129,7 @@ void setup(void) {
   confHelper.connectToNetworkAsync(15000, conf("led_buildin").toInt());
 }
 
-int cntSoft = 0;
-int cntHard = 0;
+int syncType = 0;
 
 
 // App main loop
@@ -138,34 +140,40 @@ void loop(void) {
 
   if(!WiFi.isConnected()) return;
   // Display info
-  if (millis() - pingMillis >= 5000){
+  if (millis() - pingMillis >= 20000){
     tnow = time(nullptr);
     LOG_I("Time in sync: %i clock: %s", confHelper.isTimeSync(), ctime(&tnow));
-    cntSoft++;
-    cntHard++;
+    syncType++;
     pingMillis = millis();
+  }else{
+    return;
   }
 
-  if(cntSoft>2){
+  if(syncType == 1){
     // Force time synchronization,
-    // Clock will not wait if already time is set
+    // syncTime will not wait if already time is set
     // and time will be automatically sync in background.
+    LOG_I("* * * Starting soft resync time...\n");
     confHelper.syncTime(10000, false);
     tnow = time(nullptr);
-    cntSoft = 0;
     LOG_I("Soft resync time: %i clock: %s", confHelper.isTimeSync(), ctime(&tnow));
-  }
 
-  if(cntHard>4){
+  }else if(syncType == 2){
     // Force time synchronization,
     // Clock will be reseted and wait for max 20 sec to sync
     // If fail clock will be restored
+    LOG_I("* * * Starting hard resync time...\n");
     confHelper.syncTime(10000, true);
     tnow = time(nullptr);
     LOG_I("Hard resynced time: %i clock: %s", confHelper.isTimeSync(), ctime(&tnow));
-    cntHard = 0;
+  }else if(syncType == 3){
+    // Force time synchronization and don't wait for Synchronization
+    LOG_I("* * * Starting ASYNC hard resync time...\n");
+    confHelper.syncTimeAsync(10000, true);
+    tnow = time(nullptr);
+    LOG_N("ASYNC Hard resynced time: %i clock: %s", confHelper.isTimeSync(), ctime(&tnow));
   }
-
+  if(syncType > 3) syncType = 0;
   // Allow the cpu to switch to other tasks
   delay(2);
 }
