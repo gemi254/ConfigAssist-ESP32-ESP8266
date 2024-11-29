@@ -35,6 +35,7 @@ class ConfigAssistHelper {
              _ledState(LEDState::OFF),
              _reconnect(false),
             _waitForResult(false),
+            _timeOld(0),
             _connectTimeout(10000)
         {
             _resultCallback = nullptr;
@@ -48,7 +49,8 @@ class ConfigAssistHelper {
         // Set time zone
         void setEnvTimeZone(const char* tz) {
             if (tz[0] == '\0') {
-                LOG_E("Environment tz is not set.\n");
+                LOG_E("Environment tz is not set, set default `GMT0`.\n");
+                setenv("TZ", "GMT0", 1);
                 return;
             }
             LOG_D("Set environment tz: %s\n", tz);
@@ -62,7 +64,12 @@ class ConfigAssistHelper {
         }
 
         // Sync time, force to reset clock
-        void syncTime(uint32_t syncTimeout = 20000, bool force = false) {
+        void syncTimeAsync(uint32_t syncTimeout = 20000, bool force = false) {
+            syncTime(syncTimeout, force, true);
+        }
+        // Sync time, force to reset clock, async to not wait until sync
+        // In asynchronous mode, if time synchronization fails, no restoration of the clock occurs.
+        void syncTime(uint32_t syncTimeout = 20000, bool force = false, bool async = false) {
             if (WiFi.status() != WL_CONNECTED) {
                 LOG_E("Not connected to Wi-Fi. Cannot synchronize time.\n");
                 return;
@@ -70,7 +77,7 @@ class ConfigAssistHelper {
 
             String tzString = _conf(CA_TIMEZONE_KEY);
             if ( tzString == "") {
-                LOG_W("No time zone found in config!\n");
+                LOG_E("Time zone key '%s' found in config!\n",CA_TIMEZONE_KEY);
                 tzString = "GMT0";
             }
 
@@ -93,39 +100,35 @@ class ConfigAssistHelper {
                 LOG_E("No Ntp servers found in config\n");
                 return;
             }
-            LOG_I("Syncing time with NTP servers: %s, %s, %s\n", ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
-            configTzTime(_conf(CA_TIMEZONE_KEY).c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
 
-            if (force) {
-                struct timeval tv;
-                tv.tv_sec = 0;
-                tv.tv_usec = 0;
-                time_t tnow = time(nullptr);
-                settimeofday(&tv, nullptr);
-
-                time_t start = millis();
-                waitForTimeSync(syncTimeout);
-
-                if (!isTimeSync()) {
-                    time_t duration = (millis() - start);
-                    tv.tv_sec = tnow + (duration) / 1000;
-                    tv.tv_usec = 0;
-                    settimeofday(&tv, nullptr);
-                    LOG_E("Time sync failed, restoring old time.\n");
-                }
-            } else {
-                waitForTimeSync(syncTimeout);
+            if(force){
+                _timeOld = time(nullptr);
+                resetClock();
             }
+
+            LOG_V("Sync time, NTP servers: %s, %s, %s\n", ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
+            configTzTime(tzString.c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
+
+            time_t start = millis();
+            if(!async) waitForTimeSync(syncTimeout);
+
+            // Clock reseted and wait for sync timeout
+            if (force && !async && !isTimeSync()) {
+                time_t elapsed = (millis() - start);
+                restoreClock(elapsed);
+            }
+
+            LOG_D("Time sync ended ms: %llu\n", (millis() - start));
         }
 
-        // Is clock sync
+        // Is clock in sync
         bool isTimeSync() {
             return time(nullptr) > 1000000000l;
         }
 
         // Wait for clock to be synced
         void waitForTimeSync(const uint32_t timeout = 20000) {
-            LOG_I("Synchronizing time..\n");
+            LOG_D("Waiting for time sync..\n");
             uint32_t startAttemptTime = millis();
             while (!isTimeSync() && millis() - startAttemptTime < timeout) {
                 Serial.print(".");
@@ -134,7 +137,7 @@ class ConfigAssistHelper {
             Serial.println();
 
             time_t tnow = time(nullptr);
-            LOG_I("Synchronized: %i, time: %s", isTimeSync(), ctime(&tnow));
+            LOG_D("Wait sync: %i, time: %s", isTimeSync(), ctime(&tnow));
         }
 
         // Check if ssid exists in config
@@ -176,6 +179,23 @@ class ConfigAssistHelper {
         LEDState getLedState() { return _ledState; }
 
     private:
+        // Reset clock to 0
+        void resetClock(){
+            struct timeval tv;
+            tv.tv_sec = 0;
+            tv.tv_usec = 0;
+            // Reset clock
+            settimeofday(&tv, nullptr);
+        }
+
+        // Restore clock to _timeOld + elapsed ms
+        void restoreClock(time_t elapsed){
+            struct timeval tv;
+            tv.tv_sec = _timeOld + (elapsed) / 1000;
+            tv.tv_usec = 0;
+            settimeofday(&tv, nullptr);
+            LOG_W("Restoring old clock time.\n");
+        }
         // Find wifi credentials from config.
         // Return true if found
         bool getStSSID(String& ssid, String& pass, String& ip) {
@@ -341,7 +361,7 @@ class ConfigAssistHelper {
                     if (_resultCallback) _resultCallback(WiFiResult::DISCONNECTION_ERROR, "Disconnection.");
                         LOG_D("Reconnecting to: %s\n", WiFi.SSID().c_str());
                         #if defined(ESP8266)
-                        if( _reconnect wifi_station_disconnect()) {
+                        if( _reconnect && wifi_station_disconnect()) {
                             wifi_station_connect();
                         }
                         #else
@@ -351,7 +371,7 @@ class ConfigAssistHelper {
                     _ledState = LEDState::CONNECTED;
                     if (_resultCallback) _resultCallback(WiFiResult::SUCCESS, "Connected");
                 }
-                LOG_V("Checking connection mode: %i, state: %i\n", (int)WiFi.getMode(), (int)_ledState);
+                LOG_V("Checking connection Wifimode: %i, ledstate: %i\n", (int)WiFi.getMode(), (int)_ledState);
                 _checkConnectionTime = millis();
             }
         }
@@ -386,6 +406,7 @@ class ConfigAssistHelper {
 
         // Connect to network, async = true will return and a connection event will be send
         bool connectToNetwork(uint32_t connectTimeout = 10000, const uint8_t ledPin = 0, const bool async = false) {
+            if(WiFi.isConnected()) return true;
             if (!validateWiFiConfig()) {
                 if (_resultCallback) {
                     _resultCallback(WiFiResult::INVALID_CREDENTIALS, "Invalid Wi-Fi configuration.");
@@ -427,6 +448,7 @@ class ConfigAssistHelper {
         LEDState            _ledState;
         bool                _reconnect;
         bool                _waitForResult;
+        time_t              _timeOld;
         uint32_t            _connectTimeout;
         uint32_t            _startAttemptTime;
         uint32_t            _checkConnectionTime;
