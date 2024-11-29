@@ -131,7 +131,10 @@ void ConfigAssist::setupConfigPortal(WEB_SERVER& server, bool apEnable){
 void ConfigAssist::setup(WEB_SERVER &server, bool apEnable ){
   setupConfigPortal(server,apEnable);
 }
-
+// AP started ?
+bool ConfigAssist::isAPEnabled(){
+  return _apEnabled;
+}
 // Setup an access point, settings from config or defaults
 bool ConfigAssist::setupAP(bool startMDNS){
   if(_apEnabled) return true;
