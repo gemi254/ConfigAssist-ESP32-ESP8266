@@ -437,7 +437,8 @@ class ConfigAssistHelper {
             }
             String host = _conf(CA_HOSTNAME_KEY);
             if(host == "") host = _conf.getHostName();
-            bool ret = MDNS.begin(host);
+            // Oldest versions not include MDNS.begin(String)
+            bool ret = MDNS.begin(host.c_str());
             if(ret) LOG_D("MDNS started, host: %s\n", host.c_str());
             else LOG_E("MDNS failed to start, host: %s\n", host.c_str());
             return ret;
