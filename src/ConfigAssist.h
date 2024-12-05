@@ -321,6 +321,7 @@ class ConfigAssist{
     bool                          _apEnabled;
     ConfigAssistDisplayType       _displayType;
     ConfigAssistChangeCbf         _changeCbf;
+    static bool                   _storageStarted;
 #if (CA_USE_PERSIST_CON)
     static Preferences _prefs;
 #endif
