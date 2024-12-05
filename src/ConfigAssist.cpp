@@ -10,6 +10,7 @@
 // Class static members
 WEB_SERVER *ConfigAssist::_server = NULL;
 String ConfigAssist::_jWifi="[{}]";
+bool ConfigAssist::_storageStarted = false;
 
 #if (CA_USE_PERSIST_CON)
  Preferences ConfigAssist::_prefs;
@@ -66,20 +67,21 @@ void ConfigAssist::setDictStr(const char * dictStr, bool load){
 
 // Start storage if not init
 void ConfigAssist::startStorage() {
+  if(_storageStarted) return;
   #if defined(ESP32)
-    if(!STORAGE.begin(true)) LOG_E("ESP32 storage init failed!\n");
-    else LOG_D("Storage started.\n");
+    _storageStarted = STORAGE.begin(true);
   #else
-    if(!STORAGE.begin()) LOG_E("ESP8266 storage init failed!\n");
-    else LOG_D("Storage started.\n");
+    _storageStarted = STORAGE.begin();
   #endif
+  if(!_storageStarted) LOG_E("ESP32 storage init failed!\n");
+  else LOG_D("Storage started.\n");
 }
 
 // Initialize with defaults
 void ConfigAssist::init() {
   if(_init) return;
   _init = true;
-  startStorage();
+  if(!_storageStarted) startStorage();
   // First run ?
   if(!loadConfigFile(_confFile) && _dictStr!=NULL){
     LOG_I("Config not found! Generating default..\n");
