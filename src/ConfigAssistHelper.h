@@ -53,6 +53,8 @@ class ConfigAssistHelper {
                 setenv("TZ", "GMT0", 1);
                 return;
             }
+            // Already set
+            if(strcmp(getenv("TZ"), tz) == 0) return;
             LOG_D("Set environment tz: %s\n", tz);
             setenv("TZ", tz, 1);
             tzset();
@@ -309,16 +311,20 @@ class ConfigAssistHelper {
                     _waitForResult = true;
                     // Check for connection on loop
                     return true;
-                } else {
+                } else { // Block mode, wait or timeout
                     // Wait connection or timeout
                     waitForConnection(_connectTimeout);
-                    //bool con = WiFi.status() == WL_CONNECTED
                     if(WiFi.isConnected()){
-                         LOG_D("Wifi connected. ip: %s\n", WiFi.localIP().toString().c_str());
+                        LOG_D("Wifi connected. ip: %s\n", WiFi.localIP().toString().c_str());
                         _ledState = LEDState::CONNECTED;
+                        if (_resultCallback) _resultCallback(WiFiResult::SUCCESS, WiFi.localIP().toString());
                     }else{
-                         LOG_E("Wifi connection timeout\n");
+                        LOG_E("Wifi connection timeout\n");
                         _ledState = LEDState::TIMEOUT;
+                        if (_resultCallback) _resultCallback(WiFiResult::CONNECTION_TIMEOUT, "Timeout connecting.");
+                        // Next connection if any
+                        if(!connectWiFi(async))
+                           _waitForResult = false;
                     }
                     updateLED();
                     return WiFi.isConnected();
@@ -359,7 +365,7 @@ class ConfigAssistHelper {
                     //WiFi.reconnect();
                     _ledState = LEDState::DISCONNECTED;
                     if (_resultCallback) _resultCallback(WiFiResult::DISCONNECTION_ERROR, "Disconnection.");
-                        LOG_D("Reconnecting to: %s\n", WiFi.SSID().c_str());
+                        LOG_D("Reconnecting Wifi...\n");
                         #if defined(ESP8266)
                         if( _reconnect && wifi_station_disconnect()) {
                             wifi_station_connect();
@@ -369,7 +375,7 @@ class ConfigAssistHelper {
                         #endif
                 }else if(WiFi.isConnected() && _ledState != LEDState::CONNECTED) {
                     _ledState = LEDState::CONNECTED;
-                    if (_resultCallback) _resultCallback(WiFiResult::SUCCESS, "Connected");
+                    if (_resultCallback) _resultCallback(WiFiResult::SUCCESS, WiFi.localIP().toString());
                 }
                 LOG_V("Checking connection Wifimode: %i, ledstate: %i\n", (int)WiFi.getMode(), (int)_ledState);
                 _checkConnectionTime = millis();
