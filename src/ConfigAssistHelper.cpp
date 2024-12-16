@@ -114,10 +114,12 @@ bool ConfigAssistHelper::isTimeSync() {
 }
 
 // Wait for time synchronization with a timeout
-void ConfigAssistHelper::waitForTimeSync(const uint32_t timeout) {
+void ConfigAssistHelper::waitForTimeSync(uint32_t syncTimeout) {
+  if(syncTimeout == 0) syncTimeout = _conf("sync_timeout").toInt();
+  if(syncTimeout == 0) syncTimeout = 15000;
   LOG_D("Waiting for time sync..\n");
   uint32_t startAttemptTime = millis();
-  while (!isTimeSync() && millis() - startAttemptTime < timeout) {
+  while (!isTimeSync() && millis() - startAttemptTime < syncTimeout) {
     printStatus();
     delay(100);
   }
@@ -154,8 +156,11 @@ void ConfigAssistHelper::setLedPin(uint8_t pin) {
 }
 
 // Set the timeout for Wi-Fi connection
-void ConfigAssistHelper::setConnectionTimeout(uint32_t timeout) {
-  _connectTimeout = timeout;
+void ConfigAssistHelper::setConnectionTimeout(uint32_t connectTimeout) {
+  if(connectTimeout == 0) connectTimeout = _conf("connect_timeout").toInt() * 1000L;
+  if(connectTimeout == 0) connectTimeout = 15000;
+  LOG_D("Set conn timeout: %i\n", connectTimeout);
+  _connectTimeout = connectTimeout;
 }
 
 // Enable or disable automatic reconnection to Wi-Fi
@@ -316,6 +321,7 @@ void ConfigAssistHelper::waitForResult(){
 }
 // Wait until connection or timout. FLash led and print dots
 void ConfigAssistHelper::waitForConnection(uint32_t connectTimeout) {
+    setConnectionTimeout(connectTimeout);
     uint32_t startAttemptTime = millis();
 
     while (!WiFi.isConnected() && millis() - startAttemptTime < connectTimeout) {
@@ -372,7 +378,7 @@ bool ConfigAssistHelper::connectToNetwork(uint32_t connectTimeout, const uint8_t
   }
   // Set LED pin for indicating connection status
   setLedPin(ledPin);
-  _connectTimeout = connectTimeout;
+  setConnectionTimeout(connectTimeout);
   return connectWiFi(async); // Attempt to connect to Wi-Fi
 }
 
