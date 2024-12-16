@@ -15,17 +15,32 @@
 const char* VARIABLES_DEF_YAML PROGMEM = R"~(
 Wifi connection settings:
   - st_ssid1:
-      label: Name for WLAN
+      label: Name for WLAN 1
   - st_pass1:
-      label: Password for WLAN
+      label: Password for WLAN 1
   - st_ip1:
       label: Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)
+  
   - st_ssid2:
-      label: Name for WLAN
+      label: Name for WLAN 2
   - st_pass2:
-      label: Password for WLAN
+      label: Password for WLAN 2
   - st_ip2:
       label: Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)
+  
+  - st_ssid3:
+      label: Name for WLAN 3
+  - st_pass3:
+      label: Password for WLAN
+  - st_ip3:
+      label: Static ip setup (ip mask gateway) (192.168.1.100 255.255.255.0 192.168.1.1)
+      
+  - connect_timeout:
+      label: Seconds to wait until ST connection
+      default: 10      
+  - conn_failover:
+      label: Connect to next wifi on connection fail.
+      checked: true
 
 Wifi Access Point settings:
   - ap_ssid:
@@ -105,7 +120,7 @@ void handleNotFound() {
 
 void onWiFiResult(ConfigAssistHelper::WiFiResult res, const String& message) {
     if (res == ConfigAssistHelper::WiFiResult::SUCCESS) {
-        LOG_D("Connected to Wi-Fi! IP: %s\n", message.c_str());
+        //LOG_D("Connected to Wi-Fi! IP: %s\n", message.c_str());
         confHelper.startMDNS();
         conf.setupConfigPortalHandlers(server);
         server.begin();
@@ -118,6 +133,7 @@ void onWiFiResult(ConfigAssistHelper::WiFiResult res, const String& message) {
 
     }else if (res == ConfigAssistHelper::WiFiResult::CONNECTION_TIMEOUT) {
         LOG_E("Connect timeout: %s\n", message.c_str());
+        //if(conf.is)
         conf.setupConfigPortal(server, true);
 
     }else if (res == ConfigAssistHelper::WiFiResult::INVALID_CREDENTIALS) {
@@ -151,8 +167,8 @@ void setup(void) {
   // On wifi event onWiFiResult will be called
   // Starting mdns, webserver services will be
   // called when the connection has been made
-  confHelper.connectToNetworkAsync(15000, LED_BUILTIN, onWiFiResult);
-
+  confHelper.connectToNetworkAsync(conf("connect_timeout").toInt()*1000L, LED_BUILTIN, onWiFiResult);
+  LOG_I("Setup end\n");
 }
 
 //Loop function
