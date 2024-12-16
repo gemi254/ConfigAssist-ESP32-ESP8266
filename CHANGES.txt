@@ -1,3 +1,8 @@
+2.8.7
+  * Added connection failover
+  * Fixed callback with no async connection
+  * Fix start storage called once
+
 2.8.6 (2024-12-02)
   * Added WiFi async connection with WiFiResultCallback. Added example
   * Check connection and auto reconnect on failure
