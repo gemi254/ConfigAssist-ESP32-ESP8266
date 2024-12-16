@@ -212,7 +212,7 @@ void setup(void) {
   WiFi.setAutoConnect(false);
   WiFi.setAutoReconnect(false);
 
-  // Connect to any available network
+  // Connect to any available network and connect or timeout
   bool bConn = confHelper.connectToNetwork(15000, conf("led_buildin").toInt());
 
   // Append config assist handlers to web server, setup ap on no connection
