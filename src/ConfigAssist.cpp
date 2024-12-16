@@ -146,8 +146,8 @@ bool ConfigAssist::setupAP(bool startMDNS){
   String ssid = get(CA_AP_SSID_KEY);
   if(ssid == "") ssid = hostName;
 
-  if(WiFi.getMode() != WIFI_AP_STA)
-    WiFi.mode(WIFI_AP_STA);
+  if(WiFi.getMode() == WIFI_STA) WiFi.mode(WIFI_AP_STA);
+  else WiFi.mode(WIFI_AP);
 
   // Get ip config and setup if found
   IPAddress ip, mask, gw;
@@ -311,7 +311,7 @@ bool ConfigAssist::put(const String &key, String val, bool force) {
     if(_configs[keyPos].type == CHECK_BOX){
       val = String(IS_BOOL_TRUE(val));
     }
-    LOG_N("Check : %s, %s\n", _configs[keyPos].value.c_str(), value.c_str());
+    //LOG_N("Check : %s, %s\n", _configs[keyPos].value.c_str(), value.c_str());
     if(_configs[keyPos].value != val){
       LOG_D("Put %s=%s\n", key.c_str(), val.c_str());
       _configs[keyPos].value = val;
@@ -416,7 +416,6 @@ void ConfigAssist::sortSeperators(){
 
 // Return next key and value from configs on each call in key order
 bool ConfigAssist::getNextKeyVal(confPairs &c, bool reset ) {
-  //static uint8_t row = 0;
   if(!_init) init();
   if(reset){
     _row = 0;
@@ -863,9 +862,9 @@ String ConfigAssist::testWiFiSTConnection(String no){
   if(ssid != "" && WiFi.status() != WL_CONNECTED){
     //Connect to Wifi station with ssid from conf file
     uint32_t startAttemptTime = millis();
-    if(WiFi.getMode()!=WIFI_AP_STA) WiFi.mode(WIFI_AP_STA);
+    if(WiFi.getMode() != WIFI_AP_STA) WiFi.mode(WIFI_AP_STA);
     LOG_D("Wifi Station testing, no: %s, ssid: %s\n", (no != "") ? no.c_str():"0", ssid.c_str());
-    LOG_N("Wifi Station testing, no: %s, ssid: %s, pass: %s\n", (no != "") ? no.c_str():"0", ssid.c_str(), pass.c_str());
+    //LOG_N("Wifi Station testing, no: %s, ssid: %s, pass: %s\n", (no != "") ? no.c_str():"0", ssid.c_str(), pass.c_str());
 
     WiFi.begin(ssid.c_str(), pass.c_str());
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000)  {
@@ -1071,7 +1070,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
   if(server == NULL ) server = _server;
   String reply = "";
   //Save config form
-  LOG_N("handleFormRequest Entering, args: %i\n",server->args());
+  //LOG_N("handleFormRequest Entering, args: %i\n",server->args());
   if (server->args() > 0) {
     //Download a file
     if (server->hasArg(F("_DWN"))) {
@@ -1230,7 +1229,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
   //Generate html page and send it to client
   if(server->args() < 1) sendHtmlEditPage(server);
   else server->send(200, "text/html", reply);
-  LOG_N("handleFormRequest exiting, args: %i\n",server->args());
+  //LOG_N("handleFormRequest exiting, args: %i\n",server->args());
 
 }
 
@@ -1336,7 +1335,7 @@ bool ConfigAssist::isNumeric(String s){ //1.0, -.232, .233, -32.32
       if(sign) return false;
       else sign = true;
     }else if (!isDigit(s.charAt(i))){
-      LOG_N("%c\n", s.charAt(i));
+      //LOG_N("%c\n", s.charAt(i));
       return false;
     }
   }
@@ -1355,7 +1354,7 @@ bool ConfigAssist::endsWith(const String &name, const String &key, String &no) {
   if(sKey.endsWith(key)){
     return true;
   }
-  LOG_N("Not endsWith name: %s, key: %s, sKey: %s no: %s\n", name.c_str(), key.c_str(), sKey.c_str(), no.c_str());
+  //LOG_N("Not endsWith name: %s, key: %s, sKey: %s no: %s\n", name.c_str(), key.c_str(), sKey.c_str(), no.c_str());
   return false;
 }
 
@@ -1671,7 +1670,7 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
   int lfPos = attribs.indexOf("\n");
   if( lfPos >=0 && lfPos != (int)attribs.length() - 1 ) strcpy(&sep[0],"\n");
 
-  LOG_N("getOptionsListHtml ndxLnF: %i sep: '%s', defVal: %s attribs: %s \n", attribs.indexOf("\n"), sep, defVal.c_str(), attribs.c_str());
+  //LOG_N("getOptionsListHtml ndxLnF: %i sep: '%s', defVal: %s attribs: %s \n", attribs.indexOf("\n"), sep, defVal.c_str(), attribs.c_str());
   token = strtok(&attribs[0],  sep);
   while( token != NULL ){
     String opt;
@@ -1694,7 +1693,7 @@ String ConfigAssist::getOptionsListHtml(String defVal, String attribs, bool isDa
     optVal.trim();
     optName.replace("'","");
     optName.trim();
-    LOG_N("getOptionsListHtml %s = %s\n",optName.c_str(), optVal.c_str());
+    //LOG_N("getOptionsListHtml %s = %s\n",optName.c_str(), optVal.c_str());
 
     opt.replace("{optVal}", optVal);
     opt.replace("{optName}", optName);
@@ -1728,7 +1727,7 @@ int ConfigAssist::getKeyPos(String key) {
   if (keyPos >= (int)_keysNdx.size()) return -1;
 
   // Log the key and its corresponding index for debugging
-  LOG_N("getKeyPos key: %s ndx: %i\n", key.c_str(), _keysNdx[keyPos].ndx);
+  //LOG_N("getKeyPos key: %s ndx: %i\n", key.c_str(), _keysNdx[keyPos].ndx);
 
   // Validate if the key exists in the _configs and if the name matches
   if (_keysNdx[keyPos].ndx < (int)_configs.size() && key == _configs[_keysNdx[keyPos].ndx].name) {
@@ -1747,7 +1746,7 @@ int ConfigAssist::getSepKeyPos(String key) {
   );
   int keyPos = std::distance(_seperators.begin(), lower);
   if (key == _seperators[keyPos].name) return keyPos;
-  LOG_N("Sep key %s not found.\n", key.c_str());
+  //LOG_N("Sep key %s not found.\n", key.c_str());
   return -1; // not found
 }
 
