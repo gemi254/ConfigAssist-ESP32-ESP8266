@@ -51,7 +51,7 @@ public:
     // Check if the time is synchronized
     bool isTimeSync();
     // Wait for the time synchronization with a timeout
-    void waitForTimeSync(const uint32_t timeout = 20000);
+    void waitForTimeSync(uint32_t syncTimeout = 20000);
     // Validate the Wi-Fi configuration in the configuration file
     bool validateWiFiConfig();
     // Set a callback function to handle Wi-Fi result
@@ -59,17 +59,17 @@ public:
     // Set the pin number for the LED indicator
     void setLedPin(uint8_t pin);
     // Set the connection timeout for Wi-Fi
-    void setConnectionTimeout(uint32_t timeout);
+    void setConnectionTimeout(uint32_t connectTimeout);
     // Set whether to reconnect to Wi-Fi automatically
     void setReconnect(bool reconnect);
     // Get the current LED state
     LEDState getLedState();
     // Run the main loop to manage Wi-Fi connection and LED states
     void loop();
-    // Connect to the Wi-Fi network
-    bool connectToNetwork(uint32_t connectTimeout = 10000, const uint8_t ledPin = 0, const bool async = false);
+    // Connect to the Wi-Fi network if connectTimeout == 0 default timeout from config or 15000
+    bool connectToNetwork(uint32_t connectTimeout = 0, const uint8_t ledPin = 0, const bool async = false);
     // Connect to the network asynchronously
-    void connectToNetworkAsync(uint32_t connectTimeout = 10000, const uint8_t ledPin = 0, WiFiResultCallback callback = nullptr);
+    void connectToNetworkAsync(uint32_t connectTimeout = 0, const uint8_t ledPin = 0, WiFiResultCallback callback = nullptr);
     // Start mDNS (Multicast DNS) for the device
     bool startMDNS();
 
@@ -93,7 +93,7 @@ private:
     // Wait for a result from the connection process
     void waitForResult();
     // Wait for the connection to complete with a timeout
-    void waitForConnection(uint32_t connectTimeout = 10000);
+    void waitForConnection(uint32_t connectTimeout = 0);
     // Check if the device is still connected to Wi-Fi
     // Will try to reconnect or swich to another connection
     void checkConnection();
