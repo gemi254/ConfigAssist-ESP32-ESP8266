@@ -1,4 +1,4 @@
-2.8.7
+2.8.7 (2024-12-17)
   * Added connection failover
   * Fixed callback with no async connection
   * Fix start storage called once
