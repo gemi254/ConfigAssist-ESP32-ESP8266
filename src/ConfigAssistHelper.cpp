@@ -91,7 +91,7 @@ void ConfigAssistHelper::syncTime(uint32_t syncTimeout, bool force, bool async) 
   }
 
   // Synchronize time using the NTP servers
-  LOG_V("Sync time, NTP servers: %s, %s, %s\n", ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
+  LOG_D("Sync time, NTP servers: %s, %s, %s\n", ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
   configTzTime(tzString.c_str(), ntpServers[0].c_str(), ntpServers[1].c_str(), ntpServers[2].c_str());
 
   // Start a timer for the synchronization process
@@ -105,7 +105,7 @@ void ConfigAssistHelper::syncTime(uint32_t syncTimeout, bool force, bool async) 
   }
 
   // Log the duration of the time synchronization
-  LOG_D("Time sync ended ms: %lu\n", (unsigned long)(millis() - start));
+  LOG_V("Time sync ended ms: %lu\n", (unsigned long)(millis() - start));
 }
 
 // Check if the system time is synchronized
@@ -117,7 +117,7 @@ bool ConfigAssistHelper::isTimeSync() {
 void ConfigAssistHelper::waitForTimeSync(uint32_t syncTimeout) {
   if(syncTimeout == 0) syncTimeout = _conf("sync_timeout").toInt();
   if(syncTimeout == 0) syncTimeout = 15000;
-  LOG_D("Waiting for time sync..\n");
+  LOG_D("Waiting for time sync timeout: %i..\n", syncTimeout);
   uint32_t startAttemptTime = millis();
   while (!isTimeSync() && millis() - startAttemptTime < syncTimeout) {
     printStatus();
@@ -252,6 +252,7 @@ void ConfigAssistHelper::loop() {
     waitForResult();
   } else {
     updateLED();
+    // Dont check on TIMEOUT, CONNECTING
     if (_ledState == LEDState::CONNECTED || _ledState == LEDState::DISCONNECTED)
       checkConnection();
   }
@@ -319,7 +320,7 @@ void ConfigAssistHelper::waitForResult(){
         }
     }
 }
-// Wait until connection or timout. FLash led and print dots
+// Wait until connection or timout. Flash led and print dots
 void ConfigAssistHelper::waitForConnection(uint32_t connectTimeout) {
     setConnectionTimeout(connectTimeout);
     uint32_t startAttemptTime = millis();
@@ -433,17 +434,18 @@ bool ConfigAssistHelper::connectWiFi(bool async){
           if (_resultCallback) _resultCallback(WiFiResult::SUCCESS, WiFi.localIP().toString());
       }else{
           LOG_E("Conn timeout async: %i\n", async);
+          _ledState = LEDState::TIMEOUT;
+          _waitForResult = false;
+          if (_resultCallback) _resultCallback(WiFiResult::CONNECTION_TIMEOUT, "Timeout connecting.");
           // Next connection if any
           if(!connectWiFi(async)){
-              _ledState = LEDState::TIMEOUT;
-              _waitForResult = false;
-              if (_resultCallback) _resultCallback(WiFiResult::CONNECTION_TIMEOUT, "Timeout connecting.");
+            return false;
           }
       }
       updateLED();
       return WiFi.isConnected();
     }
-  }else{
+  }else{ // Available ssids end
     LOG_D("No more SSIDS, failover: %s\n",  _conf("conn_failover").c_str() );
     if( _conf("conn_failover").toInt()){
         LOG_D("Starting over..\n");
