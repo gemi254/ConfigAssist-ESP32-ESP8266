@@ -154,7 +154,7 @@ void loop(void) {
     // syncTime will not wait if already time is set
     // and time will be automatically sync in background.
     LOG_I("* * * Starting soft resync time...\n");
-    confHelper.syncTime(10000, false);
+    confHelper.syncTime(conf("sync_timeout").toInt() * 1000L, false);
     tnow = time(nullptr);
     LOG_I("Soft resync time: %i clock: %s", confHelper.isTimeSync(), ctime(&tnow));
 
@@ -163,13 +163,13 @@ void loop(void) {
     // Clock will be reseted and wait for max 20 sec to sync
     // If fail clock will be restored
     LOG_I("* * * Starting hard resync time...\n");
-    confHelper.syncTime(10000, true);
+    confHelper.syncTime(conf("sync_timeout").toInt() * 1000L, true);
     tnow = time(nullptr);
     LOG_I("Hard resynced time: %i clock: %s", confHelper.isTimeSync(), ctime(&tnow));
   }else if(syncType == 3){
     // Force time synchronization and don't wait for Synchronization
     LOG_I("* * * Starting ASYNC hard resync time...\n");
-    confHelper.syncTimeAsync(10000, true);
+    confHelper.syncTimeAsync(conf("sync_timeout").toInt() * 1000L, true);
     tnow = time(nullptr);
     LOG_N("ASYNC Hard resynced time: %i clock: %s", confHelper.isTimeSync(), ctime(&tnow));
   }
