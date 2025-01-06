@@ -63,4 +63,8 @@ Time settings:
   - ntp_server3:
       label: Time server to sync time3
       default: "pool.ntp.org"
+
+  - sync_timeout:
+      label: Timeout for time sync (sec)
+      default: 15      
 )~";
