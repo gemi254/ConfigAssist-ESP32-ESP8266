@@ -33,6 +33,8 @@
     #define LOGGER_CLOSE_LOG() log_file.close();
 #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
     #ifndef _log_printf
+    void _log_printf(const char *format, ...);
+    //#warning _log_printf() must be defined
     #endif
 #else
     #define _DEBUG_PORT Serial
@@ -54,7 +56,7 @@
     #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE
         #define LOG_V(format, ...) { _CHK_LOG_FILE;  _log_printf(_LOG_FORMAT(V, format), ##__VA_ARGS__); }
     #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
-        #define LOG_V(format, ...) { _log_printf(_LOG_FORMAT(V, format), ##__VA_ARGS__); }
+        #define LOG_V(format, ...) _log_printf(_LOG_FORMAT(V, format), ##__VA_ARGS__)
     #else
         #define LOG_V(format, ...) _log_printf(_LOG_FORMAT(V, format), ##__VA_ARGS__)
     #endif
@@ -66,9 +68,9 @@
     #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE
         #define LOG_D(format, ...) { _CHK_LOG_FILE;  _log_printf(_LOG_FORMAT(E, format), ##__VA_ARGS__); }
     #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
-        #define LOG_D(format, ...) { _log_printf(_LOG_FORMAT(D, format), ##__VA_ARGS__); }
+        #define LOG_D(format, ...) _log_printf(_LOG_FORMAT(D, format), ##__VA_ARGS__)
     #else
-       #define LOG_D(format, ...) _log_printf(_LOG_FORMAT(D, format), ##__VA_ARGS__)
+        #define LOG_D(format, ...) _log_printf(_LOG_FORMAT(D, format), ##__VA_ARGS__)
     #endif
 #else
     #define LOG_D(format, ...)
@@ -78,7 +80,7 @@
     #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE
         #define LOG_I(format, ...) { _CHK_LOG_FILE;  _log_printf(_LOG_FORMAT(E, format), ##__VA_ARGS__); }
     #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
-        #define LOG_I(format, ...) { _log_printf(_LOG_FORMAT(I, format), ##__VA_ARGS__); }
+        #define LOG_I(format, ...) _log_printf(_LOG_FORMAT(I, format), ##__VA_ARGS__)
     #else
         #define LOG_I(format, ...) _log_printf(_LOG_FORMAT(I, format), ##__VA_ARGS__)
     #endif
@@ -90,7 +92,7 @@
     #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE
         #define LOG_W(format, ...) { _CHK_LOG_FILE;  _log_printf(_LOG_FORMAT(E, format), ##__VA_ARGS__); }
     #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
-        #define LOG_W(format, ...) { _log_printf(_LOG_FORMAT(W, format), ##__VA_ARGS__); }
+        #define LOG_W(format, ...) _log_printf(_LOG_FORMAT(W, format), ##__VA_ARGS__)
     #else
         #define LOG_W(format, ...) _log_printf(_LOG_FORMAT(W, format), ##__VA_ARGS__)
     #endif
@@ -102,7 +104,7 @@
     #if LOGGER_LOG_MODE == LOGGER_LOG_MODE_FILE
         #define LOG_E(format, ...) { _CHK_LOG_FILE;  _log_printf(_LOG_FORMAT(E, format), ##__VA_ARGS__); }
     #elif LOGGER_LOG_MODE == LOGGER_LOG_MODE_EXTERNAL
-        #define LOG_E(format, ...) { _log_printf(_LOG_FORMAT(E, format), ##__VA_ARGS__); }
+        #define LOG_E(format, ...) _log_printf(_LOG_FORMAT(E, format), ##__VA_ARGS__)
     #else
         #define LOG_E(format, ...) _log_printf(_LOG_FORMAT(E, format), ##__VA_ARGS__)
     #endif
