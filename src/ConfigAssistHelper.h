@@ -45,13 +45,14 @@ public:
     // Set the time zone from the configuration file
     void setEnvTimeZone();
     // Synchronize time asynchronously with a timeout
-    void syncTimeAsync(uint32_t syncTimeout = 20000, bool force = false);
+    void syncTimeAsync(uint32_t syncTimeout = 0, bool force = false);
     // Synchronize time synchronously with a timeout
-    void syncTime(uint32_t syncTimeout = 20000, bool force = false, bool async = false);
+    void syncTime(uint32_t syncTimeout = 0, bool force = false, bool async = false);
     // Check if the time is synchronized
     bool isTimeSync();
-    // Wait for the time synchronization with a timeout
-    void waitForTimeSync(uint32_t syncTimeout = 20000);
+    // Wait for time synchronization with a timeout
+    // if syncTimeout == 0, default sync_timeout from config or 15000
+    void waitForTimeSync(uint32_t syncTimeout = 0);
     // Validate the Wi-Fi configuration in the configuration file
     bool validateWiFiConfig();
     // Set a callback function to handle Wi-Fi result
@@ -66,7 +67,7 @@ public:
     LEDState getLedState();
     // Run the main loop to manage Wi-Fi connection and LED states
     void loop();
-    // Connect to the Wi-Fi network if connectTimeout == 0 default timeout from config or 15000
+    // Connect to the Wi-Fi network if connectTimeout == 0 default connect_timeout from config or 15000
     bool connectToNetwork(uint32_t connectTimeout = 0, const uint8_t ledPin = 0, const bool async = false);
     // Connect to the network asynchronously
     void connectToNetworkAsync(uint32_t connectTimeout = 0, const uint8_t ledPin = 0, WiFiResultCallback callback = nullptr);
