@@ -6,7 +6,11 @@
       #include "Update.h"
   #endif
 #endif
-
+#if ESP_ARDUINO_VERSION < ESP_ARDUINO_VERSION_VAL(3, 0, 3)
+#define CLIENT_FLUSH(srv) srv->client().flush()
+#else 
+#define CLIENT_FLUSH(srv) srv->client().clear()
+#endif
 // Class static members
 WEB_SERVER *ConfigAssist::_server = NULL;
 String ConfigAssist::_jWifi="[{}]";
@@ -73,8 +77,8 @@ void ConfigAssist::startStorage() {
   #else
     _storageStarted = STORAGE.begin();
   #endif
-  if(!_storageStarted) LOG_E("ESP32 storage init failed!\n");
-  else LOG_D("Storage started.\n");
+  if(!_storageStarted){ LOG_E("ESP32 storage init failed!\n"); }
+  else { LOG_D("Storage started.\n"); }
 }
 
 // Initialize with defaults
@@ -903,7 +907,7 @@ void ConfigAssist::handleDownloadFile(const String &fileName){
     const char* resp_str = "File does not exist or cannot be opened";
     LOG_E("%s: %s", resp_str, fileName.c_str());
     _server->send(200, "text/html", resp_str);
-    _server->client().flush();
+    CLIENT_FLUSH(_server);
     return;
   }
   uint32_t config_len = f.size();
@@ -1006,7 +1010,7 @@ void ConfigAssist::handleFileUpload(){
 
         // Check if we need to output a milestone (100k 200k 300k)
         if (uploadfile.totalSize >= next) {
-          Serial.printf("%dk ", next / 1024);
+          Serial.printf("%luk ", next / 1024);
           next += chunk_size;
         }
         return;
@@ -1101,7 +1105,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         server->send ( 200, "text/html", "OK: Recreated config.");
       }*/
       server->send ( 200, "text/html", "OK: Recreated config.");
-      server->client().flush();
+      CLIENT_FLUSH(server);      
       return;
     }
     //Reload and loose changes
@@ -1115,7 +1119,8 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         if(clearPrefs()) reply = "Cleared preferences.";
         else reply = "ERROR: Failed to clear preferences.";
         server->send(200, "text/html", reply);
-        server->client().flush();
+        //server->client().flush();
+        server->client().clear();
         return;
     }
 #endif
@@ -1127,7 +1132,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
       String no = server->arg(F("_TEST_WIFI"));
       String msg = testWiFiSTConnection(no);
       server->send(200, "text/json", msg.c_str());
-      server->client().flush();
+      CLIENT_FLUSH(server);
       LOG_D("Testing WIFI ST connection..Done\n");
       //if(_apEnabled) WiFi.disconnect();
       return;
@@ -1137,7 +1142,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
     if (server->hasArg(F("_RBT_CONFIRM"))) {
       LOG_D("Restarting..\n");
       server->send(200, "text/html", "OK");
-      server->client().flush();
+      CLIENT_FLUSH(server);
       delay(1000);
       ESP.restart();
       return;
@@ -1161,7 +1166,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         }
         checkTime(val.toInt(), offs.toInt());
         server->send(200, "text/html", "OK");
-        server->client().flush();
+        CLIENT_FLUSH(server);
         return;
       }
       //Check if it is a text box with file name
@@ -1214,7 +1219,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         out.replace("{url}", "/cfg");
         out.replace("{refresh}", "10000");
         server->send(200, "text/html", out);
-        server->client().flush();
+        CLIENT_FLUSH(server);
         return;
     }
     //Save config file
@@ -1222,7 +1227,7 @@ void ConfigAssist::handleFormRequest(WEB_SERVER * server){
         if(saveConfigFile()) reply = "Config saved.";
         else reply = "ERROR: Failed to save config.";
         server->send(200, "text/html", reply);
-        server->client().flush();
+        CLIENT_FLUSH(server);
         return;
     }
   }
