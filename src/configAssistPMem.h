@@ -984,7 +984,7 @@ R"=====(<input type="text" id="{key}" name="{key}" list="{key}_list" value="{val
 PROGMEM const char CONFIGASSIST_HTML_INPUT_RANGE[] = R"=====(
             <div class="card-val-ctrl">
               <div class="range-min">{min}</div>
-              <input title="{lbl}" type="range" id="{key}" name="{key}" min="{min}" max="{max}" value="{val}">
+              <input title="{lbl}" type="range" id="{key}" name="{key}" min="{min}" max="{max}" step="{step}" value="{val}">
               <div class="range-value" name="rangeVal"></div>
               <div class="range-max">{max}</div>
             </div>)=====";
