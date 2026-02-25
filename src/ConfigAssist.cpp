@@ -260,7 +260,7 @@ void ConfigAssist::setRemotUpdateCallback(ConfigAssistChangeCbf ev){
 
 // Get the device mac id
 String ConfigAssist::getMacID(){
-  String mac = WiFi.macAddress();
+  String mac = Network.macAddress();
   mac.replace(":","");
   return mac.substring(6);
 }
